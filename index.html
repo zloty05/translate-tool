@@ -1273,7 +1273,17 @@ async function loadTeam(){
     if(userIds.length){
       profiles=await dbGet('profiles',`?id=in.(${userIds.join(',')})`);
     }
-    const membersWithProfiles=members.map(m=>({...m,profiles:profiles.find(p=>p.id===m.user_id)||null}));
+    // Fetch display names from member_emails view
+    let emailMap={};
+    try{
+      const emailData=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
+      emailData.forEach(e=>{ emailMap[e.user_id]={display_name:e.display_name}; });
+    }catch(e){ console.warn('member_emails not available'); }
+    const membersWithProfiles=members.map(m=>({
+      ...m,
+      profiles:profiles.find(p=>p.id===m.user_id)||null,
+      display_name:emailMap[m.user_id]?.display_name||null
+    }));
     const pending=await dbGet('invitations',`?${orgParam()}&accepted_at=is.null&order=created_at.desc`);
     renderTeamList(membersWithProfiles);
     renderPendingInvites(pending);
