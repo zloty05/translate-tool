@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TranslateTool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
+
+/* ── AUTH SCREENS ── */
+.auth-screen{display:none;min-height:100vh;align-items:center;justify-content:center;background:#f5f4f0}
+.auth-screen.active{display:flex}
+.auth-box{background:#fff;border-radius:16px;border:1px solid #e8e6e0;padding:40px;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.auth-logo{font-size:20px;font-weight:700;text-align:center;margin-bottom:8px;letter-spacing:-.5px}
+.auth-sub{font-size:13px;color:#888;text-align:center;margin-bottom:28px}
+.auth-field{margin-bottom:14px}
+.auth-field label{font-size:12px;color:#666;display:block;margin-bottom:5px;font-weight:500}
+.auth-field input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border-color .15s}
+.auth-field input:focus{border-color:#1a1a1a}
+.auth-btn{width:100%;padding:11px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:4px}
+.auth-btn:hover{background:#333}
+.auth-btn.secondary{background:#fff;color:#1a1a1a;border:1px solid #ddd;margin-top:10px}
+.auth-btn.secondary:hover{background:#f5f4f0}
+.auth-link{font-size:13px;text-align:center;margin-top:18px;color:#888}
+.auth-link a{color:#1a1a1a;font-weight:500;cursor:pointer;text-decoration:underline}
+.auth-error{background:#fde8e8;color:#b32424;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+.auth-success{background:#e6f5ec;color:#1a7a3f;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:#ccc;font-size:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:#eee}
+
+/* ── ONBOARDING ── */
+.onboard-step{display:none}
+.onboard-step.active{display:block}
+.onboard-progress{display:flex;gap:6px;margin-bottom:24px}
+.onboard-dot{flex:1;height:3px;border-radius:2px;background:#eee;transition:background .3s}
+.onboard-dot.done{background:#1a1a1a}
+
+/* ── APP SHELL ── */
+#app-shell{display:none}
+header{background:#1a1a1a;color:#fff;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:52px}
+header h1{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.hdr-org{font-size:12px;color:#888;background:#2a2a2a;padding:4px 12px;border-radius:20px}
+.hdr-user{display:flex;align-items:center;gap:8px;cursor:pointer;position:relative}
+.avatar{width:30px;height:30px;border-radius:50%;background:#444;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff}
+.user-menu{position:absolute;top:42px;right:0;background:#fff;border:1px solid #e8e6e0;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.1);min-width:200px;display:none;z-index:100}
+.user-menu.open{display:block}
+.user-menu-item{padding:10px 16px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;color:#1a1a1a}
+.user-menu-item:hover{background:#f5f4f0}
+.user-menu-item.danger{color:#b32424}
+.user-menu-sep{height:1px;background:#f0ede8;margin:4px 0}
+.db-dot{width:7px;height:7px;border-radius:50%;background:#444;display:inline-block;margin-right:4px}
+.db-dot.ok{background:#4ade80}
+.db-dot.err{background:#f87171}
+
+/* ── TABS ── */
+.tabs{background:#fff;border-bottom:1px solid #e8e6e0;display:flex;padding:0 32px;overflow-x:auto}
+.tab{padding:13px 16px;font-size:13px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:color .15s,border-color .15s}
+.tab:hover{color:#444}
+.tab.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
+.tab-badge{font-size:10px;background:#eee;color:#888;padding:1px 6px;border-radius:10px}
+.tab.active .tab-badge{background:#1a1a1a;color:#fff}
+.tab-sep{width:1px;background:#eee;margin:10px 4px}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ── LAYOUT ── */
+.container{max-width:1200px;margin:0 auto;padding:22px 24px}
+.card{background:#fff;border-radius:12px;border:1px solid #e8e6e0;padding:20px;margin-bottom:14px}
+.card-title{font-size:14px;font-weight:600;margin-bottom:12px}
+.card-sub{font-size:12px;color:#888;margin-bottom:12px;line-height:1.6}
+label{font-size:12px;color:#666;display:block;margin-bottom:4px}
+input[type=password],input[type=text],select,input[type=search],input[type=email]{width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fafaf8;color:#1a1a1a;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:#888}
+.input-row{display:flex;gap:8px}
+.input-row input,.input-row select{flex:1}
+.btn{cursor:pointer;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:500;border:1px solid #ddd;background:#fff;color:#1a1a1a;transition:background .15s,transform .1s;white-space:nowrap}
+.btn:hover{background:#f5f4f0}
+.btn:active{transform:scale(.98)}
+.btn-dark{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-dark:hover{background:#333}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-red{background:#fde8e8;color:#b32424;border-color:#f5c0c0}
+.btn-red:hover{background:#fad4d4}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.progress-wrap{margin:10px 0 4px;height:5px;background:#eee;border-radius:3px;overflow:hidden;display:none}
+.progress-fill{height:100%;background:#2a8a4a;border-radius:3px;transition:width .3s}
+.status-line{font-size:12px;color:#666;min-height:18px;margin-top:5px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;font-weight:600;color:#999;text-align:left;padding:7px 10px;border-bottom:1px solid #eee;background:#fafaf8;position:sticky;top:0;z-index:1}
+td{padding:6px 10px;border-bottom:1px solid #f0ede8;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fdfcfa}
+.id-cell{font-size:10px;font-family:monospace;color:#ccc;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-cell{font-size:12px;color:#555;line-height:1.5}
+.tm-hint{font-size:10px;color:#6b21a8;font-style:italic;margin-top:2px}
+textarea{width:100%;font-size:12px;font-family:inherit;border:1px solid #e0ddd8;border-radius:5px;padding:5px 8px;resize:vertical;min-height:44px;background:#fafaf8;color:#1a1a1a;transition:border-color .15s}
+textarea:focus{outline:none;border-color:#888}
+.table-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;border:1px solid #eee;border-radius:8px}
+.hint{font-size:11px;color:#999;margin-bottom:10px;line-height:1.5}
+.toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+a{color:#2451b3}
+.badge{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px}
+.b-blue{background:#e8f0ff;color:#2451b3}
+.b-green{background:#e6f5ec;color:#1a7a3f}
+.b-yellow{background:#fef9e6;color:#8a6a00}
+.b-red{background:#fde8e8;color:#b32424}
+.b-gray{background:#f0ede8;color:#666}
+.b-purple{background:#f0eaff;color:#6b21a8}
+.b-orange{background:#fff3e8;color:#b35a00}
+.badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.drop-zone{border:2px dashed #d0cec8;border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:background .15s,border-color .15s}
+.drop-zone:hover,.drop-zone.drag{background:#f5f4f0;border-color:#aaa}
+.drop-zone input{display:none}
+.cost-box{background:#f8fdf9;border:1px solid #c8e8d0;border-radius:8px;padding:14px 16px;margin-top:12px;display:none}
+.cost-box.warn{background:#fffdf0;border-color:#e8d890}
+.cost-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:10px}
+.cost-cell{text-align:center}
+.cost-num{font-size:18px;font-weight:600}
+.cost-num.green{color:#1a7a3f}
+.cost-num.orange{color:#b35a00}
+.cost-lbl{font-size:10px;color:#888;margin-top:1px}
+.cost-note{font-size:11px;color:#888;line-height:1.5;border-top:1px solid #e0eed8;padding-top:8px;margin-top:2px}
+.cost-tm-savings{font-size:11px;color:#1a7a3f;font-weight:500;margin-bottom:6px}
+.filter-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.slide-badge{display:inline-flex;align-items:center;font-size:11px;padding:3px 8px;border-radius:5px;background:#fff3e8;color:#b35a00;font-weight:500}
+.dict-wrap{border:1px solid #eee;border-radius:8px;overflow:auto;max-height:500px}
+.dict-grid{width:100%;border-collapse:collapse}
+.dict-grid th{font-size:11px;font-weight:600;color:#999;background:#fafaf8;padding:7px 8px;border-bottom:1px solid #eee;text-align:left;position:sticky;top:0;z-index:2;white-space:nowrap}
+.dict-grid td{padding:4px 5px;border-bottom:1px solid #f5f3ef;vertical-align:middle}
+.dict-inp{border:1px solid #e8e6e0;border-radius:4px;padding:4px 7px;font-size:12px;width:100%;background:#fff;outline:none;font-family:inherit}
+.dict-inp:focus{border-color:#888}
+.dict-inp.missing{background:#fef9e6;border-color:#f0d080}
+.del-btn{cursor:pointer;background:none;border:none;color:#ddd;font-size:14px;padding:2px 5px;border-radius:3px}
+.del-btn:hover{color:#b32424;background:#fde8e8}
+.tm-stats,.hist-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px}
+.stat-box{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:10px;text-align:center}
+.stat-num{font-size:20px;font-weight:600}
+.stat-lbl{font-size:10px;color:#999;margin-top:2px}
+.tm-list{max-height:380px;overflow-y:auto;border:1px solid #eee;border-radius:8px}
+.tm-row{display:grid;grid-template-columns:1fr 1fr 90px 70px;border-bottom:1px solid #f0ede8}
+.tm-row:last-child{border-bottom:none}
+.tm-col{padding:7px 10px;font-size:11px;border-right:1px solid #f0ede8}
+.tm-col:last-child{border-right:none;color:#aaa}
+.hist-list{border:1px solid #eee;border-radius:8px;overflow:hidden;max-height:500px;overflow-y:auto}
+.hist-thead{display:grid;grid-template-columns:1fr 70px 100px 80px 90px 90px 110px;background:#fafaf8;border-bottom:1px solid #eee}
+.hist-row{display:grid;grid-template-columns:1fr 70px 100px 80px 90px 90px 110px;border-bottom:1px solid #f0ede8;align-items:center}
+.hist-row:last-child{border-bottom:none}
+.hist-row:hover{background:#fdfcfa}
+.hist-col{padding:8px 10px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-th{padding:7px 10px;font-size:11px;font-weight:600;color:#999}
+.hist-empty{padding:32px;text-align:center;color:#ccc;font-size:13px}
+.ft-xliff{background:#e8f0ff;color:#2451b3;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
+.ft-pptx{background:#fff3e8;color:#b35a00;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
+.loading{display:flex;align-items:center;gap:8px;font-size:13px;color:#888;padding:20px}
+.spinner{width:16px;height:16px;border:2px solid #eee;border-top-color:#888;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TEAM TAB ── */
+.member-row{display:grid;grid-template-columns:1fr 100px 120px 80px;gap:0;border-bottom:1px solid #f0ede8;align-items:center}
+.member-row:last-child{border-bottom:none}
+.member-row:hover{background:#fdfcfa}
+.member-col{padding:10px 12px;font-size:13px}
+.role-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+.role-admin{background:#fef9e6;color:#8a6a00}
+.role-translator{background:#e8f0ff;color:#2451b3}
+.role-viewer{background:#f0ede8;color:#666}
+.invite-box{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:14px}
+
+/* ── ROLE GUARD ── */
+.viewer-only{display:none}
+[data-role=viewer] .hide-viewer{display:none}
+[data-role=viewer] .viewer-only{display:block}
+
+#pptx-segs-card,#pptx-lang-card,#lang-card,#segments-card{display:none}
+/* TOKENS */
+.token-badge{display:flex;align-items:center;gap:6px;background:#2a2a2a;padding:4px 12px;border-radius:20px;cursor:pointer;transition:background .15s}
+.token-badge:hover{background:#333}
+.token-icon{font-size:13px}
+.token-amount{font-size:12px;font-weight:600;color:#fff}
+.token-amount.low{color:#f87171}
+.token-amount.empty{color:#f87171;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.token-label{font-size:10px;color:#666}
+/* SHOP */
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:4px}
+.pkg-card{border:1.5px solid #e8e6e0;border-radius:12px;padding:22px;text-align:center;cursor:pointer;transition:border-color .2s,transform .1s,box-shadow .2s;background:#fff}
+.pkg-card:hover{border-color:#1a1a1a;box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
+.pkg-card.popular{border-color:#1a1a1a;position:relative}
+.pkg-popular-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:10px;font-weight:600;padding:2px 10px;border-radius:10px;white-space:nowrap}
+.pkg-name{font-size:15px;font-weight:600;margin-bottom:6px}
+.pkg-tokens{font-size:28px;font-weight:700;margin-bottom:2px}
+.pkg-tokens span{font-size:13px;font-weight:400;color:#888}
+.pkg-price{font-size:22px;font-weight:700;color:#1a1a1a;margin:10px 0}
+.pkg-price span{font-size:13px;font-weight:400;color:#888}
+.pkg-equiv{font-size:11px;color:#aaa;margin-bottom:14px}
+.pkg-btn{width:100%;padding:10px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+.pkg-btn:hover{background:#333}
+/* TX HISTORY */
+.tx-list{border:1px solid #eee;border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto}
+.tx-row{display:grid;grid-template-columns:120px 1fr 100px 100px;border-bottom:1px solid #f0ede8;align-items:center}
+.tx-row:last-child{border-bottom:none}
+.tx-row:hover{background:#fdfcfa}
+.tx-col{padding:8px 12px;font-size:12px}
+.tx-plus{color:#1a7a3f;font-weight:600}
+.tx-minus{color:#b32424;font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     AUTH: LOGIN
+══════════════════════════════════════════════════════ -->
+<div class="auth-screen active" id="screen-login">
+  <div class="auth-box">
+    <div class="auth-logo">🌐 TranslateTool</div>
+    <div class="auth-sub">Zaloguj się do swojego konta</div>
+    <div class="auth-error" id="login-error"></div>
+    <div class="auth-success" id="login-success"></div>
+    <div class="auth-field"><label>Email</label><input type="email" id="login-email" placeholder="jan@firma.pl" /></div>
+    <div class="auth-field"><label>Hasło</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+    <button class="auth-btn" onclick="doLogin()">Zaloguj się</button>
+    <button class="auth-btn secondary" onclick="showScreen('screen-reset')">Nie pamiętam hasła</button>
+    <div class="auth-link">Nie masz konta? <a onclick="showScreen('screen-register')">Zarejestruj się</a></div>
+  </div>
+</div>
+
+<!-- ══════ AUTH: REGISTER ══════ -->
+<div class="auth-screen" id="screen-register">
+  <div class="auth-box">
+    <div class="auth-logo">🌐 TranslateTool</div>
+    <div class="auth-sub">Utwórz nowe konto</div>
+    <div class="auth-error" id="reg-error"></div>
+    <div class="auth-field"><label>Imię i nazwisko</label><input type="text" id="reg-name" placeholder="Jan Kowalski" /></div>
+    <div class="auth-field"><label>Email</label><input type="email" id="reg-email" placeholder="jan@firma.pl" /></div>
+    <div class="auth-field"><label>Hasło (min. 8 znaków)</label><input type="password" id="reg-pass" placeholder="••••••••" /></div>
+    <div class="auth-field"><label>Powtórz hasło</label><input type="password" id="reg-pass2" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()" /></div>
+    <button class="auth-btn" onclick="doRegister()">Utwórz konto</button>
+    <div class="auth-link">Masz już konto? <a onclick="showScreen('screen-login')">Zaloguj się</a></div>
+  </div>
+</div>
+
+<!-- ══════ AUTH: RESET ══════ -->
+<div class="auth-screen" id="screen-reset">
+  <div class="auth-box">
+    <div class="auth-logo">🌐 TranslateTool</div>
+    <div class="auth-sub">Resetuj hasło</div>
+    <div class="auth-error" id="reset-error"></div>
+    <div class="auth-success" id="reset-success"></div>
+    <div class="auth-field"><label>Email</label><input type="email" id="reset-email" placeholder="jan@firma.pl" onkeydown="if(event.key==='Enter')doReset()" /></div>
+    <button class="auth-btn" onclick="doReset()">Wyślij link resetujący</button>
+    <button class="auth-btn secondary" onclick="showScreen('screen-login')">Wróć do logowania</button>
+  </div>
+</div>
+
+<!-- ══════ ONBOARDING ══════ -->
+<div class="auth-screen" id="screen-onboard">
+  <div class="auth-box" style="max-width:480px;">
+    <div class="auth-logo">🌐 TranslateTool</div>
+    <div class="auth-sub" id="onboard-subtitle">Skonfiguruj swoją organizację</div>
+    <div class="onboard-progress">
+      <div class="onboard-dot done" id="od1"></div>
+      <div class="onboard-dot" id="od2"></div>
+    </div>
+    <div class="auth-error" id="onboard-error"></div>
+
+    <!-- Krok 1: nazwa org -->
+    <div class="onboard-step active" id="onboard-step1">
+      <div class="auth-field">
+        <label>Nazwa organizacji / firmy</label>
+        <input type="text" id="org-name" placeholder="np. Acme Corp" oninput="updateSlug()" />
+      </div>
+      <div class="auth-field">
+        <label>Identyfikator (auto-generowany)</label>
+        <input type="text" id="org-slug" placeholder="acme-corp" />
+        <div style="font-size:11px;color:#aaa;margin-top:4px;">Używany w URL. Tylko litery, cyfry i myślniki.</div>
+      </div>
+      <button class="auth-btn" onclick="onboardStep2()">Dalej →</button>
+    </div>
+
+    <!-- Krok 2: zaproś zespół (opcjonalne) -->
+    <div class="onboard-step" id="onboard-step2">
+      <p style="font-size:13px;color:#555;margin-bottom:14px;">Zaproś członków zespołu (możesz to zrobić później w ustawieniach):</p>
+      <div id="invite-rows">
+        <div class="input-row" style="margin-bottom:8px;">
+          <input type="email" placeholder="email@firma.pl" class="invite-email" />
+          <select class="invite-role" style="width:130px;flex:none;">
+            <option value="translator">Translator</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-sm" style="margin-bottom:16px;" onclick="addInviteRow()">+ Dodaj kolejny</button>
+      <button class="auth-btn" onclick="finishOnboarding()">Zakończ i przejdź do aplikacji</button>
+      <button class="auth-btn secondary" onclick="finishOnboarding(true)">Pomiń — zrobię to później</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════════ -->
+<div id="app-shell">
+<header>
+  <h1>🌐 TranslateTool</h1>
+  <div class="hdr-right">
+    <span class="hdr-org" id="hdr-org-name">—</span>
+    <div class="token-badge" onclick="switchTab('shop')" title="Kliknij aby kupić tokeny">
+      <span class="token-icon">🪙</span>
+      <div>
+        <div class="token-amount" id="hdr-token-amount">—</div>
+        <div class="token-label">tokenów</div>
+      </div>
+    </div>
+    <span><span class="db-dot" id="db-dot"></span></span>
+    <div class="hdr-user" onclick="toggleUserMenu()">
+      <div class="avatar" id="hdr-avatar">?</div>
+      <div class="user-menu" id="user-menu">
+        <div class="user-menu-item" style="font-weight:600;cursor:default;" id="menu-name">—</div>
+        <div class="user-menu-item" style="font-size:11px;color:#aaa;cursor:default;padding-top:0;" id="menu-email">—</div>
+        <div class="user-menu-sep"></div>
+        <div class="user-menu-item" onclick="switchTab('team')">👥 Zarządzaj zespołem</div>
+        <div class="user-menu-sep"></div>
+        <div class="user-menu-item danger" onclick="doLogout()">↩ Wyloguj się</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('xliff')">📄 XLIFF</div>
+  <div class="tab" onclick="switchTab('pptx')">📊 PowerPoint <span class="tab-badge" id="pptx-count"></span></div>
+  <div class="tab-sep"></div>
+  <div class="tab" onclick="switchTab('history')">🕐 Historia <span class="tab-badge" id="hist-count">0</span></div>
+  <div class="tab" onclick="switchTab('dict')">📖 Słownik <span class="tab-badge" id="dict-count">0</span></div>
+  <div class="tab" onclick="switchTab('tm')">🧠 Pamięć TM <span class="tab-badge" id="tm-count">0</span></div>
+  <div class="tab" onclick="switchTab('team')">👥 Zespół</div>
+  <div class="tab" onclick="switchTab('shop')">🪙 Kup tokeny</div>
+</div>
+
+<!-- XLIFF -->
+<div class="tab-content active" id="tab-xliff"><div class="container">
+  <div class="card">
+    <p class="card-title">Klucz API Anthropic</p>
+    <div class="input-row">
+      <input type="password" id="api-key" placeholder="sk-ant-api03-..." />
+      <button class="btn btn-sm" onclick="toggleKey('api-key',this)">Pokaż</button>
+    </div>
+    <p style="font-size:11px;color:#aaa;margin-top:6px;"><a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a> · Klucz nie jest zapisywany.</p>
+  </div>
+  <div class="card">
+    <p class="card-title">Plik XLIFF (Articulate Storyline)</p>
+    <div class="drop-zone" id="xliff-drop" onclick="document.getElementById('xliff-file').click()" ondragover="dzOver(event,'xliff-drop')" ondragleave="dzLeave('xliff-drop')" ondrop="dzDrop(event,'xliff-drop',loadXliff)">
+      <input type="file" id="xliff-file" accept=".xliff,.xlf,.xml" onchange="loadXliff(event.target.files[0])" />
+      <div style="font-size:22px;color:#ccc;margin-bottom:6px;">↑</div>
+      <p style="font-weight:600;font-size:14px;">Przeciągnij plik XLIFF tutaj</p>
+      <p style="font-size:12px;color:#aaa;margin-top:3px;">lub kliknij · .xliff .xlf .xml</p>
+    </div>
+    <div class="badges" id="xliff-badges" style="display:none;">
+      <span class="badge b-blue" id="xliff-fname"></span>
+      <span class="badge b-green" id="xliff-segs"></span>
+      <span class="badge b-blue" id="xliff-frags"></span>
+      <span class="badge b-purple" id="xliff-tm-hits" style="display:none;"></span>
+    </div>
+  </div>
+  <div class="card" id="lang-card">
+    <div class="row">
+      <div><label>Język docelowy</label><select id="target-lang" style="width:220px;" onchange="xliffLangChange()"></select></div>
+      <div style="margin-top:19px;"><button class="btn btn-dark hide-viewer" onclick="startXliffTranslation()">✓ Tłumacz automatycznie</button></div>
+    </div>
+    <div class="cost-box" id="xliff-cost-box"><div class="cost-tm-savings" id="xliff-cost-tm"></div><div class="cost-grid" id="xliff-cost-grid"></div><div class="cost-note" id="xliff-cost-note"></div></div>
+    <div class="progress-wrap" id="xliff-pw"><div class="progress-fill" id="xliff-pf" style="width:0%"></div></div>
+    <p class="status-line" id="xliff-status"></p>
+  </div>
+  <div class="card" id="segments-card">
+    <div class="toolbar">
+      <p class="card-title" style="margin:0;">Segmenty</p>
+      <div class="row">
+        <span class="badge b-yellow" id="xliff-prog-badge">0/0</span>
+        <button class="btn btn-sm hide-viewer" onclick="xliffRetranslateEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-sm" onclick="xliffExportExcel()">↓ Excel</button>
+        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('xliff-xl-imp').click()">↑ Excel</button>
+        <input type="file" id="xliff-xl-imp" accept=".xlsx" style="display:none;" onchange="xliffImportExcel(event)" />
+        <button class="btn btn-dark btn-sm" onclick="exportXliff()">↓ XLIFF</button>
+      </div>
+    </div>
+    <p class="hint">Widoczny tekst do tłumaczenia. Znaczniki Storyline zachowane. <span style="color:#6b21a8;">Fioletowe</span> = z TM.</p>
+    <div class="filter-row">
+      <input type="search" id="xliff-filter" placeholder="Szukaj..." oninput="renderXliffTable()" style="max-width:260px;" />
+      <select id="xliff-fs" onchange="renderXliffTable()" style="width:150px;">
+        <option value="all">Wszystkie</option><option value="pending">Oczekujące</option>
+        <option value="done">Przetłumaczone</option><option value="tm">Z TM</option><option value="error">Błędy</option>
+      </select>
+    </div>
+    <div class="table-wrap" style="margin-top:6px;">
+      <table><thead><tr><th style="width:80px;">ID</th><th style="width:34%;">Źródło (PL)</th><th>Tłumaczenie</th><th style="width:70px;">Status</th></tr></thead>
+      <tbody id="xliff-tbody"></tbody></table>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn btn-dark" onclick="exportXliff()">↓ Pobierz XLIFF</button>
+      <button class="btn btn-sm" onclick="xliffExportExcel()">↓ Excel</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- PPTX -->
+<div class="tab-content" id="tab-pptx"><div class="container">
+  <div class="card">
+    <p class="card-title">Klucz API Anthropic</p>
+    <div class="input-row">
+      <input type="password" id="pptx-api-key" placeholder="sk-ant-api03-..." />
+      <button class="btn btn-sm" onclick="toggleKey('pptx-api-key',this)">Pokaż</button>
+    </div>
+    <p style="font-size:11px;color:#aaa;margin-top:6px;"><a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a></p>
+  </div>
+  <div class="card">
+    <p class="card-title">Plik PowerPoint</p>
+    <p class="card-sub">Tekst ze wszystkich slajdów i tabel zostanie przetłumaczony z zachowaniem formatowania.</p>
+    <div class="drop-zone" id="pptx-drop" onclick="document.getElementById('pptx-file').click()" ondragover="dzOver(event,'pptx-drop')" ondragleave="dzLeave('pptx-drop')" ondrop="dzDrop(event,'pptx-drop',loadPptx)">
+      <input type="file" id="pptx-file" accept=".pptx" onchange="loadPptx(event.target.files[0])" />
+      <div style="font-size:22px;color:#ccc;margin-bottom:6px;">↑</div>
+      <p style="font-weight:600;font-size:14px;">Przeciągnij plik .pptx tutaj</p>
+      <p style="font-size:12px;color:#aaa;margin-top:3px;">lub kliknij</p>
+    </div>
+    <div class="badges" id="pptx-badges" style="display:none;">
+      <span class="badge b-orange" id="pptx-fname"></span>
+      <span class="badge b-green" id="pptx-slide-count"></span>
+      <span class="badge b-blue" id="pptx-text-count"></span>
+      <span class="badge b-purple" id="pptx-tm-badge" style="display:none;"></span>
+    </div>
+  </div>
+  <div class="card" id="pptx-lang-card">
+    <div class="row">
+      <div><label>Język docelowy</label><select id="pptx-target-lang" style="width:220px;" onchange="pptxLangChange()"></select></div>
+      <div style="margin-top:19px;"><button class="btn btn-dark hide-viewer" onclick="startPptxTranslation()">✓ Tłumacz automatycznie</button></div>
+    </div>
+    <div class="cost-box" id="pptx-cost-box"><div class="cost-tm-savings" id="pptx-cost-tm"></div><div class="cost-grid" id="pptx-cost-grid"></div><div class="cost-note" id="pptx-cost-note"></div></div>
+    <div class="progress-wrap" id="pptx-pw"><div class="progress-fill" id="pptx-pf" style="width:0%"></div></div>
+    <p class="status-line" id="pptx-status"></p>
+  </div>
+  <div class="card" id="pptx-segs-card">
+    <div class="toolbar">
+      <p class="card-title" style="margin:0;">Teksty w prezentacji</p>
+      <div class="row">
+        <span class="badge b-yellow" id="pptx-prog-badge">0/0</span>
+        <button class="btn btn-sm hide-viewer" onclick="pptxRetranslateEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-sm" onclick="pptxExportExcel()">↓ Excel</button>
+        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('pptx-xl-imp').click()">↑ Excel</button>
+        <input type="file" id="pptx-xl-imp" accept=".xlsx" style="display:none;" onchange="pptxImportExcel(event)" />
+        <button class="btn btn-dark btn-sm" onclick="exportPptx()">↓ Pobierz PPTX</button>
+      </div>
+    </div>
+    <p class="hint">Każdy wiersz = blok tekstu ze slajdu lub komórki tabeli. <span style="color:#6b21a8;">Fioletowe</span> = z TM.</p>
+    <div class="filter-row">
+      <input type="search" id="pptx-filter" placeholder="Szukaj..." oninput="renderPptxTable()" style="max-width:260px;" />
+      <select id="pptx-filter-slide" onchange="renderPptxTable()" style="width:135px;"><option value="all">Wszystkie slajdy</option></select>
+      <select id="pptx-fs" onchange="renderPptxTable()" style="width:145px;">
+        <option value="all">Wszystkie</option><option value="pending">Oczekujące</option>
+        <option value="done">Przetłumaczone</option><option value="tm">Z TM</option><option value="error">Błędy</option>
+      </select>
+    </div>
+    <div class="table-wrap" style="margin-top:6px;">
+      <table><thead><tr><th style="width:100px;">Slajd/Tabela</th><th style="width:34%;">Tekst źródłowy</th><th>Tłumaczenie</th><th style="width:70px;">Status</th></tr></thead>
+      <tbody id="pptx-tbody"></tbody></table>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn btn-dark" onclick="exportPptx()">↓ Pobierz PPTX</button>
+      <button class="btn btn-sm" onclick="pptxExportExcel()">↓ Excel</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- HISTORIA -->
+<div class="tab-content" id="tab-history"><div class="container">
+  <div class="card">
+    <p class="card-title">Historia tłumaczeń</p>
+    <div class="hist-stats">
+      <div class="stat-box"><div class="stat-num" id="hist-total">0</div><div class="stat-lbl">Tłumaczeń</div></div>
+      <div class="stat-box"><div class="stat-num" id="hist-xliff-c">0</div><div class="stat-lbl">Plików XLIFF</div></div>
+      <div class="stat-box"><div class="stat-num" id="hist-pptx-c">0</div><div class="stat-lbl">Plików PPTX</div></div>
+      <div class="stat-box"><div class="stat-num" id="hist-cost-total">0,00</div><div class="stat-lbl">Łączny koszt (PLN)</div></div>
+      <div class="stat-box"><div class="stat-num" id="hist-tm-total">0</div><div class="stat-lbl">Segmentów z TM</div></div>
+    </div>
+    <div class="filter-row">
+      <input type="search" id="hist-filter" placeholder="Szukaj pliku..." oninput="renderHistory()" style="max-width:260px;" />
+      <select id="hist-ftype" onchange="renderHistory()" style="width:140px;"><option value="all">Wszystkie typy</option><option value="xliff">XLIFF</option><option value="pptx">PowerPoint</option></select>
+      <select id="hist-flang" onchange="renderHistory()" style="width:175px;"><option value="all">Wszystkie języki</option></select>
+      <button class="btn btn-sm" style="margin-left:auto;" onclick="loadHistory()">↺ Odśwież</button>
+    </div>
+    <div id="hist-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
+    <div class="hist-list" id="hist-list"><div class="hist-empty">Brak historii</div></div>
+  </div>
+</div></div>
+
+<!-- SŁOWNIK -->
+<div class="tab-content" id="tab-dict"><div class="container">
+  <div class="card">
+    <p class="card-title">Słownik terminologii — wielojęzyczny</p>
+    <p class="card-sub">Jeden wpis = jeden termin z tłumaczeniami na wszystkie języki. Claude stosuje słownik przy każdym tłumaczeniu. Dane współdzielone w ramach organizacji.</p>
+    <div class="hide-viewer" style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:12px;">
+      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">Dodaj nowy termin</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div><label>Termin źródłowy (PL) *</label><input type="text" id="dict-src" placeholder="np. pasta stykowa" /></div>
+        <div><label>Uwaga / kontekst</label><input type="text" id="dict-note" placeholder="np. nazwa produktu" /></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:6px;margin-bottom:10px;" id="dict-new-langs"></div>
+      <button class="btn btn-dark btn-sm" onclick="addDictEntry()">+ Dodaj termin</button>
+    </div>
+    <div class="filter-row">
+      <input type="search" id="dict-filter" placeholder="Szukaj..." oninput="renderDict()" style="max-width:240px;" />
+      <select id="dict-filter-lang" onchange="renderDict()" style="width:180px;"></select>
+      <button class="btn btn-sm hide-viewer" style="margin-left:auto;" onclick="fillDictWithAI()">✦ Uzupełnij AI</button>
+    </div>
+    <div id="dict-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
+    <div class="dict-wrap"><table class="dict-grid"><thead id="dict-thead"></thead><tbody id="dict-tbody"></tbody></table></div>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn btn-sm" onclick="exportDictExcel()">↓ Excel</button>
+      <button class="btn btn-sm hide-viewer" onclick="document.getElementById('dict-xl-imp').click()">↑ Excel</button>
+      <input type="file" id="dict-xl-imp" accept=".xlsx" style="display:none;" onchange="importDictExcel(event)" />
+      <button class="btn btn-sm" onclick="exportDictJSON()">↓ JSON</button>
+      <button class="btn btn-sm hide-viewer" onclick="document.getElementById('dict-json-imp').click()">↑ JSON</button>
+      <input type="file" id="dict-json-imp" accept=".json" style="display:none;" onchange="importDictJSON(event)" />
+      <button class="btn btn-red btn-sm hide-viewer" style="margin-left:auto;" onclick="clearDict()">Wyczyść</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- TM -->
+<div class="tab-content" id="tab-tm"><div class="container">
+  <div class="card">
+    <p class="card-title">Pamięć tłumaczeń (Translation Memory)</p>
+    <p class="card-sub">Wspólna baza organizacji dla XLIFF i PPTX. Zatwierdzone tłumaczenia zapisywane automatycznie.</p>
+    <div class="tm-stats">
+      <div class="stat-box"><div class="stat-num" id="tm-total">0</div><div class="stat-lbl">Segmentów</div></div>
+      <div class="stat-box"><div class="stat-num" id="tm-langs-count">0</div><div class="stat-lbl">Języków</div></div>
+      <div class="stat-box"><div class="stat-num" id="tm-saved-count">0</div><div class="stat-lbl">Zaoszczędzone API</div></div>
+    </div>
+    <div class="filter-row">
+      <input type="search" id="tm-filter" placeholder="Szukaj..." oninput="renderTMList()" style="max-width:260px;" />
+      <select id="tm-filter-lang" onchange="renderTMList()" style="width:175px;"><option value="all">Wszystkie języki</option></select>
+      <select id="tm-filter-src" onchange="renderTMList()" style="width:140px;"><option value="all">Wszystkie źródła</option><option value="xliff">XLIFF</option><option value="pptx">PowerPoint</option></select>
+    </div>
+    <div id="tm-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
+    <div class="tm-list" id="tm-list"><div style="padding:20px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</div></div>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn btn-sm" onclick="exportTM()">↓ JSON</button>
+      <button class="btn btn-sm hide-viewer" onclick="document.getElementById('tm-imp').click()">↑ JSON</button>
+      <input type="file" id="tm-imp" accept=".json" style="display:none;" onchange="importTM(event)" />
+      <button class="btn btn-red btn-sm hide-viewer" style="margin-left:auto;" onclick="clearTM()">Wyczyść TM</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- ZESPÓŁ -->
+<div class="tab-content" id="tab-team"><div class="container">
+  <div class="card">
+    <p class="card-title">Zarządzanie zespołem</p>
+    <p class="card-sub" id="team-org-info">Organizacja: —</p>
+
+    <!-- Zaproś -->
+    <div class="invite-box hide-viewer">
+      <p style="font-size:13px;font-weight:600;margin-bottom:10px;">Zaproś nowego członka</p>
+      <div class="input-row">
+        <input type="email" id="invite-email" placeholder="email@firma.pl" />
+        <select id="invite-role" style="width:140px;flex:none;">
+          <option value="translator">Translator</option>
+          <option value="admin">Admin</option>
+          <option value="viewer">Viewer</option>
+        </select>
+        <button class="btn btn-dark btn-sm" onclick="sendInvite()" style="flex:none;">Wyślij zaproszenie</button>
+      </div>
+      <p style="font-size:11px;color:#aaa;margin-top:6px;">Zaproszenie ważne 7 dni. Osoba otrzyma email z linkiem.</p>
+    </div>
+
+    <!-- Lista członków -->
+    <p style="font-size:13px;font-weight:600;margin-bottom:10px;">Członkowie organizacji</p>
+    <div id="team-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
+    <div style="border:1px solid #eee;border-radius:8px;overflow:hidden;" id="team-list">
+      <div style="padding:20px;text-align:center;color:#ccc;font-size:13px;">Ładowanie...</div>
+    </div>
+
+    <!-- Oczekujące zaproszenia -->
+    <p style="font-size:13px;font-weight:600;margin:16px 0 10px;display:none;" id="pending-title">Oczekujące zaproszenia</p>
+    <div id="pending-list"></div>
+
+    <!-- Admin: manual token top-up for testing -->
+    <div class="hide-viewer" style="margin-top:16px;background:#fef9e6;border:1px solid #f0d080;border-radius:8px;padding:14px;">
+      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">🛠 Panel admina — ręczne doładowanie tokenów (tryb testowy)</p>
+      <div class="row">
+        <select id="admin-token-amount" style="width:220px;">
+          <option value="50000">50 000 tokenów</option>
+          <option value="100000">100 000 tokenów</option>
+          <option value="500000">500 000 tokenów</option>
+          <option value="2000000">2 000 000 tokenów</option>
+        </select>
+        <button class="btn btn-dark btn-sm" onclick="adminAddTokens(parseInt(document.getElementById('admin-token-amount').value),'Ręczne doładowanie testowe')">+ Dodaj tokeny</button>
+      </div>
+      <p style="font-size:11px;color:#999;margin-top:6px;">Tylko do testowania — zastąpione przez Stripe przed launchem.</p>
+    </div>
+
+    <!-- Legendy ról -->
+    <div style="margin-top:16px;padding:12px;background:#fafaf8;border-radius:8px;font-size:12px;color:#888;line-height:1.8;">
+      <strong>Role:</strong><br>
+      🔑 <strong>Admin</strong> — pełny dostęp, zarządzanie zespołem, usuwanie danych<br>
+      ✏️ <strong>Translator</strong> — tłumaczenie, edycja słownika i TM, pobieranie plików<br>
+      👁 <strong>Viewer</strong> — tylko podgląd historii i słownika, pobieranie plików
+    </div>
+  </div>
+</div></div>
+
+<!-- SHOP -->
+<div class="tab-content" id="tab-shop"><div class="container">
+  <div class="card">
+    <p class="card-title">🪙 Kup tokeny</p>
+    <p class="card-sub">Tokeny są wspólne dla całej organizacji. 1 token ≈ 4 znaki tekstu. Zakup jest jednorazowy — tokeny nie wygasają.</p>
+
+    <!-- Aktualne saldo -->
+    <div style="background:#fafaf8;border:1px solid #eee;border-radius:10px;padding:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:12px;color:#888;margin-bottom:2px;">Aktualne saldo organizacji</div>
+        <div style="font-size:28px;font-weight:700;" id="shop-balance">—</div>
+        <div style="font-size:12px;color:#aaa;">tokenów</div>
+      </div>
+      <div style="font-size:12px;color:#888;text-align:right;">
+        <div id="shop-balance-equiv">—</div>
+      </div>
+    </div>
+
+    <!-- Pakiety -->
+    <p style="font-size:13px;font-weight:600;margin-bottom:14px;">Wybierz pakiet:</p>
+    <div class="shop-grid">
+
+      <div class="pkg-card" onclick="startCheckout('price_1TRpL9FAZbQYcNSrcZCePhAO','starter')">
+        <div class="pkg-name">Starter</div>
+        <div class="pkg-tokens">100 000<span> tokenów</span></div>
+        <div class="pkg-equiv">~10 plików XLIFF</div>
+        <div class="pkg-price">9 PLN<span> netto</span></div>
+        <button class="pkg-btn">Kup teraz →</button>
+      </div>
+
+      <div class="pkg-card popular" onclick="startCheckout('price_1TRpLWFAZbQYcNSraskM5Xoq','standard')">
+        <div class="pkg-popular-badge">Najpopularniejszy</div>
+        <div class="pkg-name">Standard</div>
+        <div class="pkg-tokens">500 000<span> tokenów</span></div>
+        <div class="pkg-equiv">~50 plików XLIFF</div>
+        <div class="pkg-price">39 PLN<span> netto</span></div>
+        <button class="pkg-btn">Kup teraz →</button>
+      </div>
+
+      <div class="pkg-card" onclick="startCheckout('price_1TRpLnFAZbQYcNSrhHdwtHo5','pro')">
+        <div class="pkg-name">Pro</div>
+        <div class="pkg-tokens">2 000 000<span> tokenów</span></div>
+        <div class="pkg-equiv">~200 plików XLIFF</div>
+        <div class="pkg-price">129 PLN<span> netto</span></div>
+        <button class="pkg-btn">Kup teraz →</button>
+      </div>
+
+    </div>
+
+    <p style="font-size:11px;color:#aaa;margin-top:14px;line-height:1.6;">
+      Płatność obsługiwana przez Stripe. Akceptujemy karty Visa, Mastercard, BLIK i przelewy.
+      Tokeny są dodawane do salda organizacji natychmiast po potwierdzeniu płatności.
+    </p>
+  </div>
+
+  <!-- Historia transakcji -->
+  <div class="card">
+    <div class="toolbar">
+      <p class="card-title" style="margin:0;">Historia transakcji</p>
+      <button class="btn btn-sm" onclick="loadTokenHistory()">↺ Odśwież</button>
+    </div>
+    <div id="tx-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
+    <div class="tx-list" id="tx-list">
+      <div style="padding:20px;text-align:center;color:#ccc;font-size:13px;">Brak transakcji</div>
+    </div>
+  </div>
+</div></div>
+
+</div><!-- end app-shell -->
+
+<script>
+// ══════════════════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════════════════
+const SB_URL='https://lzklxvdzyslpwugjvvtj.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a2x4dmR6eXNscHd1Z2p2dnRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjI5NjcsImV4cCI6MjA5MzAzODk2N30.5ddnoP1rO-FsQ73lcMfOxz02G8MDPXHHHsBrZJKxTFE';
+const supa=supabase.createClient(SB_URL,SB_KEY);
+
+// REST helper (bypasses RLS issues with JS client in some cases)
+async function sbRest(method,table,body=null,params=''){
+  const url=`${SB_URL}/rest/v1/${table}${params}`;
+  const h={'apikey':SB_KEY,'Authorization':`Bearer ${currentSession?.access_token||SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'};
+  const r=await fetch(url,{method,headers:h,body:body?JSON.stringify(body):null});
+  if(!r.ok){const e=await r.text();throw new Error(`${method} ${table}: ${e}`);}
+  const t=await r.text();return t?JSON.parse(t):[];
+}
+const dbGet=(t,p='')=>sbRest('GET',t,null,p);
+const dbPost=(t,b)=>sbRest('POST',t,b);
+const dbPatch=(t,b,p)=>sbRest('PATCH',t,b,p);
+const dbDelete=(t,p)=>sbRest('DELETE',t,null,p);
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let currentSession=null, currentUser=null, currentOrg=null, currentRole=null;
+let xliffSegs=[],xliffRawXml='',xliffXmlDoc=null;
+let pptxSegs=[],pptxZip=null,pptxFilename='';
+let dictCache=[],tmCache=[],histCache=[];
+let tmApiSaved=0;
+const domParser=new DOMParser(),xmlSer=new XMLSerializer();
+const XLIFF_NS='urn:oasis:names:tc:xliff:document:1.2';
+const PRICE_IN=3.0,PRICE_OUT=15.0,PLN_USD=4.0,CPT=4,CHUNK=20;
+
+// ══════════════════════════════════════════════════════════
+// LANGUAGES
+// ══════════════════════════════════════════════════════════
+const LANGS=[
+  {code:'English',label:'EN — Angielski',flag:'🇬🇧',primary:true},
+  {code:'Lithuanian',label:'LT — Litewski',flag:'🇱🇹',primary:true},
+  {code:'Latvian',label:'LV — Łotewski',flag:'🇱🇻',primary:true},
+  {code:'Estonian',label:'ET — Estoński',flag:'🇪🇪',primary:true},
+  {code:'Ukrainian',label:'UA — Ukraiński',flag:'🇺🇦',primary:true},
+  {code:'Hungarian',label:'HU — Węgierski',flag:'🇭🇺',primary:true},
+  {code:'Czech',label:'CZ — Czeski',flag:'🇨🇿',primary:true},
+  {code:'Slovak',label:'SK — Słowacki',flag:'🇸🇰',primary:true},
+  {code:'German',label:'DE — Niemiecki',flag:'🇩🇪'},
+  {code:'French',label:'FR — Francuski',flag:'🇫🇷'},
+  {code:'Spanish',label:'ES — Hiszpański',flag:'🇪🇸'},
+  {code:'Italian',label:'IT — Włoski',flag:'🇮🇹'},
+  {code:'Russian',label:'RU — Rosyjski',flag:'🇷🇺'},
+  {code:'Portuguese',label:'PT — Portugalski',flag:'🇵🇹'},
+  {code:'Dutch',label:'NL — Niderlandzki',flag:'🇳🇱'},
+  {code:'Swedish',label:'SV — Szwedzki',flag:'🇸🇪'},
+  {code:'Norwegian',label:'NO — Norweski',flag:'🇳🇴'},
+  {code:'Danish',label:'DA — Duński',flag:'🇩🇰'},
+  {code:'Finnish',label:'FI — Fiński',flag:'🇫🇮'},
+  {code:'Romanian',label:'RO — Rumuński',flag:'🇷🇴'},
+  {code:'Bulgarian',label:'BG — Bułgarski',flag:'🇧🇬'},
+  {code:'Serbian',label:'SR — Serbski',flag:'🇷🇸'},
+  {code:'Croatian',label:'HR — Chorwacki',flag:'🇭🇷'},
+  {code:'Slovenian',label:'SL — Słoweński',flag:'🇸🇮'},
+  {code:'Polish',label:'PL — Polski',flag:'🇵🇱'},
+  {code:'Turkish',label:'TR — Turecki',flag:'🇹🇷'},
+  {code:'Japanese',label:'JA — Japoński',flag:'🇯🇵'},
+  {code:'Korean',label:'KO — Koreański',flag:'🇰🇷'},
+  {code:'Chinese (Simplified)',label:'ZH — Chiński',flag:'🇨🇳'},
+  {code:'Arabic',label:'AR — Arabski',flag:'🇸🇦'},
+];
+const PRIMARY=LANGS.filter(l=>l.primary);
+function langOptionsHTML(){
+  return`<optgroup label="Twoje języki">${PRIMARY.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('')}</optgroup>`+
+    `<optgroup label="Pozostałe">${LANGS.filter(l=>!l.primary).map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('')}</optgroup>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('app-shell').style.display='none';
+  const el=document.getElementById(id);
+  if(el)el.classList.add('active');
+}
+
+function showApp(){
+  document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('app-shell').style.display='block';
+}
+
+function authErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
+function authOk(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
+function clearAuthMsgs(){document.querySelectorAll('.auth-error,.auth-success').forEach(e=>{e.style.display='none';e.textContent='';})}
+
+async function doLogin(){
+  clearAuthMsgs();
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){authErr('login-error','Wypełnij email i hasło.');return;}
+  const{data,error}=await supa.auth.signInWithPassword({email,password:pass});
+  if(error){authErr('login-error',error.message);return;}
+  currentSession=data.session;currentUser=data.user;
+  await afterLogin();
+}
+
+async function doRegister(){
+  clearAuthMsgs();
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  if(!name||!email||!pass){authErr('reg-error','Wypełnij wszystkie pola.');return;}
+  if(pass.length<8){authErr('reg-error','Hasło musi mieć min. 8 znaków.');return;}
+  if(pass!==pass2){authErr('reg-error','Hasła nie są identyczne.');return;}
+  const{data,error}=await supa.auth.signUp({email,password:pass,options:{
+    data:{full_name:name},
+    emailRedirectTo:'https://tooltranslate.netlify.app'
+  }});
+  if(error){authErr('reg-error',error.message);return;}
+  // If session exists — email confirmation disabled, go straight to app
+  if(data.session){
+    currentSession=data.session;currentUser=data.user;
+    await afterLogin();
+  } else {
+    // Email confirmation required — show message
+    document.getElementById('reg-error').style.display='none';
+    const box=document.createElement('div');
+    box.className='auth-success';box.style.display='block';
+    box.textContent='Sprawdź skrzynkę '+email+' i kliknij link potwierdzający aby dokończyć rejestrację.';
+    document.querySelector('#screen-register .auth-box').insertBefore(box,document.getElementById('reg-error').nextSibling);
+  }
+}
+
+async function doReset(){
+  clearAuthMsgs();
+  const email=document.getElementById('reset-email').value.trim();
+  if(!email){authErr('reset-error','Wpisz email.');return;}
+  const{error}=await supa.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
+  if(error){authErr('reset-error',error.message);return;}
+  authOk('reset-success','Link resetujący wysłany! Sprawdź skrzynkę.');
+}
+
+async function doLogout(){
+  await supa.auth.signOut();
+  currentSession=null;currentUser=null;currentOrg=null;currentRole=null;
+  dictCache=[];tmCache=[];histCache=[];
+  showScreen('screen-login');
+}
+
+async function afterLogin(){
+  try{
+    // Check for pending invitation
+    const pendingInvite=sessionStorage.getItem('pendingInvite');
+    if(pendingInvite){
+      sessionStorage.removeItem('pendingInvite');
+      await acceptInvitation(pendingInvite);
+      return;
+    }
+    // Step 1: get membership
+    const members=await dbGet('organization_members',`?user_id=eq.${currentUser.id}`);
+    if(members.length===0){
+      showScreen('screen-onboard');
+      return;
+    }
+    const m=members[0];
+    currentRole=m.role;
+    // Step 2: get org separately (avoids RLS join issues)
+    const orgs=await dbGet('organizations',`?id=eq.${m.organization_id}`);
+    if(!orgs.length){
+      showScreen('screen-onboard');
+      return;
+    }
+    currentOrg=orgs[0];
+    await loadApp();
+  }catch(e){
+    console.error('afterLogin error:',e);
+    showScreen('screen-onboard');
+  }
+}
+
+async function acceptInvitation(token){
+  try{
+    // Find invitation by token
+    const invites=await dbGet('invitations',`?token=eq.${token}&accepted_at=is.null`);
+    if(!invites.length){
+      alert('Zaproszenie wygasło lub zostało już użyte.');
+      showScreen('screen-onboard');
+      return;
+    }
+    const inv=invites[0];
+    if(new Date(inv.expires_at)<new Date()){
+      alert('Zaproszenie wygasło.');
+      showScreen('screen-onboard');
+      return;
+    }
+    // Add user to organization
+    await dbPost('organization_members',{organization_id:inv.organization_id,user_id:currentUser.id,role:inv.role});
+    // Mark invitation as accepted
+    await dbPatch('invitations',{accepted_at:new Date().toISOString()},`?token=eq.${token}`);
+    // Load org
+    const orgs=await dbGet('organizations',`?id=eq.${inv.organization_id}`);
+    currentOrg=orgs[0];
+    currentRole=inv.role;
+    await loadApp();
+    alert(`Dołączyłeś do organizacji ${currentOrg.name} jako ${inv.role}!`);
+  }catch(e){
+    console.error('acceptInvitation error:',e);
+    alert('Błąd akceptacji zaproszenia: '+e.message);
+    showScreen('screen-onboard');
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// ONBOARDING
+// ══════════════════════════════════════════════════════════
+function updateSlug(){
+  const name=document.getElementById('org-name').value;
+  const slug=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  document.getElementById('org-slug').value=slug;
+}
+
+async function onboardStep2(){
+  const name=document.getElementById('org-name').value.trim();
+  const slug=document.getElementById('org-slug').value.trim();
+  if(!name||!slug){document.getElementById('onboard-error').textContent='Wypełnij nazwę i identyfikator.';document.getElementById('onboard-error').style.display='block';return;}
+  document.getElementById('onboard-error').style.display='none';
+  try{
+    // Use security definer function to bypass RLS
+    // Step 1: create org (security definer bypasses RLS)
+    const{data:orgId,error:e1}=await supa.rpc('create_org_record',{org_name:name,org_slug:slug});
+    if(e1)throw new Error(e1.message);
+    // Step 2: add current user as admin (security invoker — auth.uid() works)
+    const{error:e2}=await supa.rpc('add_org_admin',{org_id:orgId});
+    if(e2)throw new Error(e2.message);
+    // Step 3: fetch full org record
+    const orgs=await dbGet('organizations',`?id=eq.${orgId}`);
+    currentOrg=orgs[0];
+    currentRole='admin';
+    // Go to step 2
+    document.getElementById('onboard-step1').classList.remove('active');
+    document.getElementById('onboard-step2').classList.add('active');
+    document.getElementById('od2').classList.add('done');
+    document.getElementById('onboard-subtitle').textContent='Zaproś zespół (opcjonalnie)';
+  }catch(e){document.getElementById('onboard-error').textContent='Błąd: '+e.message;document.getElementById('onboard-error').style.display='block';}
+}
+
+function addInviteRow(){
+  const div=document.createElement('div');
+  div.className='input-row';div.style.marginBottom='8px';
+  div.innerHTML=`<input type="email" placeholder="email@firma.pl" class="invite-email" /><select class="invite-role" style="width:130px;flex:none;"><option value="translator">Translator</option><option value="admin">Admin</option><option value="viewer">Viewer</option></select>`;
+  document.getElementById('invite-rows').appendChild(div);
+}
+
+async function finishOnboarding(skip=false){
+  if(!skip){
+    const emails=document.querySelectorAll('.invite-email');
+    const roles=document.querySelectorAll('.invite-role');
+    for(let i=0;i<emails.length;i++){
+      const email=emails[i].value.trim();
+      if(!email)continue;
+      try{await dbPost('invitations',{organization_id:currentOrg.id,email,role:roles[i].value,invited_by:currentUser.id});}
+      catch(e){console.error('Invite error:',e);}
+    }
+  }
+  await loadApp();
+}
+
+// ══════════════════════════════════════════════════════════
+// APP LOAD
+// ══════════════════════════════════════════════════════════
+async function loadApp(){
+  showApp();
+  // Set header
+  const profile=currentUser.user_metadata;
+  const name=profile?.full_name||currentUser.email;
+  document.getElementById('hdr-org-name').textContent=currentOrg?.name||'—';
+  document.getElementById('hdr-avatar').textContent=name.charAt(0).toUpperCase();
+  document.getElementById('menu-name').textContent=name;
+  document.getElementById('menu-email').textContent=currentUser.email;
+  // Set role guard
+  document.getElementById('app-shell').setAttribute('data-role',currentRole||'viewer');
+  // Init UI
+  document.getElementById('target-lang').innerHTML=langOptionsHTML();
+  document.getElementById('pptx-target-lang').innerHTML=langOptionsHTML();
+  buildDictNewRow();buildDictLangFilter();
+  // Load data
+  try{
+    await Promise.all([loadTMCache(),loadDictCache(),loadOrgBalance()]);
+    setDbStatus(true);
+  }catch(e){setDbStatus(false);console.error(e);}
+}
+
+async function loadOrgBalance(){
+  if(!currentOrg) return;
+  try{
+    const orgs = await dbGet('organizations', `?id=eq.${currentOrg.id}`);
+    if(orgs.length){ currentOrg.tokens_balance = orgs[0].tokens_balance || 0; }
+  }catch(e){ console.error('Balance load error:', e); }
+  updateTokenBadge();
+}
+
+function setDbStatus(ok){
+  const dot=document.getElementById('db-dot');
+  dot.className='db-dot '+(ok?'ok':'err');
+}
+
+function toggleUserMenu(){
+  document.getElementById('user-menu').classList.toggle('open');
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.hdr-user'))document.getElementById('user-menu')?.classList.remove('open');
+});
+
+// ══════════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════════
+function switchTab(name){
+  const names=['xliff','pptx','history','dict','tm','team','shop'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='tm')renderTMList();
+  if(name==='dict')renderDict();
+  if(name==='history')loadHistory();
+  if(name==='team')loadTeam();
+  if(name==='shop'){updateShopBalance();loadTokenHistory();}
+}
+
+// ══════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function toggleKey(id,btn){const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';btn.textContent=i.type==='password'?'Pokaż':'Ukryj';}
+function dzOver(e,id){e.preventDefault();document.getElementById(id).classList.add('drag');}
+function dzLeave(id){document.getElementById(id).classList.remove('drag');}
+function dzDrop(e,id,fn){e.preventDefault();document.getElementById(id).classList.remove('drag');const f=e.dataTransfer.files[0];if(f)fn(f);}
+function download(c,fn,m){const b=new Blob([c],{type:m}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);}
+function readFile(file,mode='text'){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;mode==='array'?r.readAsArrayBuffer(file):r.readAsText(file,'UTF-8');});}
+function getApiKey(){return(document.getElementById('api-key').value||document.getElementById('pptx-api-key').value).trim();}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL')+' '+d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});}
+function fmtPLN(v){return Number(v).toFixed(2).replace('.',',');}
+function orgParam(){return currentOrg?`organization_id=eq.${currentOrg.id}`:'id=eq.00000000-0000-0000-0000-000000000000';}
+
+// ══════════════════════════════════════════════════════════
+// TEAM MANAGEMENT
+// ══════════════════════════════════════════════════════════
+async function loadTeam(){
+  document.getElementById('team-org-info').textContent=`Organizacja: ${currentOrg?.name||'—'} · Twoja rola: ${currentRole||'—'}`;
+  document.getElementById('team-loading').style.display='flex';
+  try{
+    const members=await dbGet('organization_members',`?${orgParam()}`);
+    const userIds=members.map(m=>m.user_id);
+    let profiles=[];
+    if(userIds.length){
+      profiles=await dbGet('profiles',`?id=in.(${userIds.join(',')})`);
+    }
+    const membersWithProfiles=members.map(m=>({...m,profiles:profiles.find(p=>p.id===m.user_id)||null}));
+    const pending=await dbGet('invitations',`?${orgParam()}&accepted_at=is.null&order=created_at.desc`);
+    renderTeamList(membersWithProfiles);
+    renderPendingInvites(pending);
+  }catch(e){console.error('loadTeam error:',e);}
+  document.getElementById('team-loading').style.display='none';
+}
+
+function renderTeamList(members){
+  const roles={admin:'🔑 Admin',translator:'✏️ Translator',viewer:'👁 Viewer'};
+  const roleClass={admin:'role-admin',translator:'role-translator',viewer:'role-viewer'};
+  const list=document.getElementById('team-list');
+  if(!members.length){list.innerHTML='<div style="padding:16px;text-align:center;color:#ccc;font-size:13px;">Brak członków</div>';return;}
+  list.innerHTML=`<div class="member-row" style="background:#fafaf8;font-size:11px;font-weight:600;color:#999;">
+    <div class="member-col">Użytkownik</div><div class="member-col">Rola</div><div class="member-col">Dołączył</div><div class="member-col"></div>
+  </div>`+
+  members.map(m=>{
+    const isMe=m.user_id===currentUser.id;
+    const name=m.profiles?.full_name||m.user_id.substring(0,8)+'...';
+    const canRemove=currentRole==='admin'&&!isMe;
+    return`<div class="member-row">
+      <div class="member-col"><strong>${esc(name)}</strong>${isMe?' <span style="font-size:10px;color:#888;">(Ty)</span>':''}</div>
+      <div class="member-col"><span class="role-badge ${roleClass[m.role]||''}">${roles[m.role]||m.role}</span></div>
+      <div class="member-col" style="color:#aaa;font-size:11px;">${fmtDate(m.created_at)}</div>
+      <div class="member-col">${canRemove?`<button class="btn btn-red btn-sm" onclick="removeMember('${m.id}')">Usuń</button>`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderPendingInvites(pending){
+  const title=document.getElementById('pending-title');
+  const list=document.getElementById('pending-list');
+  if(!pending||!pending.length){if(title)title.style.display='none';if(list)list.innerHTML='';return;}
+  if(title)title.style.display='block';
+  const baseUrl='https://tooltranslate.netlify.app';
+  list.innerHTML=`<div style="border:1px solid #eee;border-radius:8px;overflow:hidden;">`+
+    pending.map(inv=>{
+      const expired=new Date(inv.expires_at)<new Date();
+      const inviteUrl=`${baseUrl}?invite=${inv.token}`;
+      return`<div style="border-bottom:1px solid #f0ede8;padding:10px 14px;">
+        <div style="display:grid;grid-template-columns:1fr 80px 90px 56px;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="font-size:13px;font-weight:500;">${esc(inv.email)}</div>
+          <div><span class="badge b-gray" style="font-size:10px;">${esc(inv.role)}</span></div>
+          <div style="font-size:11px;">${expired?'<span style="color:#b32424;">Wygasło</span>':'<span style="color:#1a7a3f;">Aktywne</span>'}</div>
+          <div><button class="btn btn-red btn-sm" onclick="deleteInvite('${inv.id}')" title="Usuń">✕</button></div>
+        </div>
+        ${!expired?`<div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" value="${inviteUrl}" readonly style="flex:1;font-size:11px;padding:5px 8px;border:1px solid #eee;border-radius:5px;background:#fafaf8;color:#666;" onclick="this.select()" />
+          <button class="btn btn-sm" onclick="copyInviteLink('${inviteUrl}',this)">Kopiuj link</button>
+        </div>`:''}
+      </div>`;
+    }).join('')+`</div>`;
+}
+
+function copyInviteLink(url, btn){
+  navigator.clipboard.writeText(url).then(()=>{
+    const orig=btn.textContent;
+    btn.textContent='Skopiowano!';
+    btn.style.color='#1a7a3f';
+    setTimeout(()=>{btn.textContent=orig;btn.style.color='';},2000);
+  });
+}
+
+async function deleteInvite(id){
+  if(!confirm('Usunąć to zaproszenie?'))return;
+  try{
+    await dbDelete('invitations',`?id=eq.${id}`);
+    loadTeam();
+  }catch(e){alert('Błąd: '+e.message);}
+}
+
+async function sendInvite(){
+  const email=document.getElementById('invite-email').value.trim();
+  const role=document.getElementById('invite-role').value;
+  if(!email){alert('Wpisz email.');return;}
+  if(currentRole!=='admin'){alert('Tylko admin może zapraszać.');return;}
+  try{
+    await dbPost('invitations',{organization_id:currentOrg.id,email,role,invited_by:currentUser.id});
+    document.getElementById('invite-email').value='';
+    alert(`Zaproszenie wysłane do ${email}.\n\nUwaga: automatyczne wysyłanie emaili wymaga konfiguracji w Supabase (Auth → SMTP). Na razie skopiuj link ręcznie z tabeli invitations.`);
+    loadTeam();
+  }catch(e){alert('Błąd: '+e.message);}
+}
+
+async function removeMember(memberId){
+  if(!confirm('Usunąć tego członka z organizacji?'))return;
+  try{await dbDelete('organization_members',`?id=eq.${memberId}`);loadTeam();}
+  catch(e){alert('Błąd: '+e.message);}
+}
+
+// ══════════════════════════════════════════════════════════
+// TRANSLATION MEMORY
+// ══════════════════════════════════════════════════════════
+async function loadTMCache(){
+  if(!currentOrg)return;
+  const data=await dbGet('translation_memory',`?${orgParam()}&order=created_at.desc&limit=5000`);
+  tmCache=data;updateTMUI();
+}
+function tmKey(t){return t.trim().toLowerCase().replace(/\s+/g,' ');}
+function lookupTM(src,lang){const k=tmKey(src);return tmCache.find(e=>e.key===k&&e.lang===lang)?.target||null;}
+
+async function pushTMBatch(pairs,lang,source){
+  if(!currentOrg)return;
+  const toIns=[];
+  pairs.forEach(({src,tgt})=>{const k=tmKey(src);if(tgt.trim()&&!tmCache.find(e=>e.key===k&&e.lang===lang)){toIns.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});tmCache.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});}});
+  if(!toIns.length)return;
+  try{await dbPost('translation_memory',toIns);updateTMUI();}catch(e){console.error('TM push:',e);}
+}
+
+function updateTMUI(){
+  const langs=[...new Set(tmCache.map(e=>e.lang))];
+  document.getElementById('tm-count').textContent=tmCache.length;
+  document.getElementById('tm-total').textContent=tmCache.length;
+  document.getElementById('tm-langs-count').textContent=langs.length;
+  document.getElementById('tm-saved-count').textContent=tmApiSaved;
+  const sel=document.getElementById('tm-filter-lang');const cur=sel.value;
+  sel.innerHTML='<option value="all">Wszystkie języki</option>'+langs.map(l=>`<option value="${esc(l)}"${l===cur?' selected':''}>${esc(l)}</option>`).join('');
+}
+
+function renderTMList(){
+  const ft=(document.getElementById('tm-filter')?.value||'').toLowerCase();
+  const fl=document.getElementById('tm-filter-lang')?.value||'all';
+  const fs=document.getElementById('tm-filter-src')?.value||'all';
+  let data=tmCache;
+  if(ft)data=data.filter(e=>e.source.toLowerCase().includes(ft)||e.target.toLowerCase().includes(ft));
+  if(fl!=='all')data=data.filter(e=>e.lang===fl);
+  if(fs!=='all')data=data.filter(e=>e.src===fs);
+  const list=document.getElementById('tm-list');
+  if(!data.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</div>';return;}
+  list.innerHTML=data.slice(0,300).map(e=>`<div class="tm-row"><div class="tm-col">${esc(e.source)}</div><div class="tm-col">${esc(e.target)}</div><div class="tm-col"><span class="badge b-gray" style="font-size:10px;">${esc(e.lang.substring(0,8))}</span></div><div class="tm-col"><span class="badge ${e.src==='pptx'?'b-orange':'b-blue'}" style="font-size:10px;">${esc(e.src||'xliff')}</span></div></div>`).join('');
+}
+
+function exportTM(){download(JSON.stringify(tmCache,null,2),'translation-memory.json','application/json');}
+async function importTM(e){
+  const f=e.target.files[0];if(!f)return;
+  const data=JSON.parse(await readFile(f));
+  const toIns=data.filter(x=>!tmCache.find(y=>y.key===x.key&&y.lang===x.lang)).map(x=>({...x,organization_id:currentOrg.id}));
+  if(toIns.length){await dbPost('translation_memory',toIns);await loadTMCache();}
+  alert('Zaimportowano '+toIns.length+' wpisów.');e.target.value='';
+}
+async function clearTM(){
+  if(!confirm('Wyczyścić całą pamięć TM?'))return;
+  await dbDelete('translation_memory',`?${orgParam()}`);
+  tmCache=[];updateTMUI();renderTMList();
+}
+
+function applyTMToSegs(segs,lang){
+  let hits=0;
+  segs.forEach(seg=>{
+    if(seg.status==='done')return;
+    if(seg.type==='plain'){const f=lookupTM(seg.source,lang);if(f){seg.target=f;seg.status='done';seg.fromTM=true;hits++;tmApiSaved++;}}
+    else{let any=false;seg.textNodes.forEach((n,i)=>{if(!seg.targets[i].text.trim()){const f=lookupTM(n.text,lang);if(f){seg.targets[i].text=f;any=true;}}});if(any&&seg.targets.every(t=>t.text.trim())){seg.status='done';seg.fromTM=true;hits++;tmApiSaved++;}}
+  });
+  updateTMUI();return hits;
+}
+
+// ══════════════════════════════════════════════════════════
+// DICTIONARY
+// ══════════════════════════════════════════════════════════
+async function loadDictCache(){
+  if(!currentOrg)return;
+  const data=await dbGet('dictionary',`?${orgParam()}&order=created_at.asc`);
+  dictCache=data;document.getElementById('dict-count').textContent=dictCache.length;
+}
+function buildDictNewRow(){document.getElementById('dict-new-langs').innerHTML=PRIMARY.map(l=>`<div><label>${l.flag} ${l.label}</label><input type="text" class="dict-new-lang" data-lang="${l.code}" placeholder="Tłumaczenie..." /></div>`).join('');}
+function buildDictLangFilter(){const sel=document.getElementById('dict-filter-lang');sel.innerHTML='<option value="all">Wszystkie</option>'+PRIMARY.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('')+'<option value="missing">⚠ Brakujące</option>';}
+
+async function addDictEntry(){
+  if(!currentOrg)return;
+  const src=document.getElementById('dict-src').value.trim();const note=document.getElementById('dict-note').value.trim();
+  if(!src){alert('Wpisz termin.');return;}
+  if(dictCache.find(e=>e.src.toLowerCase()===src.toLowerCase())){alert('Termin już istnieje.');return;}
+  const translations={};document.querySelectorAll('.dict-new-lang').forEach(inp=>{const v=inp.value.trim();if(v)translations[inp.dataset.lang]=v;});
+  const[row]=await dbPost('dictionary',{src,note,translations,organization_id:currentOrg.id});
+  dictCache.push(row);document.getElementById('dict-src').value='';document.getElementById('dict-note').value='';
+  document.querySelectorAll('.dict-new-lang').forEach(inp=>inp.value='');
+  document.getElementById('dict-count').textContent=dictCache.length;renderDict();
+}
+async function deleteDict(id){await dbDelete('dictionary',`?id=eq.${id}`);dictCache=dictCache.filter(e=>e.id!==id);document.getElementById('dict-count').textContent=dictCache.length;renderDict();}
+async function updateDictCell(id,lang,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.translations={...e.translations,[lang]:val};await dbPatch('dictionary',{translations:e.translations},`?id=eq.${id}`);}
+async function updateDictNote(id,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.note=val;await dbPatch('dictionary',{note:val},`?id=eq.${id}`);}
+
+function renderDict(){
+  document.getElementById('dict-count').textContent=dictCache.length;
+  const ft=(document.getElementById('dict-filter')?.value||'').toLowerCase();
+  const fl=document.getElementById('dict-filter-lang')?.value||'all';
+  let filtered=dictCache.filter(e=>{
+    if(ft&&!e.src.toLowerCase().includes(ft)&&!Object.values(e.translations||{}).some(v=>v.toLowerCase().includes(ft)))return false;
+    if(fl==='missing')return PRIMARY.some(l=>!e.translations?.[l.code]);
+    if(fl!=='all')return!e.translations?.[fl];
+    return true;
+  });
+  document.getElementById('dict-thead').innerHTML='<tr><th style="min-width:150px;">Termin PL</th>'+PRIMARY.map(l=>`<th style="min-width:120px;">${l.flag} ${l.label}</th>`).join('')+'<th style="min-width:110px;">Uwaga</th><th style="width:34px;"></th></tr>';
+  const tbody=document.getElementById('dict-tbody');
+  const canEdit=currentRole!=='viewer';
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="${PRIMARY.length+3}" style="padding:18px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</td></tr>`;return;}
+  tbody.innerHTML=filtered.map(e=>{
+    const cells=PRIMARY.map(l=>{const v=e.translations?.[l.code]||'';return`<td><input class="dict-inp${v?'':' missing'}" value="${esc(v)}" placeholder="—" ${canEdit?`onchange="updateDictCell('${e.id}','${l.code}',this.value)" onblur="this.className='dict-inp'+(this.value.trim()?'':' missing')"`:' readonly'} /></td>`;}).join('');
+    return`<tr><td><strong style="font-size:12px;">${esc(e.src)}</strong></td>${cells}<td><input class="dict-inp" value="${esc(e.note||'')}" placeholder="—" ${canEdit?`onchange="updateDictNote('${e.id}',this.value)"`:' readonly'} /></td><td>${canEdit?`<button class="del-btn" onclick="deleteDict('${e.id}')">×</button>`:''}</td></tr>`;
+  }).join('');
+}
+
+function buildDictPrompt(lang){const d=dictCache.filter(e=>e.translations?.[lang]);if(!d.length)return'';return'\n\nSłownik terminologii — stosuj obowiązkowo:\n'+d.map(e=>`  "${e.src}" → "${e.translations[lang]}"${e.note?' ('+e.note+')':''}`).join('\n');}
+
+function exportDictExcel(){
+  if(!dictCache.length){alert('Słownik jest pusty.');return;}
+  const hdr=['Termin PL',...PRIMARY.map(l=>l.label),'Uwaga'];
+  const rows=[hdr,...dictCache.map(e=>[e.src,...PRIMARY.map(l=>e.translations?.[l.code]||''),e.note||''])];
+  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:28},...PRIMARY.map(()=>({wch:22})),{wch:28}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Słownik');XLSX.writeFile(wb,'slownik.xlsx');
+}
+async function importDictExcel(e){
+  const f=e.target.files[0];if(!f)return;
+  const buf=await readFile(f,'array');const wb=XLSX.read(buf,{type:'array'});
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+  const hdr=rows[0]||[];const colMap={};PRIMARY.forEach(l=>{const i=hdr.findIndex(h=>String(h).includes(l.label));if(i>=0)colMap[l.code]=i;});
+  const toAdd=[];rows.slice(1).forEach(row=>{const src=String(row[0]||'').trim();if(!src||dictCache.find(e=>e.src.toLowerCase()===src.toLowerCase()))return;const tr={};Object.entries(colMap).forEach(([lang,i])=>{const v=String(row[i]||'').trim();if(v)tr[lang]=v;});toAdd.push({src,note:String(row[hdr.length-1]||'').trim(),translations:tr,organization_id:currentOrg.id});});
+  if(toAdd.length){const res=await dbPost('dictionary',toAdd);dictCache.push(...res);}
+  renderDict();alert('Zaimportowano '+toAdd.length+' wpisów.');e.target.value='';
+}
+function exportDictJSON(){download(JSON.stringify(dictCache,null,2),'slownik.json','application/json');}
+async function importDictJSON(e){const f=e.target.files[0];if(!f)return;const data=JSON.parse(await readFile(f));const toAdd=data.filter(x=>!dictCache.find(y=>y.src.toLowerCase()===x.src.toLowerCase())).map(x=>({src:x.src,note:x.note||'',translations:x.translations||{},organization_id:currentOrg.id}));if(toAdd.length){const res=await dbPost('dictionary',toAdd);dictCache.push(...res);}renderDict();alert('Zaimportowano.');e.target.value='';}
+async function clearDict(){if(!confirm('Wyczyścić słownik?'))return;await dbDelete('dictionary',`?${orgParam()}`);dictCache=[];renderDict();}
+async function fillDictWithAI(){
+  const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}
+  const toFill=[];dictCache.forEach(entry=>PRIMARY.forEach(l=>{if(!entry.translations?.[l.code])toFill.push({id:entry.id,src:entry.src,lang:l.code,note:entry.note||''});}));
+  if(!toFill.length){alert('Brak brakujących tłumaczeń.');return;}
+  if(!confirm(`Uzupełnić ${toFill.length} brakujących AI?`))return;
+  const C=30;for(let i=0;i<toFill.length;i+=C){
+    const chunk=toFill.slice(i,i+C);
+    const prompt=`Przetłumacz terminy słownikowe. TYLKO JSON: [{"id":"...","lang":"...","translation":"..."}]. Bez markdown.\n\n${JSON.stringify(chunk.map(t=>({id:t.id,src:t.src,lang:t.lang,note:t.note})))}`;
+    try{const res=JSON.parse((await apiCall(apiKey,prompt)).replace(/```json|```/g,'').trim());for(const r of res){const entry=dictCache.find(e=>e.id===r.id);if(entry&&r.translation){entry.translations={...entry.translations,[r.lang]:r.translation};await dbPatch('dictionary',{translations:entry.translations},`?id=eq.${r.id}`);}}}catch(err){console.error(err);}
+    await sleep(200);
+  }
+  renderDict();alert('Uzupełniono!');
+}
+
+// ══════════════════════════════════════════════════════════
+// HISTORIA
+// ══════════════════════════════════════════════════════════
+async function loadHistory(){
+  if(!currentOrg)return;
+  document.getElementById('hist-loading').style.display='flex';
+  document.getElementById('hist-list').innerHTML='';
+  try{histCache=await dbGet('translation_history',`?${orgParam()}&order=created_at.desc&limit=200`);renderHistory();}
+  catch(e){document.getElementById('hist-list').innerHTML='<div class="hist-empty">Błąd ładowania</div>';}
+  document.getElementById('hist-loading').style.display='none';
+}
+
+function renderHistory(){
+  const ft=(document.getElementById('hist-filter')?.value||'').toLowerCase();
+  const ftype=document.getElementById('hist-ftype')?.value||'all';
+  const flang=document.getElementById('hist-flang')?.value||'all';
+  let data=histCache;
+  if(ft)data=data.filter(h=>h.filename.toLowerCase().includes(ft));
+  if(ftype!=='all')data=data.filter(h=>h.filetype===ftype);
+  if(flang!=='all')data=data.filter(h=>h.lang===flang);
+  const totalCost=histCache.reduce((a,h)=>a+Number(h.cost_pln||0),0);
+  const totalTM=histCache.reduce((a,h)=>a+Number(h.segments_from_tm||0),0);
+  document.getElementById('hist-count').textContent=histCache.length;
+  document.getElementById('hist-total').textContent=histCache.length;
+  document.getElementById('hist-xliff-c').textContent=histCache.filter(h=>h.filetype==='xliff').length;
+  document.getElementById('hist-pptx-c').textContent=histCache.filter(h=>h.filetype==='pptx').length;
+  document.getElementById('hist-cost-total').textContent=fmtPLN(totalCost);
+  document.getElementById('hist-tm-total').textContent=totalTM;
+  const langs=[...new Set(histCache.map(h=>h.lang))];
+  const lsel=document.getElementById('hist-flang');const lcur=lsel.value;
+  lsel.innerHTML='<option value="all">Wszystkie języki</option>'+langs.map(l=>`<option value="${esc(l)}"${l===lcur?' selected':''}>${esc(l)}</option>`).join('');
+  const list=document.getElementById('hist-list');
+  if(!data.length){list.innerHTML='<div class="hist-empty">Brak historii</div>';return;}
+  list.innerHTML=`<div class="hist-thead"><div class="hist-th">Plik</div><div class="hist-th">Typ</div><div class="hist-th">Język</div><div class="hist-th">Segmenty</div><div class="hist-th">Koszt</div><div class="hist-th">Status</div><div class="hist-th">Data</div></div>`+
+    data.map(h=>`<div class="hist-row">
+      <div class="hist-col" title="${esc(h.filename)}" style="font-weight:500;">${esc(h.filename)}</div>
+      <div class="hist-col"><span class="ft-${h.filetype}">${h.filetype.toUpperCase()}</span></div>
+      <div class="hist-col">${esc(h.lang)}</div>
+      <div class="hist-col"><span style="color:#1a7a3f;">${h.segments_done||0}</span>/<span style="color:#888;">${h.segments_total||0}</span>${h.segments_from_tm>0?` <span style="color:#6b21a8;font-size:10px;">+${h.segments_from_tm}TM</span>`:''}</div>
+      <div class="hist-col"><strong>${fmtPLN(h.cost_pln||0)}</strong> PLN</div>
+      <div class="hist-col">${h.status==='completed'?'<span style="color:#1a7a3f;">✓ Ukończone</span>':'<span style="color:#888;">W toku</span>'}</div>
+      <div class="hist-col" style="color:#aaa;font-size:11px;">${fmtDate(h.created_at)}</div>
+    </div>`).join('');
+}
+
+async function createHistoryEntry(filename,filetype,lang,total,fromTM){
+  if(!currentOrg)return null;
+  try{const[row]=await dbPost('translation_history',{filename,filetype,lang,segments_total:total,segments_done:fromTM,segments_from_tm:fromTM,cost_usd:0,cost_pln:0,status:'in_progress',organization_id:currentOrg.id,user_id:currentUser.id});return row.id;}
+  catch(e){console.error(e);return null;}
+}
+async function updateHistoryEntry(id,done,fromTM,costUsd,costPln){
+  if(!id)return;
+  try{await dbPatch('translation_history',{segments_done:done,segments_from_tm:fromTM,cost_usd:costUsd,cost_pln:costPln,status:'completed'},`?id=eq.${id}`);}
+  catch(e){console.error(e);}
+}
+
+// ══════════════════════════════════════════════════════════
+// COST
+// ══════════════════════════════════════════════════════════
+function estimateCost(chars,tmChars){const toTr=chars-tmChars;if(toTr<=0)return{usd:0,pln:0,free:true};const textT=Math.ceil(toTr/CPT);const inputT=textT+Math.max(1,Math.ceil(textT/(CHUNK*20)))*350,outputT=textT;const usd=(inputT/1e6)*PRICE_IN+(outputT/1e6)*PRICE_OUT;return{inputT,outputT,usd,pln:usd*PLN_USD,free:false};}
+
+function renderCostBox(boxId,gridId,noteId,tmId,totalChars,tmChars,segCount,doneCount){
+  const box=document.getElementById(boxId),grid=document.getElementById(gridId),note=document.getElementById(noteId),tmEl=document.getElementById(tmId);
+  const est=estimateCost(totalChars,tmChars);const toTr=segCount-doneCount;
+  box.style.display='block';box.className='cost-box'+(est.usd>1?' warn':'');
+  if(doneCount>0){tmEl.style.display='block';tmEl.textContent=`✓ TM: ${doneCount} segmentów bezpłatnie — oszczędność ~${fmtPLN(estimateCost(tmChars,0).pln)} PLN`;}
+  else tmEl.style.display='none';
+  if(est.free||toTr===0){grid.innerHTML=`<div class="cost-cell"><div class="cost-num green">0,00 PLN</div><div class="cost-lbl">Koszt</div></div>`;note.innerHTML='Wszystkie z TM.';}
+  else{const cc=est.usd<0.5?'green':est.usd<2?'':'orange';grid.innerHTML=`<div class="cost-cell"><div class="cost-num ${cc}">${fmtPLN(est.pln)} PLN</div><div class="cost-lbl">Szacowany koszt</div></div><div class="cost-cell"><div class="cost-num">${toTr}</div><div class="cost-lbl">Segmentów</div></div><div class="cost-cell"><div class="cost-num">~$${est.usd.toFixed(4)}</div><div class="cost-lbl">USD</div></div>`;note.innerHTML=`<strong>Szacunek.</strong> Claude Sonnet 4 · $${PRICE_IN}/$${PRICE_OUT} /1M tokenów · ~${PLN_USD} PLN/USD.`;}
+}
+
+function updateXliffCost(){if(!xliffSegs.length)return;let total=0,tm=0;xliffSegs.forEach(s=>{if(s.type==='plain'){total+=s.source.length;if(s.fromTM||s.status==='done')tm+=s.source.length;}else{s.textNodes.forEach((n,i)=>{total+=n.text.length;if(s.fromTM||s.targets[i]?.text?.trim())tm+=n.text.length;});}});renderCostBox('xliff-cost-box','xliff-cost-grid','xliff-cost-note','xliff-cost-tm',total,tm,xliffSegs.length,xliffSegs.filter(s=>s.status==='done').length);}
+function updatePptxCost(){if(!pptxSegs.length)return;let total=0,tm=0;pptxSegs.forEach(s=>{total+=s.source.length;if(s.fromTM||s.status==='done')tm+=s.source.length;});renderCostBox('pptx-cost-box','pptx-cost-grid','pptx-cost-note','pptx-cost-tm',total,tm,pptxSegs.length,pptxSegs.filter(s=>s.status==='done').length);}
+
+// ══════════════════════════════════════════════════════════
+// API CALL
+// ══════════════════════════════════════════════════════════
+async function apiCall(apiKey,prompt,maxTokens=2000){
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]})});
+  if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||resp.statusText);}
+  const data=await resp.json();return data.content.map(b=>b.text||'').join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// XLIFF
+// ══════════════════════════════════════════════════════════
+async function loadXliff(file){
+  const xml=await readFile(file);xliffRawXml=xml;xliffXmlDoc=domParser.parseFromString(xml,'application/xml');
+  const units=Array.from(xliffXmlDoc.querySelectorAll('trans-unit'));xliffSegs=[];
+  units.forEach(unit=>{
+    const unitId=unit.getAttribute('id')||'',datatype=unit.getAttribute('datatype')||'';
+    const srcEl=unit.querySelector('source');if(!srcEl)return;
+    if(datatype==='plaintext'){const text=(srcEl.textContent||'').trim();if(!text)return;const tgt=unit.querySelector('target');xliffSegs.push({id:unitId,unitId,type:'plain',source:text,target:tgt?(tgt.textContent||''):'',status:(tgt&&tgt.textContent.trim())?'done':'pending',fromTM:false});}
+    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})).filter(n=>n.text.trim());if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
+  });
+  const tmHits=applyTMToSegs(xliffSegs,document.getElementById('target-lang').value);
+  const fc=xliffSegs.reduce((a,s)=>a+(s.type==='rich'?s.textNodes.length:1),0);
+  document.getElementById('xliff-badges').style.display='flex';
+  document.getElementById('xliff-fname').textContent=file.name;
+  document.getElementById('xliff-segs').textContent=xliffSegs.length+' segmentów';
+  document.getElementById('xliff-frags').textContent=fc+' fragmentów';
+  const th=document.getElementById('xliff-tm-hits');if(tmHits>0){th.style.display='';th.textContent=tmHits+' z TM';}else th.style.display='none';
+  document.getElementById('lang-card').style.display='block';document.getElementById('segments-card').style.display='block';
+  renderXliffTable();updateXliffProgress();updateXliffCost();
+}
+
+function xliffLangChange(){applyTMToSegs(xliffSegs,document.getElementById('target-lang').value);renderXliffTable();updateXliffProgress();updateXliffCost();}
+function xliffSrc(s){return s.type==='plain'?s.source:s.textNodes.map(n=>n.text).join('\n');}
+function xliffTgt(s){return s.type==='plain'?s.target:s.targets.map(n=>n.text).join('\n');}
+
+function renderXliffTable(){
+  const ft=(document.getElementById('xliff-filter')?.value||'').toLowerCase();
+  const fs=document.getElementById('xliff-fs')?.value||'all';
+  const tbody=document.getElementById('xliff-tbody');tbody.innerHTML='';
+  const canEdit=currentRole!=='viewer';
+  xliffSegs.forEach((seg,i)=>{
+    const src=xliffSrc(seg),tgt=xliffTgt(seg);
+    if(ft&&!src.toLowerCase().includes(ft)&&!tgt.toLowerCase().includes(ft))return;
+    if(fs!=='all'){if(fs==='tm'&&!seg.fromTM)return;if(fs!=='tm'&&seg.status!==fs)return;}
+    const sc=seg.status==='done'?'b-green':seg.status==='error'?'b-red':'b-yellow';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="id-cell" title="${esc(seg.id)}">${esc(seg.id)}</td><td class="src-cell">${esc(src).replace(/\n/g,'<br>')}</td><td>${seg.fromTM?'<div class="tm-hint">↩ z TM</div>':''}<textarea id="xta-${i}" rows="2" ${canEdit?`onchange="xliffEdit(${i},this.value)"`:' readonly'}>${esc(tgt)}</textarea></td><td><span class="badge ${sc}" id="xbadge-${i}">${seg.status==='done'?'OK':seg.status==='error'?'Błąd':'Oczekuje'}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function xliffEdit(i,val){const seg=xliffSegs[i];if(seg.type==='plain')seg.target=val;else{const lines=val.split('\n');seg.targets.forEach((t,j)=>{t.text=lines[j]!==undefined?lines[j]:'';});}seg.status=val.trim()?'done':'pending';seg.fromTM=false;const b=document.getElementById('xbadge-'+i);if(b){b.className='badge '+(val.trim()?'b-green':'b-yellow');b.textContent=val.trim()?'OK':'Oczekuje';}updateXliffProgress();}
+function updateXliffProgress(){const done=xliffSegs.filter(s=>s.status==='done').length;const b=document.getElementById('xliff-prog-badge');if(b){b.textContent=done+'/'+xliffSegs.length;b.className='badge '+(done===xliffSegs.length?'b-green':'b-yellow');}}
+
+async function startXliffTranslation(){
+  const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}
+  const toT=xliffSegs.filter(s=>s.status!=='done');if(!toT.length){setXS('Wszystko przetłumaczone!');return;}
+  // Check token balance
+  const totalChars=toT.reduce((a,s)=>a+(s.type==='plain'?s.source.length:s.textNodes.reduce((b,n)=>b+n.text.length,0)),0);
+  const needed=estimateTokensForTranslation(totalChars);
+  if(!checkTokenBalance(needed))return;
+  await runXliffBatch(toT,apiKey);
+}
+async function xliffRetranslateEmpty(){const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}const toT=xliffSegs.filter(s=>s.type==='plain'?!s.target.trim():s.targets.every(t=>!t.text.trim()));if(!toT.length){setXS('Brak pustych.');return;}await runXliffBatch(toT,apiKey);}
+
+async function runXliffBatch(toT,apiKey){
+  const lang=document.getElementById('target-lang').value;
+  const histId=await createHistoryEntry(document.getElementById('xliff-fname').textContent,'xliff',lang,xliffSegs.length,xliffSegs.filter(s=>s.fromTM).length);
+  document.getElementById('xliff-pw').style.display='block';document.getElementById('xliff-pf').style.width='0%';
+  const items=[];toT.forEach(seg=>{const idx=xliffSegs.indexOf(seg);if(seg.type==='plain')items.push({key:idx+'__p',segIndex:idx,gId:null,text:seg.source});else seg.textNodes.forEach(n=>items.push({key:idx+'__'+n.gId,segIndex:idx,gId:n.gId,text:n.text}));});
+  setXS('Tłumaczenie '+items.length+' fragmentów na '+lang+'...');
+  const dict=buildDictPrompt(lang);let done=0,totalCostUsd=0;
+  for(let i=0;i<items.length;i+=CHUNK){
+    const chunk=items.slice(i,i+CHUNK);
+    const charsIn=chunk.reduce((a,it)=>a+it.text.length,0);
+    const prompt=`Tłumacz materiały e-learningowe na: ${lang}.\nZachowaj zmienne %...% bez zmian.${dict}\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nFragmenty:\n${JSON.stringify(chunk.map(it=>({key:it.key,text:it.text})))}`;
+    try{
+      const res=JSON.parse((await apiCall(apiKey,prompt)).replace(/```json|```/g,'').trim());
+      const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
+      totalCostUsd+=((charsIn/CPT)/1e6)*PRICE_IN+((charsOut/CPT)/1e6)*PRICE_OUT;
+      res.forEach(r=>{const item=chunk.find(it=>it.key===r.key);if(!item)return;const seg=xliffSegs[item.segIndex];if(!seg)return;if(seg.type==='plain'){seg.target=r.translation;seg.status='done';}else{const tn=seg.targets.find(t=>t.gId===item.gId);if(tn)tn.text=r.translation;if(seg.targets.every(t=>t.text.trim()))seg.status='done';}const ta=document.getElementById('xta-'+item.segIndex);if(ta)ta.value=xliffTgt(xliffSegs[item.segIndex]);const b=document.getElementById('xbadge-'+item.segIndex);if(b&&xliffSegs[item.segIndex].status==='done'){b.className='badge b-green';b.textContent='OK';}});
+    }catch(err){chunk.forEach(it=>{xliffSegs[it.segIndex].status='error';const b=document.getElementById('xbadge-'+it.segIndex);if(b){b.className='badge b-red';b.textContent='Błąd';}});setXS('Błąd: '+err.message);}
+    done+=chunk.length;document.getElementById('xliff-pf').style.width=Math.round(done/items.length*100)+'%';updateXliffProgress();await sleep(150);
+  }
+  const finalDone=xliffSegs.filter(s=>s.status==='done').length;
+  await pushTMBatch(xliffSegs.filter(s=>s.status==='done').flatMap(s=>s.type==='plain'?[{src:s.source,tgt:s.target}]:s.textNodes.map((n,i)=>({src:n.text,tgt:s.targets[i]?.text||''}))),lang,'xliff');
+  await updateHistoryEntry(histId,finalDone,xliffSegs.filter(s=>s.fromTM).length,totalCostUsd,totalCostUsd*PLN_USD);
+  updateXliffCost();
+  const totalCharsTranslated=xliffSegs.filter(s=>s.status==='done').reduce((a,s)=>a+(s.type==='plain'?s.source.length:s.textNodes.reduce((b,n)=>b+n.text.length,0)),0);
+  await deductTokens(totalCharsTranslated, document.getElementById('xliff-fname').textContent, lang);
+  setXS(`Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} tokenów.`);
+}
+function setXS(m){document.getElementById('xliff-status').textContent=m;}
+
+function xliffExportExcel(){if(!xliffSegs.length){alert('Brak segmentów.');return;}const lang=document.getElementById('target-lang').value;const rows=[['ID','Typ','gID','Źródło (PL)','Tłumaczenie ('+lang+')','Status']];xliffSegs.forEach(s=>{if(s.type==='plain')rows.push([s.id,'plain','',s.source,s.target,s.status]);else s.textNodes.forEach((n,i)=>rows.push([s.id,'rich',n.gId,n.text,s.targets[i]?.text||'',s.status]));});const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Tłumaczenia');XLSX.writeFile(wb,'xliff_'+lang.toLowerCase()+'.xlsx');}
+async function xliffImportExcel(e){const f=e.target.files[0];if(!f)return;const buf=await readFile(f,'array');const rows=XLSX.utils.sheet_to_json(XLSX.read(buf,{type:'array'}).Sheets[XLSX.read(buf,{type:'array'}).SheetNames[0]],{header:1});let n=0;rows.slice(1).forEach(row=>{const sid=String(row[0]||'').trim(),type=String(row[1]||'').trim(),gId=String(row[2]||'').trim(),tr=String(row[4]||'').trim();if(!sid||!tr)return;const seg=xliffSegs.find(s=>s.id===sid);if(!seg)return;if(type==='plain'){seg.target=tr;seg.status='done';seg.fromTM=false;n++;}else if(type==='rich'&&gId){const tn=seg.targets.find(t=>t.gId===gId);if(tn){tn.text=tr;n++;}if(seg.targets.every(t=>t.text.trim()))seg.status='done';}});renderXliffTable();updateXliffProgress();e.target.value='';alert('Zaimportowano '+n+' tłumaczeń.');}
+
+function exportXliff(){
+  if(!xliffXmlDoc){alert('Brak pliku.');return;}
+  const lang=document.getElementById('target-lang').value;
+  const workDoc=domParser.parseFromString(xliffRawXml,'application/xml');
+  xliffSegs.forEach(seg=>{let unit=null;for(const u of workDoc.querySelectorAll('trans-unit')){if(u.getAttribute('id')===seg.unitId){unit=u;break;}}if(!unit)return;const srcEl=unit.querySelector('source');if(!srcEl)return;const ex=unit.querySelector('target');if(ex)ex.remove();const tgt=workDoc.createElementNS(XLIFF_NS,'target');tgt.setAttribute('state','translated');if(seg.type==='plain'){tgt.textContent=seg.target||seg.source;}else{const cl=srcEl.cloneNode(true);cl.querySelectorAll('g[ctype="x-text"]').forEach(g=>{const tn=seg.targets.find(t=>t.gId===g.getAttribute('id'));if(tn&&tn.text)g.textContent=tn.text;});while(cl.firstChild)tgt.appendChild(cl.firstChild);}srcEl.after(tgt);});
+  let s=xmlSer.serializeToString(workDoc);if(!s.startsWith('<?xml'))s='<?xml version="1.0" encoding="utf-8"?>'+s;
+  download(s,'translated_'+lang.toLowerCase().replace(/\s+/g,'_')+'.xliff','application/xliff+xml');
+}
+
+// ══════════════════════════════════════════════════════════
+// PPTX
+// ══════════════════════════════════════════════════════════
+async function loadPptx(file){
+  pptxFilename=file.name;const buf=await readFile(file,'array');pptxZip=await JSZip.loadAsync(buf);pptxSegs=[];
+  const slideFiles=Object.keys(pptxZip.files).filter(n=>n.match(/^ppt\/slides\/slide\d+\.xml$/)).sort((a,b)=>parseInt(a.match(/\d+/)[0])-parseInt(b.match(/\d+/)[0]));
+  const lang=document.getElementById('pptx-target-lang').value;
+  for(let si=0;si<slideFiles.length;si++){
+    const path=slideFiles[si],slideNum=parseInt(path.match(/slide(\d+)/)[1]);
+    const xml=await pptxZip.file(path).async('string');
+    const doc=domParser.parseFromString(xml,'application/xml');
+    const extractParas=(paras,keyPrefix,labelName)=>{paras.forEach((para,paraIdx)=>{const runs=Array.from(para.querySelectorAll('r'));if(!runs.length)return;const fullText=runs.map(r=>r.querySelector('t')?.textContent||'').join('');if(!fullText.trim())return;const key=`${keyPrefix}_p${paraIdx}`;const tmHit=lookupTM(fullText,lang);pptxSegs.push({key,slideNum,slideFile:path,keyPrefix,paraIdx,shapeName:labelName,source:fullText,target:tmHit||'',status:tmHit?'done':'pending',fromTM:!!tmHit});if(tmHit)tmApiSaved++;});};
+    Array.from(doc.querySelectorAll('sp')).forEach((shape,shapeIdx)=>{const shapeName=shape.querySelector('nvSpPr cNvPr')?.getAttribute('name')||`Shape${shapeIdx}`;extractParas(Array.from(shape.querySelectorAll('p')),`s${slideNum}_sh${shapeIdx}`,shapeName);});
+    Array.from(doc.querySelectorAll('graphicFrame')).forEach((frame,frameIdx)=>{const frameName=frame.querySelector('nvGraphicFramePr cNvPr')?.getAttribute('name')||`Table${frameIdx}`;Array.from(frame.querySelectorAll('tr')).forEach((row,rowIdx)=>{Array.from(row.querySelectorAll('tc')).forEach((cell,cellIdx)=>{extractParas(Array.from(cell.querySelectorAll('p')),`s${slideNum}_tbl${frameIdx}_r${rowIdx}_c${cellIdx}`,`${frameName} [W${rowIdx+1}K${cellIdx+1}]`);});});});
+  }
+  const tmHits=pptxSegs.filter(s=>s.fromTM).length;
+  document.getElementById('pptx-badges').style.display='flex';
+  document.getElementById('pptx-fname').textContent=file.name;
+  document.getElementById('pptx-slide-count').textContent=slideFiles.length+' slajdów';
+  document.getElementById('pptx-text-count').textContent=pptxSegs.length+' bloków';
+  const ptb=document.getElementById('pptx-tm-badge');if(tmHits>0){ptb.style.display='';ptb.textContent=tmHits+' z TM';}else ptb.style.display='none';
+  document.getElementById('pptx-lang-card').style.display='block';document.getElementById('pptx-segs-card').style.display='block';
+  document.getElementById('pptx-count').textContent=pptxSegs.length;
+  buildPptxSlideFilter(slideFiles.length);renderPptxTable();updatePptxProgress();updateTMUI();updatePptxCost();
+}
+
+function buildPptxSlideFilter(count){const sel=document.getElementById('pptx-filter-slide');sel.innerHTML='<option value="all">Wszystkie slajdy</option>'+Array.from({length:count},(_,i)=>`<option value="${i+1}">Slajd ${i+1}</option>`).join('');}
+function pptxLangChange(){const lang=document.getElementById('pptx-target-lang').value;pptxSegs.forEach(seg=>{if(seg.status==='done'&&seg.fromTM)return;const f=lookupTM(seg.source,lang);if(f){seg.target=f;seg.status='done';seg.fromTM=true;}});renderPptxTable();updatePptxProgress();updatePptxCost();}
+
+function renderPptxTable(){
+  const ft=(document.getElementById('pptx-filter')?.value||'').toLowerCase();
+  const fs=document.getElementById('pptx-fs')?.value||'all';
+  const fslide=document.getElementById('pptx-filter-slide')?.value||'all';
+  const tbody=document.getElementById('pptx-tbody');tbody.innerHTML='';
+  const canEdit=currentRole!=='viewer';
+  pptxSegs.forEach((seg,i)=>{
+    if(ft&&!seg.source.toLowerCase().includes(ft)&&!seg.target.toLowerCase().includes(ft))return;
+    if(fslide!=='all'&&String(seg.slideNum)!==fslide)return;
+    if(fs!=='all'){if(fs==='tm'&&!seg.fromTM)return;if(fs!=='tm'&&seg.status!==fs)return;}
+    const sc=seg.status==='done'?'b-green':seg.status==='error'?'b-red':'b-yellow';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="slide-badge">Slajd ${seg.slideNum}</span><div style="font-size:10px;color:#ccc;margin-top:2px;">${esc(seg.shapeName)}</div></td><td class="src-cell">${esc(seg.source)}</td><td>${seg.fromTM?'<div class="tm-hint">↩ z TM</div>':''}<textarea id="pta-${i}" rows="2" ${canEdit?`onchange="pptxEdit(${i},this.value)"`:' readonly'}>${esc(seg.target)}</textarea></td><td><span class="badge ${sc}" id="pbadge-${i}">${seg.status==='done'?'OK':seg.status==='error'?'Błąd':'Oczekuje'}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function pptxEdit(i,val){pptxSegs[i].target=val;pptxSegs[i].status=val.trim()?'done':'pending';pptxSegs[i].fromTM=false;const b=document.getElementById('pbadge-'+i);if(b){b.className='badge '+(val.trim()?'b-green':'b-yellow');b.textContent=val.trim()?'OK':'Oczekuje';}updatePptxProgress();}
+function updatePptxProgress(){const done=pptxSegs.filter(s=>s.status==='done').length;const b=document.getElementById('pptx-prog-badge');if(b){b.textContent=done+'/'+pptxSegs.length;b.className='badge '+(done===pptxSegs.length?'b-green':'b-yellow');}}
+
+async function startPptxTranslation(){
+  const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}
+  const toT=pptxSegs.filter(s=>s.status!=='done');if(!toT.length){setPPS('Wszystko przetłumaczone!');return;}
+  const totalChars=toT.reduce((a,s)=>a+s.source.length,0);
+  const needed=estimateTokensForTranslation(totalChars);
+  if(!checkTokenBalance(needed))return;
+  await runPptxBatch(toT,apiKey);
+}
+async function pptxRetranslateEmpty(){const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}const toT=pptxSegs.filter(s=>!s.target.trim());if(!toT.length){setPPS('Brak pustych.');return;}await runPptxBatch(toT,apiKey);}
+
+async function runPptxBatch(toT,apiKey){
+  const lang=document.getElementById('pptx-target-lang').value;
+  const histId=await createHistoryEntry(pptxFilename,'pptx',lang,pptxSegs.length,pptxSegs.filter(s=>s.fromTM).length);
+  document.getElementById('pptx-pw').style.display='block';document.getElementById('pptx-pf').style.width='0%';
+  setPPS('Tłumaczenie '+toT.length+' bloków na '+lang+'...');
+  const dict=buildDictPrompt(lang);let done=0,totalCostUsd=0;const C=25;
+  for(let i=0;i<toT.length;i+=C){
+    const chunk=toT.slice(i,i+C);const charsIn=chunk.reduce((a,s)=>a+s.source.length,0);
+    const prompt=`Jesteś profesjonalnym tłumaczem prezentacji biznesowych i szkoleniowych. Przetłumacz na język: ${lang}.\n\nZasady:\n- Zachowaj styl oryginału (formalny/zwięzły)\n- Nie dodawaj ani nie skracaj tekstu\n- Zachowaj interpunkcję i wielkość liter\n- Zmienne %...% przepisuj bez zmian\n- Tytuły slajdów: zwięźle i rzeczowo\n- Punkty listy: zachowaj równoległy styl${dict}\n\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nBloki:\n${JSON.stringify(chunk.map(s=>({key:s.key,text:s.source})))}`;
+    try{
+      const res=JSON.parse((await apiCall(apiKey,prompt)).replace(/```json|```/g,'').trim());
+      const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
+      totalCostUsd+=((charsIn/CPT)/1e6)*PRICE_IN+((charsOut/CPT)/1e6)*PRICE_OUT;
+      res.forEach(r=>{const seg=pptxSegs.find(s=>s.key===r.key);if(!seg)return;seg.target=r.translation;seg.status='done';const idx=pptxSegs.indexOf(seg);const ta=document.getElementById('pta-'+idx);if(ta)ta.value=r.translation;const b=document.getElementById('pbadge-'+idx);if(b){b.className='badge b-green';b.textContent='OK';}});
+    }catch(err){chunk.forEach(s=>{s.status='error';const idx=pptxSegs.indexOf(s);const b=document.getElementById('pbadge-'+idx);if(b){b.className='badge b-red';b.textContent='Błąd';}});setPPS('Błąd: '+err.message);}
+    done+=chunk.length;document.getElementById('pptx-pf').style.width=Math.round(done/toT.length*100)+'%';updatePptxProgress();await sleep(150);
+  }
+  const finalDone=pptxSegs.filter(s=>s.status==='done').length;
+  await pushTMBatch(pptxSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target})),lang,'pptx');
+  await updateHistoryEntry(histId,finalDone,pptxSegs.filter(s=>s.fromTM).length,totalCostUsd,totalCostUsd*PLN_USD);
+  updatePptxCost();
+  const totalCharsTranslated=pptxSegs.filter(s=>s.status==='done').reduce((a,s)=>a+s.source.length,0);
+  await deductTokens(totalCharsTranslated, pptxFilename, lang);
+  setPPS(`Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} tokenów.`);
+}
+function setPPS(m){document.getElementById('pptx-status').textContent=m;}
+
+function pptxExportExcel(){if(!pptxSegs.length){alert('Brak segmentów.');return;}const lang=document.getElementById('pptx-target-lang').value;const rows=[['Slajd','Kształt','Klucz','Tekst źródłowy','Tłumaczenie ('+lang+')','Status']];pptxSegs.forEach(s=>rows.push([s.slideNum,s.shapeName,s.key,s.source,s.target,s.status]));const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Tłumaczenia');XLSX.writeFile(wb,'pptx_'+lang.toLowerCase()+'.xlsx');}
+async function pptxImportExcel(e){const f=e.target.files[0];if(!f)return;const buf=await readFile(f,'array');const rows=XLSX.utils.sheet_to_json(XLSX.read(buf,{type:'array'}).Sheets[XLSX.read(buf,{type:'array'}).SheetNames[0]],{header:1});let n=0;rows.slice(1).forEach(row=>{const key=String(row[2]||'').trim(),tr=String(row[4]||'').trim();if(!key||!tr)return;const seg=pptxSegs.find(s=>s.key===key);if(!seg)return;seg.target=tr;seg.status='done';seg.fromTM=false;n++;});renderPptxTable();updatePptxProgress();e.target.value='';alert('Zaimportowano '+n+' tłumaczeń.');}
+
+async function exportPptx(){
+  if(!pptxZip){alert('Brak pliku.');return;}setPPS('Generowanie PPTX...');
+  const lang=document.getElementById('pptx-target-lang').value;
+  const bySlide={};pptxSegs.forEach(seg=>{if(!bySlide[seg.slideFile])bySlide[seg.slideFile]=[];bySlide[seg.slideFile].push(seg);});
+  const newZip=new JSZip();
+  for(const path of Object.keys(pptxZip.files)){const entry=pptxZip.files[path];if(entry.dir){newZip.folder(path);continue;}if(bySlide[path]){const xml=await pptxZip.file(path).async('string');newZip.file(path,applyPptxTranslations(xml,bySlide[path]));}else{newZip.file(path,await pptxZip.file(path).async('arraybuffer'));}}
+  const blob=await newZip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation',compression:'DEFLATE',compressionOptions:{level:6}});
+  const fname=pptxFilename.replace(/\.pptx$/i,'')+'_'+lang.toLowerCase().replace(/\s+/g,'_')+'.pptx';
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);setPPS('Plik PPTX pobrany.');
+}
+
+function applyRunText(para,translated){
+  const runs=Array.from(para.querySelectorAll('r'));if(!runs.length)return;
+  const totalSrcLen=runs.reduce((a,r)=>{const t=r.querySelector('t');return a+(t?t.textContent.length:0);},0);
+  if(runs.length===1){const t=runs[0].querySelector('t');if(t)t.textContent=translated;}
+  else if(totalSrcLen===0){const t=runs[0].querySelector('t');if(t)t.textContent=translated;runs.slice(1).forEach(r=>{const t=r.querySelector('t');if(t)t.textContent='';});}
+  else{let remaining=translated;runs.forEach((run,ri)=>{const t=run.querySelector('t');if(!t)return;const origLen=t.textContent.length;if(ri===runs.length-1){t.textContent=remaining;}else if(origLen===0){t.textContent='';}else{const ratio=origLen/totalSrcLen;let splitAt=Math.min(Math.round(translated.length*ratio),remaining.length);if(splitAt>0&&splitAt<remaining.length){const win=Math.max(4,Math.round(splitAt*0.2));let best=splitAt;for(let d=1;d<=win;d++){if(splitAt-d>=0&&remaining[splitAt-d]===' '){best=splitAt-d;break;}if(splitAt+d<=remaining.length&&remaining[splitAt+d-1]===' '){best=splitAt+d;break;}}splitAt=best;}t.textContent=remaining.slice(0,splitAt);remaining=remaining.slice(splitAt);}});}
+}
+
+function applyPptxTranslations(xml,segs){
+  const doc=domParser.parseFromString(xml,'application/xml');
+  const slideNum=segs[0]?.slideNum;
+  const findSeg=key=>segs.find(s=>s.key===key);
+  Array.from(doc.querySelectorAll('sp')).forEach((shape,shapeIdx)=>{Array.from(shape.querySelectorAll('p')).forEach((para,paraIdx)=>{const seg=findSeg(`s${slideNum}_sh${shapeIdx}_p${paraIdx}`);if(!seg||!seg.target.trim())return;applyRunText(para,seg.target);});});
+  Array.from(doc.querySelectorAll('graphicFrame')).forEach((frame,frameIdx)=>{Array.from(frame.querySelectorAll('tr')).forEach((row,rowIdx)=>{Array.from(row.querySelectorAll('tc')).forEach((cell,cellIdx)=>{Array.from(cell.querySelectorAll('p')).forEach((para,paraIdx)=>{const seg=findSeg(`s${slideNum}_tbl${frameIdx}_r${rowIdx}_c${cellIdx}_p${paraIdx}`);if(!seg||!seg.target.trim())return;applyRunText(para,seg.target);});});});});
+  return xmlSer.serializeToString(doc);
+}
+
+// ══════════════════════════════════════════════════════════
+// TOKEN SYSTEM
+// ══════════════════════════════════════════════════════════
+const STRIPE_PK = 'pk_test_51TRpDpFAZbQYcNSruWmlgB1DCvQtEE1GN1rO2qHQNFHgLxPv80FfgAXqt30ImjdCxfY3ghDNKzEO4XwXi33XIXdi00owtPZrEO';
+
+const PACKAGES = {
+  'price_1TRpL9FAZbQYcNSrcZCePhAO': { name:'Starter', tokens:100000, price:9 },
+  'price_1TRpLWFAZbQYcNSraskM5Xoq': { name:'Standard', tokens:500000, price:39 },
+  'price_1TRpLnFAZbQYcNSrhHdwtHo5': { name:'Pro', tokens:2000000, price:129 },
+};
+
+// Cost: ~$3/1M input + ~$15/1M output tokens
+// We charge ~4x markup = sell at ~$10/1M equivalent
+// 1 PLN = ~9,000 tokens (conservative estimate)
+const TOKENS_PER_PLN = 9000;
+
+function updateTokenBadge(){
+  const balance = currentOrg?.tokens_balance || 0;
+  const el = document.getElementById('hdr-token-amount');
+  if(!el) return;
+  el.textContent = formatTokens(balance);
+  el.className = 'token-amount' + (balance < 10000 ? ' low' : '') + (balance <= 0 ? ' empty' : '');
+}
+
+function formatTokens(n){
+  if(n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if(n >= 1000) return Math.floor(n/1000)+'K';
+  return String(n);
+}
+
+function updateShopBalance(){
+  const balance = currentOrg?.tokens_balance || 0;
+  const el = document.getElementById('shop-balance');
+  const equiv = document.getElementById('shop-balance-equiv');
+  if(el) el.textContent = balance.toLocaleString('pl-PL');
+  if(equiv){
+    const pln = (balance / TOKENS_PER_PLN).toFixed(2);
+    equiv.innerHTML = `Wartość: ~${pln} PLN<br><span style="color:#aaa;">wystarczy na ~${Math.floor(balance/5000)} stron tekstu</span>`;
+  }
+}
+
+async function loadTokenHistory(){
+  if(!currentOrg) return;
+  document.getElementById('tx-loading').style.display='flex';
+  try{
+    const txs = await dbGet('token_transactions', `?organization_id=eq.${currentOrg.id}&order=created_at.desc&limit=50`);
+    renderTokenHistory(txs);
+  }catch(e){ console.error('TX history error:', e); }
+  document.getElementById('tx-loading').style.display='none';
+}
+
+function renderTokenHistory(txs){
+  const list = document.getElementById('tx-list');
+  if(!txs.length){ list.innerHTML='<div style="padding:20px;text-align:center;color:#ccc;font-size:13px;">Brak transakcji</div>'; return; }
+  const typeLabel = { purchase:'🛒 Zakup', usage:'⚡ Użycie', bonus:'🎁 Bonus', refund:'↩ Zwrot' };
+  list.innerHTML = `<div class="tx-row" style="background:#fafaf8;font-size:11px;font-weight:600;color:#999;">
+    <div class="tx-col">Data</div><div class="tx-col">Opis</div>
+    <div class="tx-col">Tokeny</div><div class="tx-col">Saldo</div>
+  </div>` +
+  txs.map(tx => `<div class="tx-row">
+    <div class="tx-col" style="color:#aaa;font-size:11px;">${fmtDate(tx.created_at)}</div>
+    <div class="tx-col">${typeLabel[tx.type]||tx.type} ${esc(tx.description||'')}</div>
+    <div class="tx-col ${tx.tokens>0?'tx-plus':'tx-minus'}">${tx.tokens>0?'+':''}${tx.tokens.toLocaleString('pl-PL')}</div>
+    <div class="tx-col" style="color:#888;">${tx.balance_after.toLocaleString('pl-PL')}</div>
+  </div>`).join('');
+}
+
+// Stripe Checkout — redirect to Stripe hosted page
+async function startCheckout(priceId, pkgKey){
+  if(!currentOrg){ alert('Brak organizacji.'); return; }
+  if(currentRole === 'viewer'){ alert('Brak uprawnień do zakupu.'); return; }
+  const pkg = PACKAGES[priceId];
+  if(!confirm(`Kupić pakiet ${pkg.name} (${pkg.tokens.toLocaleString('pl-PL')} tokenów) za ${pkg.price} PLN?`)) return;
+
+  try{
+    const stripe = Stripe(STRIPE_PK);
+    // Create checkout session via Supabase Edge Function
+    // For now — use Stripe Payment Links (simpler, no backend needed)
+    // We'll show instructions to set up Payment Links
+    alert('⚠️ Do obsługi płatności wymagana jest konfiguracja Stripe Payment Links lub Edge Function.\n\nW trybie testowym możesz dodać tokeny ręcznie przez panel admina.');
+  }catch(e){ alert('Błąd: '+e.message); }
+}
+
+// Admin: manually add tokens (for testing)
+async function adminAddTokens(amount, description){
+  if(!currentOrg || currentRole !== 'admin'){ alert('Tylko admin.'); return; }
+  try{
+    const{data, error} = await supa.rpc('add_tokens', {
+      org_id: currentOrg.id,
+      amount,
+      desc_text: description || 'Ręczne doładowanie (admin)',
+    });
+    if(error) throw new Error(error.message);
+    currentOrg.tokens_balance = (currentOrg.tokens_balance || 0) + amount;
+    updateTokenBadge();
+    updateShopBalance();
+    loadTokenHistory();
+    alert(`Dodano ${amount.toLocaleString('pl-PL')} tokenów! Nowe saldo: ${currentOrg.tokens_balance.toLocaleString('pl-PL')}`);
+  }catch(e){ alert('Błąd: '+e.message); }
+}
+
+// Estimate tokens for translation
+function estimateTokensForTranslation(chars){
+  // Input tokens: chars/4, Output tokens: chars/4 (similar length translation)
+  // Total API tokens used per character ≈ 0.5 tokens
+  // We charge 1 token per 4 chars (conservative, matches our pricing)
+  return Math.ceil(chars / 4);
+}
+
+// Check if org has enough tokens
+function checkTokenBalance(requiredTokens){
+  const balance = currentOrg?.tokens_balance || 0;
+  if(balance < requiredTokens){
+    const deficit = requiredTokens - balance;
+    const result = confirm(
+      `Niewystarczające saldo tokenów!\n\n` +
+      `Potrzebujesz: ${requiredTokens.toLocaleString('pl-PL')} tokenów\n` +
+      `Masz: ${balance.toLocaleString('pl-PL')} tokenów\n` +
+      `Brakuje: ${deficit.toLocaleString('pl-PL')} tokenów\n\n` +
+      `Przejść do zakupu tokenów?`
+    );
+    if(result) switchTab('shop');
+    return false;
+  }
+  return true;
+}
+
+// Deduct tokens after translation
+async function deductTokens(charsTranslated, filename, lang){
+  if(!currentOrg) return;
+  const tokens = estimateTokensForTranslation(charsTranslated);
+  if(tokens <= 0) return;
+  try{
+    const{data, error} = await supa.rpc('use_tokens', {
+      org_id: currentOrg.id,
+      amount: tokens,
+      desc_text: `${filename} → ${lang}`,
+      meta: {filename, lang}
+    });
+    if(error){ console.error('Token deduction error:', error); return; }
+    // Update local balance
+    currentOrg.tokens_balance = data.balance_after;
+    updateTokenBadge();
+  }catch(e){ console.error('Token deduction error:', e); }
+}
+
+// ══════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════
+(async()=>{
+  // Handle invitation link (?invite=TOKEN)
+  const urlParams=new URLSearchParams(window.location.search);
+  const inviteToken=urlParams.get('invite');
+  if(inviteToken){
+    // Store token and show login/register
+    sessionStorage.setItem('pendingInvite',inviteToken);
+    window.history.replaceState(null,'',window.location.pathname);
+  }
+
+  // Handle email confirmation callback (token in URL hash)
+  const hash=window.location.hash;
+  if(hash&&hash.includes('access_token')){
+    const{data,error}=await supa.auth.getSession();
+    if(!error&&data.session){
+      currentSession=data.session;currentUser=data.session.user;
+      // Clean URL
+      window.history.replaceState(null,'',window.location.pathname);
+      await afterLogin();
+      return;
+    }
+  }
+
+  // Handle password reset callback
+  if(hash&&hash.includes('type=recovery')){
+    showScreen('screen-reset');
+    return;
+  }
+
+  // Check existing session
+  const{data:{session}}=await supa.auth.getSession();
+  if(session){
+    currentSession=session;currentUser=session.user;
+    await afterLogin();
+  } else {
+    showScreen('screen-login');
+  }
+
+  // Listen for auth changes
+  supa.auth.onAuthStateChange(async(event,session)=>{
+    currentSession=session;
+    if(event==='SIGNED_IN'&&session&&!currentOrg){
+      currentUser=session.user;
+      await afterLogin();
+    }
+    if(event==='SIGNED_OUT'){
+      currentOrg=null;currentRole=null;currentUser=null;
+      showScreen('screen-login');
+    }
+  });
+})();
+</script>
+</body>
+</html>
