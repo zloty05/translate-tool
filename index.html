@@ -961,7 +961,7 @@ async function doRegister(){
   if(pass!==pass2){authErr('reg-error','Hasła nie są identyczne.');return;}
   const{data,error}=await supa.auth.signUp({email,password:pass,options:{
     data:{full_name:name},
-    emailRedirectTo:'https://tooltranslate.netlify.app'
+    emailRedirectTo:'https://translate-tool.zloty05.workers.dev'
   }});
   if(error){authErr('reg-error',error.message);return;}
   // If session exists — email confirmation disabled, go straight to app
@@ -1294,7 +1294,7 @@ function renderPendingInvites(pending){
   const list=document.getElementById('pending-list');
   if(!pending||!pending.length){if(title)title.style.display='none';if(list)list.innerHTML='';return;}
   if(title)title.style.display='block';
-  const baseUrl='https://tooltranslate.netlify.app';
+  const baseUrl='https://translate-tool.zloty05.workers.dev';
   list.innerHTML=`<div style="border:1px solid #eee;border-radius:8px;overflow:hidden;">`+
     pending.map(inv=>{
       const expired=new Date(inv.expires_at)<new Date();
