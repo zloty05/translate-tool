@@ -1341,11 +1341,41 @@ function estimateCost(chars,tmChars){const toTr=chars-tmChars;if(toTr<=0)return{
 function renderCostBox(boxId,gridId,noteId,tmId,totalChars,tmChars,segCount,doneCount){
   const box=document.getElementById(boxId),grid=document.getElementById(gridId),note=document.getElementById(noteId),tmEl=document.getElementById(tmId);
   const est=estimateCost(totalChars,tmChars);const toTr=segCount-doneCount;
+  const charsToTranslate=totalChars-tmChars;
+  const tokensNeeded=estimateTokensForTranslation(charsToTranslate);
+  const currentBalance=currentOrg?.tokens_balance||0;
+  const hasEnough=currentBalance>=tokensNeeded;
   box.style.display='block';box.className='cost-box'+(est.usd>1?' warn':'');
-  if(doneCount>0){tmEl.style.display='block';tmEl.textContent=`✓ TM: ${doneCount} segmentów bezpłatnie — oszczędność ~${fmtPLN(estimateCost(tmChars,0).pln)} PLN`;}
-  else tmEl.style.display='none';
-  if(est.free||toTr===0){grid.innerHTML=`<div class="cost-cell"><div class="cost-num green">0,00 PLN</div><div class="cost-lbl">Koszt</div></div>`;note.innerHTML='Wszystkie z TM.';}
-  else{const cc=est.usd<0.5?'green':est.usd<2?'':'orange';grid.innerHTML=`<div class="cost-cell"><div class="cost-num ${cc}">${fmtPLN(est.pln)} PLN</div><div class="cost-lbl">Szacowany koszt</div></div><div class="cost-cell"><div class="cost-num">${toTr}</div><div class="cost-lbl">Segmentów</div></div><div class="cost-cell"><div class="cost-num">~$${est.usd.toFixed(4)}</div><div class="cost-lbl">USD</div></div>`;note.innerHTML=`<strong>Szacunek.</strong> Claude Sonnet 4 · $${PRICE_IN}/$${PRICE_OUT} /1M tokenów · ~${PLN_USD} PLN/USD.`;}
+
+  // TM savings line
+  if(doneCount>0){
+    tmEl.style.display='block';
+    tmEl.textContent=`✓ Pamięć TM: ${doneCount} segmentów uzupełnionych bezpłatnie — oszczędność ~${fmtPLN(estimateCost(tmChars,0).pln)} PLN`;
+  } else tmEl.style.display='none';
+
+  if(est.free||toTr===0){
+    grid.innerHTML=`<div class="cost-cell"><div class="cost-num green">0,00 PLN</div><div class="cost-lbl">Koszt API</div></div>
+      <div class="cost-cell"><div class="cost-num green">0</div><div class="cost-lbl">Tokenów z salda</div></div>`;
+    note.innerHTML='Wszystkie segmenty uzupełnione z pamięci TM — brak kosztów.';
+  } else {
+    const cc=est.usd<0.5?'green':est.usd<2?'':'orange';
+    const balanceColor=hasEnough?'#1a7a3f':'#b32424';
+    const balanceInfo=hasEnough
+      ? `<span style="color:#1a7a3f;">✓ Wystarczy (masz ${formatTokens(currentBalance)})</span>`
+      : `<span style="color:#b32424;">✗ Brakuje ${formatTokens(tokensNeeded-currentBalance)} tokenów — <a href="#" onclick="switchTab('shop');return false;">kup tutaj</a></span>`;
+
+    grid.innerHTML=`
+      <div class="cost-cell"><div class="cost-num ${cc}">${fmtPLN(est.pln)} PLN</div><div class="cost-lbl">Koszt API (szacunek)</div></div>
+      <div class="cost-cell"><div class="cost-num" style="color:${balanceColor};">${formatTokens(tokensNeeded)}</div><div class="cost-lbl">Tokenów z salda</div></div>
+      <div class="cost-cell"><div class="cost-num">${toTr}</div><div class="cost-lbl">Segmentów do tłum.</div></div>
+      <div class="cost-cell"><div class="cost-num" style="color:${balanceColor};">${formatTokens(currentBalance)}</div><div class="cost-lbl">Twoje saldo</div></div>`;
+
+    note.innerHTML=`${balanceInfo}<br>
+      <span style="color:#999;font-size:11px;">
+        <strong>Co to token?</strong> 1 token ≈ 4 znaki tekstu. To tłumaczenie ma ~${charsToTranslate.toLocaleString('pl-PL')} znaków = ${formatTokens(tokensNeeded)} tokenów z Twojego salda.
+        Koszt API ($${est.usd.toFixed(4)}) jest po Twojej stronie — tokeny kupujesz od nas, my rozliczamy się z Anthropic.
+      </span>`;
+  }
 }
 
 function updateXliffCost(){if(!xliffSegs.length)return;let total=0,tm=0;xliffSegs.forEach(s=>{if(s.type==='plain'){total+=s.source.length;if(s.fromTM||s.status==='done')tm+=s.source.length;}else{s.textNodes.forEach((n,i)=>{total+=n.text.length;if(s.fromTM||s.targets[i]?.text?.trim())tm+=n.text.length;});}});renderCostBox('xliff-cost-box','xliff-cost-grid','xliff-cost-note','xliff-cost-tm',total,tm,xliffSegs.length,xliffSegs.filter(s=>s.status==='done').length);}
