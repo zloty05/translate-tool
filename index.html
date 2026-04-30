@@ -7,7 +7,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://js.stripe.com/v3/"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
@@ -2296,11 +2295,13 @@ function renderEditorTable(lang){
     const tText=tData?.text||'';
     const tStatus=tData?.status||'empty';
     const tr=document.createElement('tr');
+    const rowCount=Math.max(2,(seg.source_text.match(/[
+]/g)||[]).length+1);
     tr.innerHTML=`
       <td style="color:#ccc;font-size:11px;text-align:center;">${i+1}</td>
       <td><div class="seg-src" style="white-space:pre-wrap;">${esc(seg.source_text)}</div></td>
       <td><textarea class="seg-textarea" id="seg-${seg.id}"
-        rows="${Math.max(2,(seg.source_text.match(/[\r\n]/g)||[]).length+1)}" ${(!canEdit||isLocked)?'readonly':''}
+        rows="${rowCount}" ${(!canEdit||isLocked)?'readonly':''}
         onInput="onSegInput('${seg.id}','${lang}',this)"
         >${esc(tText)}</textarea></td>
       <td><span class="status-pill sp-${tStatus==='translated'?'translated':tStatus==='approved'?'approved':'empty'}" id="spill-${seg.id}-${lang}">
@@ -2906,13 +2907,8 @@ async function startCheckout(priceId, pkgKey){
   const pkg = PACKAGES[priceId];
   if(!confirm(`Kupić pakiet ${pkg.name} (${pkg.tokens.toLocaleString('pl-PL')} tokenów) za ${pkg.price} PLN?`)) return;
 
-  try{
-    const stripe = Stripe(STRIPE_PK);
-    // Create checkout session via Supabase Edge Function
-    // For now — use Stripe Payment Links (simpler, no backend needed)
-    // We'll show instructions to set up Payment Links
-    alert('⚠️ Do obsługi płatności wymagana jest konfiguracja Stripe Payment Links lub Edge Function.\n\nW trybie testowym możesz dodać tokeny ręcznie przez panel admina.');
-  }catch(e){ alert('Błąd: '+e.message); }
+  // Stripe checkout - requires backend setup
+  alert('⚠️ Do obsługi płatności wymagana jest konfiguracja Stripe.\n\nW trybie testowym możesz dodać tokeny ręcznie przez panel admina w zakładce Zespół.');
 }
 
 // Admin: manually add tokens (for testing)
