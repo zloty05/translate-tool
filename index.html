@@ -1272,19 +1272,17 @@ async function loadTeam(){
   document.getElementById('team-loading').style.display='flex';
   try{
     const members=await dbGet('organization_members',`?${orgParam()}`);
-    const userIds=members.map(m=>m.user_id);
-    let profiles=[];
-    if(userIds.length){
-      profiles=await dbGet('profiles',`?id=in.(${userIds.join(',')})`);
-    }
-    const membersWithProfiles=members.map(m=>{
-      const profile=profiles.find(p=>p.id===m.user_id)||null;
-      return{
-        ...m,
-        profiles:profile,
-        display_name:profile?.full_name?.trim()||null
-      };
-    });
+    // Use member_emails view which bypasses profiles RLS issues
+    let nameMap={};
+    try{
+      const nameData=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
+      nameData.forEach(e=>{ nameMap[e.user_id]=e.display_name; });
+    }catch(e){ console.warn('member_emails error:',e); }
+    const membersWithProfiles=members.map(m=>({
+      ...m,
+      profiles:null,
+      display_name:nameMap[m.user_id]||null
+    }));
     const pending=await dbGet('invitations',`?${orgParam()}&accepted_at=is.null&order=created_at.desc`);
     renderTeamList(membersWithProfiles);
     renderPendingInvites(pending);
