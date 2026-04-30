@@ -1193,7 +1193,8 @@ async function loadApp(){
   buildDictNewRow();buildDictLangFilter();
   // Load data
   try{
-    await Promise.all([loadTMCache(),loadDictCache(),loadOrgBalance()]);
+    await Promise.all([loadDictCache(),loadOrgBalance()]);
+    updateTMUI();
     setDbStatus(true);
   }catch(e){setDbStatus(false);console.error(e);}
 }
@@ -1420,43 +1421,83 @@ async function removeMember(memberId){
 // ══════════════════════════════════════════════════════════
 // TRANSLATION MEMORY
 // ══════════════════════════════════════════════════════════
-async function loadTMCache(){
-  if(!currentOrg)return;
-  const data=await dbGet('translation_memory',`?${orgParam()}&order=created_at.desc&limit=5000`);
-  tmCache=data;updateTMUI();
-}
+async function loadTMCache(){ await updateTMUI(); }
+
 function tmKey(t){return t.trim().toLowerCase().replace(/\s+/g,' ');}
-function lookupTM(src,lang){const k=tmKey(src);return tmCache.find(e=>e.key===k&&e.lang===lang)?.target||null;}
+
+function lookupTM(src,lang){
+  const k=tmKey(src);
+  return tmCache.find(e=>e.key===k&&e.lang===lang)?.target||null;
+}
+
+async function lookupTMBatch(sources,lang){
+  if(!currentOrg||!sources.length) return {};
+  try{
+    const keys=sources.map(s=>tmKey(s));
+    const{data,error}=await supa.rpc('lookup_tm_batch',{org_id:currentOrg.id,source_keys:keys,target_lang:lang});
+    if(error) throw error;
+    const map={};
+    (data||[]).forEach(r=>{ map[r.key]=r.target; });
+    return map;
+  }catch(e){console.error('TM batch error:',e);return{};}
+}
+
 
 async function pushTMBatch(pairs,lang,source){
-  if(!currentOrg)return;
+  if(!currentOrg||!pairs.length)return;
+  // Use small rolling cache just for dedup within session
   const toIns=[];
-  pairs.forEach(({src,tgt})=>{const k=tmKey(src);if(tgt.trim()&&!tmCache.find(e=>e.key===k&&e.lang===lang)){toIns.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});tmCache.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});}});
+  pairs.forEach(({src,tgt})=>{
+    if(!src?.trim()||!tgt?.trim()) return;
+    const k=tmKey(src);
+    // Check local cache for dedup (avoid duplicate inserts in same session)
+    if(!tmCache.find(e=>e.key===k&&e.lang===lang)){
+      toIns.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});
+      // Keep rolling cache small - max 1000 entries
+      if(tmCache.length>1000) tmCache.shift();
+      tmCache.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});
+    }
+  });
   if(!toIns.length)return;
-  try{await dbPost('translation_memory',toIns);updateTMUI();}catch(e){console.error('TM push:',e);}
+  try{
+    await dbPost('translation_memory',toIns);
+    updateTMUI();
+  }catch(e){console.error('TM push:',e);}
 }
 
-function updateTMUI(){
-  const langs=[...new Set(tmCache.map(e=>e.lang))];
-  document.getElementById('tm-count').textContent=tmCache.length;
-  document.getElementById('tm-total').textContent=tmCache.length;
-  document.getElementById('tm-langs-count').textContent=langs.length;
+async function updateTMUI(){
   document.getElementById('tm-saved-count').textContent=tmApiSaved;
-  const sel=document.getElementById('tm-filter-lang');const cur=sel.value;
-  sel.innerHTML='<option value="all">Wszystkie języki</option>'+langs.map(l=>`<option value="${esc(l)}"${l===cur?' selected':''}>${esc(l)}</option>`).join('');
+  if(!currentOrg) return;
+  try{
+    const{data}=await supa.rpc('get_tm_stats',{org_id:currentOrg.id});
+    if(!data) return;
+    const total=data.total||0;
+    const langs=data.langs_list||[];
+    document.getElementById('tm-count').textContent=total;
+    document.getElementById('tm-total').textContent=total;
+    document.getElementById('tm-langs-count').textContent=data.langs||0;
+    const sel=document.getElementById('tm-filter-lang');const cur=sel?.value;
+    if(sel) sel.innerHTML='<option value="all">Wszystkie języki</option>'+langs.map(l=>`<option value="${esc(l)}"${l===cur?' selected':''}>${esc(l)}</option>`).join('');
+  }catch(e){console.error('TM stats error:',e);}
 }
 
-function renderTMList(){
+async function renderTMList(){
+  if(!currentOrg) return;
   const ft=(document.getElementById('tm-filter')?.value||'').toLowerCase();
   const fl=document.getElementById('tm-filter-lang')?.value||'all';
   const fs=document.getElementById('tm-filter-src')?.value||'all';
-  let data=tmCache;
-  if(ft)data=data.filter(e=>e.source.toLowerCase().includes(ft)||e.target.toLowerCase().includes(ft));
-  if(fl!=='all')data=data.filter(e=>e.lang===fl);
-  if(fs!=='all')data=data.filter(e=>e.src===fs);
   const list=document.getElementById('tm-list');
-  if(!data.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</div>';return;}
-  list.innerHTML=data.slice(0,300).map(e=>`<div class="tm-row"><div class="tm-col">${esc(e.source)}</div><div class="tm-col">${esc(e.target)}</div><div class="tm-col"><span class="badge b-gray" style="font-size:10px;">${esc(e.lang.substring(0,8))}</span></div><div class="tm-col"><span class="badge ${e.src==='pptx'?'b-orange':'b-blue'}" style="font-size:10px;">${esc(e.src||'xliff')}</span></div></div>`).join('');
+  list.innerHTML='<div style="padding:16px;text-align:center;color:#aaa;font-size:12px;"><div class="spinner" style="margin:0 auto 8px;"></div>Ładowanie...</div>';
+
+  try{
+    let params=`?${orgParam()}&order=created_at.desc&limit=200`;
+    if(fl!=='all') params+=`&lang=eq.${encodeURIComponent(fl)}`;
+    if(fs!=='all') params+=`&src=eq.${fs}`;
+    let data=await dbGet('translation_memory',params);
+    if(ft) data=data.filter(e=>e.source.toLowerCase().includes(ft)||e.target.toLowerCase().includes(ft));
+    if(!data.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</div>';return;}
+    list.innerHTML=data.map(e=>`<div class="tm-row"><div class="tm-col">${esc(e.source)}</div><div class="tm-col">${esc(e.target)}</div><div class="tm-col"><span class="badge b-gray" style="font-size:10px;">${esc(e.lang.substring(0,8))}</span></div><div class="tm-col"><span class="badge ${e.src==='pptx'?'b-orange':'b-blue'}" style="font-size:10px;">${esc(e.src||'xliff')}</span></div></div>`).join('');
+  }catch(e){list.innerHTML='<div style="padding:16px;text-align:center;color:#b32424;font-size:12px;">Błąd ładowania</div>';}
 }
 
 function exportTM(){download(JSON.stringify(tmCache,null,2),'translation-memory.json','application/json');}
@@ -1473,14 +1514,42 @@ async function clearTM(){
   tmCache=[];updateTMUI();renderTMList();
 }
 
-function applyTMToSegs(segs,lang){
+function applyTMToSegs(segs,lang){return 0;} // stub — use applyTMToSegsAsync
+
+async function applyTMToSegsAsync(segs,lang){
+  if(!segs.length) return 0;
+  // Collect all source texts for batch lookup
+  const sources=[];
+  segs.forEach(seg=>{
+    if(seg.status==='done') return;
+    if(seg.type==='plain') sources.push(seg.source);
+    else seg.textNodes.forEach(n=>{if(n.text.trim()) sources.push(n.text);});
+  });
+  if(!sources.length) return 0;
+
+  // Single batch query to DB
+  const tmMap=await lookupTMBatch([...new Set(sources)],lang);
+  if(!Object.keys(tmMap).length) return 0;
+
   let hits=0;
   segs.forEach(seg=>{
-    if(seg.status==='done')return;
-    if(seg.type==='plain'){const f=lookupTM(seg.source,lang);if(f){seg.target=f;seg.status='done';seg.fromTM=true;hits++;tmApiSaved++;}}
-    else{let any=false;seg.textNodes.forEach((n,i)=>{if(!seg.targets[i].text.trim()){const f=lookupTM(n.text,lang);if(f){seg.targets[i].text=f;any=true;}}});if(any&&seg.targets.every(t=>t.text.trim())){seg.status='done';seg.fromTM=true;hits++;tmApiSaved++;}}
+    if(seg.status==='done') return;
+    if(seg.type==='plain'){
+      const f=tmMap[tmKey(seg.source)];
+      if(f){seg.target=f;seg.status='done';seg.fromTM=true;hits++;tmApiSaved++;}
+    } else {
+      let any=false;
+      seg.textNodes.forEach((n,i)=>{
+        if(!seg.targets[i].text.trim()){
+          const f=tmMap[tmKey(n.text)];
+          if(f){seg.targets[i].text=f;any=true;}
+        }
+      });
+      if(any&&seg.targets.every(t=>t.text.trim())){seg.status='done';seg.fromTM=true;hits++;tmApiSaved++;}
+    }
   });
-  updateTMUI();return hits;
+  updateTMUI();
+  return hits;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1529,7 +1598,15 @@ function renderDict(){
   }).join('');
 }
 
-function buildDictPrompt(lang){const d=dictCache.filter(e=>e.translations?.[lang]);if(!d.length)return'';return'\n\nSłownik terminologii — stosuj obowiązkowo:\n'+d.map(e=>`  "${e.src}" → "${e.translations[lang]}"${e.note?' ('+e.note+')':''}`).join('\n');}
+function buildDictPromptForChunk(lang,chunkTexts){
+  const d=dictCache.filter(e=>e.translations?.[lang]);
+  if(!d.length)return'';
+  const combined=chunkTexts.length?chunkTexts.join(' ').toLowerCase():'';
+  const relevant=combined?d.filter(e=>combined.includes(e.src.toLowerCase())):d;
+  if(!relevant.length)return'';
+  return'\n\nSłownik terminologii — stosuj obowiązkowo:\n'+relevant.map(e=>`  "${e.src}" → "${e.translations[lang]}"${e.note?' ('+e.note+')':''}`).join('\n');
+}
+function buildDictPrompt(lang){return buildDictPromptForChunk(lang,[]);}
 
 function exportDictExcel(){
   if(!dictCache.length){alert('Słownik jest pusty.');return;}
@@ -1689,7 +1766,7 @@ async function loadXliff(file){
     if(datatype==='plaintext'){const text=(srcEl.textContent||'').trim();if(!text)return;const tgt=unit.querySelector('target');xliffSegs.push({id:unitId,unitId,type:'plain',source:text,target:tgt?(tgt.textContent||''):'',status:(tgt&&tgt.textContent.trim())?'done':'pending',fromTM:false});}
     else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:(g.textContent||'').replace(/^[ \t]+|[ \t]+$/g,'')})).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
   });
-  const tmHits=applyTMToSegs(xliffSegs,document.getElementById('target-lang').value);
+  const tmHits=await applyTMToSegsAsync(xliffSegs,document.getElementById('target-lang').value);
   const fc=xliffSegs.reduce((a,s)=>a+(s.type==='rich'?s.textNodes.length:1),0);
   document.getElementById('xliff-badges').style.display='flex';
   document.getElementById('xliff-fname').textContent=file.name;
@@ -1700,14 +1777,14 @@ async function loadXliff(file){
   renderXliffTable();updateXliffProgress();updateXliffCost();
 }
 
-function xliffLangChange(){
+async function xliffLangChange(){
   const lang=document.getElementById('target-lang').value;
   // Reset all targets to empty, then re-apply TM for new language
   xliffSegs.forEach(seg=>{
     if(seg.type==='plain'){seg.target='';seg.status='pending';seg.fromTM=false;}
     else{seg.targets.forEach(t=>t.text='');seg.status='pending';seg.fromTM=false;}
   });
-  applyTMToSegs(xliffSegs,lang);
+  await applyTMToSegsAsync(xliffSegs,lang);
   renderXliffTable();
   updateXliffProgress();
   updateXliffCost();
@@ -1751,9 +1828,10 @@ async function runXliffBatch(toT,apiKey){
   document.getElementById('xliff-pw').style.display='block';document.getElementById('xliff-pf').style.width='0%';
   const items=[];toT.forEach(seg=>{const idx=xliffSegs.indexOf(seg);if(seg.type==='plain')items.push({key:idx+'__p',segIndex:idx,gId:null,text:seg.source});else seg.textNodes.forEach(n=>items.push({key:idx+'__'+n.gId,segIndex:idx,gId:n.gId,text:n.text}));});
   setXS('Tłumaczenie '+items.length+' fragmentów na '+lang+'...');
-  const dict=buildDictPrompt(lang);let done=0,totalCostUsd=0;
+  let done=0,totalCostUsd=0;
   for(let i=0;i<items.length;i+=CHUNK){
     const chunk=items.slice(i,i+CHUNK);
+    const dict=buildDictPromptForChunk(lang,chunk.map(it=>it.text));
     const charsIn=chunk.reduce((a,it)=>a+it.text.length,0);
     const prompt=`Tłumacz materiały e-learningowe na: ${lang}.\nZachowaj zmienne %...% bez zmian.${dict}\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nFragmenty:\n${JSON.stringify(chunk.map(it=>({key:it.key,text:it.text})))}`;
     try{
@@ -1798,10 +1876,16 @@ async function loadPptx(file){
     const path=slideFiles[si],slideNum=parseInt(path.match(/slide(\d+)/)[1]);
     const xml=await pptxZip.file(path).async('string');
     const doc=domParser.parseFromString(xml,'application/xml');
-    const extractParas=(paras,keyPrefix,labelName)=>{paras.forEach((para,paraIdx)=>{const runs=Array.from(para.querySelectorAll('r'));if(!runs.length)return;const fullText=runs.map(r=>r.querySelector('t')?.textContent||'').join('');if(!fullText.trim())return;const key=`${keyPrefix}_p${paraIdx}`;const tmHit=lookupTM(fullText,lang);pptxSegs.push({key,slideNum,slideFile:path,keyPrefix,paraIdx,shapeName:labelName,source:fullText,target:tmHit||'',status:tmHit?'done':'pending',fromTM:!!tmHit});if(tmHit)tmApiSaved++;});};
+    const extractParas=(paras,keyPrefix,labelName)=>{paras.forEach((para,paraIdx)=>{const runs=Array.from(para.querySelectorAll('r'));if(!runs.length)return;const fullText=runs.map(r=>r.querySelector('t')?.textContent||'').join('');if(!fullText.trim())return;const key=`${keyPrefix}_p${paraIdx}`;pptxSegs.push({key,slideNum,slideFile:path,keyPrefix,paraIdx,shapeName:labelName,source:fullText,target:'',status:'pending',fromTM:false});});};
     Array.from(doc.querySelectorAll('sp')).forEach((shape,shapeIdx)=>{const shapeName=shape.querySelector('nvSpPr cNvPr')?.getAttribute('name')||`Shape${shapeIdx}`;extractParas(Array.from(shape.querySelectorAll('p')),`s${slideNum}_sh${shapeIdx}`,shapeName);});
     Array.from(doc.querySelectorAll('graphicFrame')).forEach((frame,frameIdx)=>{const frameName=frame.querySelector('nvGraphicFramePr cNvPr')?.getAttribute('name')||`Table${frameIdx}`;Array.from(frame.querySelectorAll('tr')).forEach((row,rowIdx)=>{Array.from(row.querySelectorAll('tc')).forEach((cell,cellIdx)=>{extractParas(Array.from(cell.querySelectorAll('p')),`s${slideNum}_tbl${frameIdx}_r${rowIdx}_c${cellIdx}`,`${frameName} [W${rowIdx+1}K${cellIdx+1}]`);});});});
   }
+  // Apply TM batch after all slides parsed
+  const pptxInitMap=await lookupTMBatch(pptxSegs.map(s=>s.source),lang);
+  pptxSegs.forEach(seg=>{
+    const f=pptxInitMap[tmKey(seg.source)];
+    if(f){seg.target=f;seg.status='done';seg.fromTM=true;tmApiSaved++;}
+  });
   const tmHits=pptxSegs.filter(s=>s.fromTM).length;
   document.getElementById('pptx-badges').style.display='flex';
   document.getElementById('pptx-fname').textContent=file.name;
@@ -1814,13 +1898,14 @@ async function loadPptx(file){
 }
 
 function buildPptxSlideFilter(count){const sel=document.getElementById('pptx-filter-slide');sel.innerHTML='<option value="all">Wszystkie slajdy</option>'+Array.from({length:count},(_,i)=>`<option value="${i+1}">Slajd ${i+1}</option>`).join('');}
-function pptxLangChange(){
+async function pptxLangChange(){
   const lang=document.getElementById('pptx-target-lang').value;
   // Reset all, then re-apply TM for new language
   pptxSegs.forEach(seg=>{seg.target='';seg.status='pending';seg.fromTM=false;});
+  const pptxTmMap=await lookupTMBatch(pptxSegs.map(s=>s.source),lang);
   pptxSegs.forEach(seg=>{
-    const f=lookupTM(seg.source,lang);
-    if(f){seg.target=f;seg.status='done';seg.fromTM=true;}
+    const f=pptxTmMap[tmKey(seg.source)];
+    if(f){seg.target=f;seg.status='done';seg.fromTM=true;tmApiSaved++;}
   });
   renderPptxTable();
   updatePptxProgress();
@@ -1863,9 +1948,10 @@ async function runPptxBatch(toT,apiKey){
   const histId=await createHistoryEntry(pptxFilename,'pptx',lang,pptxSegs.length,pptxSegs.filter(s=>s.fromTM).length);
   document.getElementById('pptx-pw').style.display='block';document.getElementById('pptx-pf').style.width='0%';
   setPPS('Tłumaczenie '+toT.length+' bloków na '+lang+'...');
-  const dict=buildDictPrompt(lang);let done=0,totalCostUsd=0;const C=25;
+  let done=0,totalCostUsd=0;const C=25;
   for(let i=0;i<toT.length;i+=C){
     const chunk=toT.slice(i,i+C);const charsIn=chunk.reduce((a,s)=>a+s.source.length,0);
+    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.text));
     const prompt=`Jesteś profesjonalnym tłumaczem prezentacji biznesowych i szkoleniowych. Przetłumacz na język: ${lang}.\n\nZasady:\n- Zachowaj styl oryginału (formalny/zwięzły)\n- Nie dodawaj ani nie skracaj tekstu\n- Zachowaj interpunkcję i wielkość liter\n- Zmienne %...% przepisuj bez zmian\n- Tytuły slajdów: zwięźle i rzeczowo\n- Punkty listy: zachowaj równoległy styl${dict}\n\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nBloki:\n${JSON.stringify(chunk.map(s=>({key:s.key,text:s.source})))}`;
     try{
       const res=JSON.parse((await apiCall(apiKey,prompt)).replace(/```json|```/g,'').trim());
@@ -2386,7 +2472,6 @@ function updateEditorProgress(lang){
 
 async function runAITranslation(toTranslate, lang, apiKey){
   if(!toTranslate.length) return;
-  const dict=buildDictPrompt(lang);
   const CHUNK=15; // smaller chunks = fewer missing segments
   let done=0, totalCostUsd=0;
   const failed=[]; // track failed segments for retry
@@ -2395,6 +2480,7 @@ async function runAITranslation(toTranslate, lang, apiKey){
     const chunk=toTranslate.slice(i,i+CHUNK);
     const charsIn=chunk.reduce((a,s)=>a+s.source_text.length,0);
 
+    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source_text));
     const prompt=`Jesteś tłumaczem materiałów e-learningowych. Przetłumacz KAŻDY segment na: ${lang}.
 WAŻNE:
 - Odpowiedź musi zawierać tłumaczenie dla KAŻDEGO podanego klucza
@@ -2550,11 +2636,19 @@ async function applyTMToProject(){
   const lang=currentProjectLang;
   if(!lang) return;
 
-  // Find all segments that have TM match
+  // Batch lookup all untranslated segments at once
+  const untranslated=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
+  if(!untranslated.length){
+    setAutosaveIndicator('Brak pustych segmentów.');
+    return;
+  }
+  setAutosaveIndicator('⏳ Sprawdzanie pamięci TM...');
+  const sources=[...new Set(untranslated.map(s=>s.source_text))];
+  const tmMap=await lookupTMBatch(sources,lang);
+
   const toUpdate=[];
-  for(const seg of currentProjectSegs){
-    if(seg.translations?.[lang]?.text) continue;
-    const found=lookupTM(seg.source_text,lang);
+  for(const seg of untranslated){
+    const found=tmMap[tmKey(seg.source_text)];
     if(!found) continue;
     toUpdate.push({seg,text:found});
   }
