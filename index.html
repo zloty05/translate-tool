@@ -187,6 +187,46 @@ a{color:#2451b3}
 .token-amount.empty{color:#f87171;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .token-label{font-size:10px;color:#666}
+/* PROJECTS */
+.proj-list{display:grid;gap:12px}
+.proj-card{background:#fff;border:1px solid #e8e6e0;border-radius:12px;padding:18px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.proj-card:hover{border-color:#1a1a1a;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.proj-card-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.proj-card-meta{font-size:12px;color:#888;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.proj-langs{display:flex;gap:6px;flex-wrap:wrap}
+.lang-pill{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.lp-pending{background:#f0ede8;color:#666}
+.lp-progress{background:#e8f0ff;color:#2451b3}
+.lp-review{background:#fff3e8;color:#b35a00}
+.lp-approved{background:#e6f5ec;color:#1a7a3f}
+.proj-actions{display:flex;gap:8px;margin-top:12px}
+/* PROJECT EDITOR */
+.editor-header{background:#fff;border-bottom:1px solid #e8e6e0;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.editor-back{cursor:pointer;font-size:13px;color:#888;display:flex;align-items:center;gap:4px}
+.editor-back:hover{color:#1a1a1a}
+.editor-title{font-size:16px;font-weight:600;flex:1}
+.editor-lang-tabs{display:flex;gap:0;border:1px solid #e8e6e0;border-radius:8px;overflow:hidden}
+.editor-lang-tab{padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer;border-right:1px solid #e8e6e0;background:#fafaf8;color:#888;transition:background .15s,color .15s}
+.editor-lang-tab:last-child{border-right:none}
+.editor-lang-tab.active{background:#1a1a1a;color:#fff}
+.editor-lang-tab.approved{background:#e6f5ec;color:#1a7a3f}
+.seg-editor-table{width:100%;border-collapse:collapse}
+.seg-editor-table th{font-size:11px;font-weight:600;color:#999;text-align:left;padding:8px 12px;border-bottom:1px solid #eee;background:#fafaf8;position:sticky;top:0;z-index:1}
+.seg-editor-table td{padding:6px 8px;border-bottom:1px solid #f0ede8;vertical-align:top}
+.seg-src{font-size:13px;color:#555;line-height:1.5;padding:6px 4px}
+.seg-textarea{width:100%;font-size:13px;font-family:inherit;border:1px solid #e0ddd8;border-radius:5px;padding:5px 8px;resize:vertical;min-height:48px;background:#fafaf8;color:#1a1a1a;transition:border-color .15s}
+.seg-textarea:focus{outline:none;border-color:#1a1a1a}
+.seg-textarea.changed{border-color:#f0c040;background:#fffdf0}
+.seg-textarea.saved{border-color:#2a8a4a;background:#f8fdf9}
+.status-pill{font-size:10px;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.sp-empty{background:#f0ede8;color:#888}
+.sp-translated{background:#e8f0ff;color:#2451b3}
+.sp-approved{background:#e6f5ec;color:#1a7a3f}
+.progress-bar-thin{height:4px;background:#eee;border-radius:2px;overflow:hidden;margin-top:4px}
+.progress-bar-fill{height:100%;background:#2a8a4a;border-radius:2px;transition:width .3s}
+.member-lang-tags{display:flex;gap:4px;flex-wrap:wrap}
+.lang-tag{font-size:11px;padding:2px 8px;border-radius:10px;background:#e8f0ff;color:#2451b3;cursor:pointer}
+.lang-tag.selected{background:#1a1a1a;color:#fff}
 /* SHOP */
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:4px}
 .pkg-card{border:1.5px solid #e8e6e0;border-radius:12px;padding:22px;text-align:center;cursor:pointer;transition:border-color .2s,transform .1s,box-shadow .2s;background:#fff}
@@ -341,6 +381,7 @@ a{color:#2451b3}
   <div class="tab" onclick="switchTab('dict')">📖 Słownik <span class="tab-badge" id="dict-count">0</span></div>
   <div class="tab" onclick="switchTab('tm')">🧠 Pamięć TM <span class="tab-badge" id="tm-count">0</span></div>
   <div class="tab" onclick="switchTab('team')">👥 Zespół</div>
+  <div class="tab" onclick="switchTab('projects')">📁 Projekty <span class="tab-badge" id="proj-count">0</span></div>
   <div class="tab" onclick="switchTab('shop')">🪙 Kup tokeny</div>
 </div>
 
@@ -613,6 +654,127 @@ a{color:#2451b3}
     </div>
   </div>
 </div></div>
+
+<!-- PROJECTS -->
+<div class="tab-content" id="tab-projects"><div class="container">
+
+  <!-- Project LIST view -->
+  <div id="proj-list-view">
+    <div class="toolbar" style="margin-bottom:14px;">
+      <div>
+        <h2 style="font-size:16px;font-weight:600;">Projekty tłumaczeń</h2>
+        <p style="font-size:12px;color:#888;margin-top:2px;">Zarządzaj projektami i śledź postęp tłumaczeń</p>
+      </div>
+      <button class="btn btn-dark hide-viewer" onclick="showNewProjectModal()">+ Nowy projekt</button>
+    </div>
+
+    <div class="filter-row">
+      <input type="search" id="proj-filter" placeholder="Szukaj projektu..." oninput="renderProjectList()" style="max-width:280px;" />
+      <select id="proj-filter-status" onchange="renderProjectList()" style="width:160px;">
+        <option value="all">Wszystkie statusy</option>
+        <option value="active">Aktywne</option>
+        <option value="completed">Ukończone</option>
+        <option value="archived">Zarchiwizowane</option>
+      </select>
+      <button class="btn btn-sm" onclick="loadProjects()">↺ Odśwież</button>
+    </div>
+
+    <div id="proj-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie projektów...</div>
+    <div class="proj-list" id="proj-list-container">
+      <div style="padding:32px;text-align:center;color:#ccc;font-size:13px;">Brak projektów — utwórz pierwszy projekt</div>
+    </div>
+  </div>
+
+  <!-- Project EDITOR view (hidden by default) -->
+  <div id="proj-editor-view" style="display:none;">
+    <div class="editor-header" style="margin:-22px -24px 20px;position:sticky;top:0;z-index:10;">
+      <span class="editor-back" onclick="closeProjectEditor()">← Powrót do projektów</span>
+      <span class="editor-title" id="editor-proj-title">—</span>
+      <div class="editor-lang-tabs" id="editor-lang-tabs"></div>
+      <div class="row" style="gap:8px;">
+        <span class="badge b-gray" id="editor-progress-badge">0/0</span>
+        <button class="btn btn-sm hide-viewer" id="editor-ai-btn" onclick="translateCurrentLangAI()">✦ Tłumacz AI</button>
+        <button class="btn btn-sm" onclick="exportProjectExcel()">↓ Excel</button>
+        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
+        <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
+        <button class="btn btn-dark btn-sm hide-viewer" id="editor-submit-btn" onclick="submitForReview()">Wyślij do weryfikacji</button>
+      </div>
+    </div>
+
+    <!-- Autosave indicator -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:#aaa;">
+      <span id="autosave-indicator">● Zmiany zapisywane automatycznie</span>
+    </div>
+
+    <div class="table-wrap">
+      <table class="seg-editor-table">
+        <thead><tr>
+          <th style="width:40px;">#</th>
+          <th style="width:45%;" id="editor-src-header">Źródło</th>
+          <th id="editor-tgt-header">Tłumaczenie</th>
+          <th style="width:90px;">Status</th>
+        </tr></thead>
+        <tbody id="editor-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div></div>
+
+<!-- NEW PROJECT MODAL -->
+<div id="new-proj-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;margin:20px;">
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">Nowy projekt tłumaczeń</h3>
+
+    <div class="auth-error" id="new-proj-error" style="display:none;"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div style="grid-column:1/-1;">
+        <label>Nazwa projektu *</label>
+        <input type="text" id="np-name" placeholder="np. Szkolenie BHP Q2 2025" />
+      </div>
+      <div>
+        <label>Język źródłowy *</label>
+        <select id="np-src-lang" style="width:100%;">
+          <option value="English">🇬🇧 Angielski (EN)</option>
+          <option value="Polish">🇵🇱 Polski (PL)</option>
+          <option value="German">🇩🇪 Niemiecki (DE)</option>
+        </select>
+      </div>
+      <div>
+        <label>Typ pliku</label>
+        <select id="np-file-type" style="width:100%;">
+          <option value="xliff">XLIFF (Articulate Storyline)</option>
+          <option value="pptx">PowerPoint (.pptx)</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1;">
+        <label>Opis (opcjonalnie)</label>
+        <input type="text" id="np-desc" placeholder="np. Wersja dla działu produkcji" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="margin-bottom:8px;display:block;">Języki docelowe i tłumacze *</label>
+      <div id="np-lang-assignments" style="display:grid;gap:8px;"></div>
+      <button class="btn btn-sm" style="margin-top:8px;" onclick="addLangAssignment()">+ Dodaj język</button>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label>Wgraj plik źródłowy *</label>
+      <div class="drop-zone" id="np-drop" style="padding:20px;" onclick="document.getElementById('np-file').click()"
+        ondragover="dzOver(event,'np-drop')" ondragleave="dzLeave('np-drop')" ondrop="dzDrop(event,'np-drop',npFileSelected)">
+        <input type="file" id="np-file" accept=".xliff,.xlf,.xml,.pptx" onchange="npFileSelected(event.target.files[0])" />
+        <p style="font-size:13px;color:#aaa;" id="np-file-label">Kliknij lub przeciągnij plik</p>
+      </div>
+    </div>
+
+    <div class="row" style="justify-content:flex-end;gap:8px;">
+      <button class="btn btn-sm" onclick="closeNewProjectModal()">Anuluj</button>
+      <button class="btn btn-dark" onclick="createProject()">Utwórz projekt →</button>
+    </div>
+  </div>
+</div>
 
 <!-- SHOP -->
 <div class="tab-content" id="tab-shop"><div class="container">
@@ -1002,7 +1164,7 @@ document.addEventListener('click',e=>{
 // TABS
 // ══════════════════════════════════════════════════════════
 function switchTab(name){
-  const names=['xliff','pptx','history','dict','tm','team','shop'];
+  const names=['xliff','pptx','projects','history','dict','tm','team','shop'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
@@ -1011,6 +1173,7 @@ function switchTab(name){
   if(name==='history')loadHistory();
   if(name==='team')loadTeam();
   if(name==='shop'){updateShopBalance();loadTokenHistory();}
+  if(name==='projects'){loadProjects();}
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1050,25 +1213,80 @@ async function loadTeam(){
   document.getElementById('team-loading').style.display='none';
 }
 
+// ══════════════════════════════════════════════════════════
+// TEAM — language assignments per member
+// ══════════════════════════════════════════════════════════
+async function saveMemberLanguages(memberId, langs){
+  try{
+    await dbPatch('organization_members',{languages:langs},`?id=eq.${memberId}`);
+    console.log('Languages saved:', langs);
+  }catch(e){ console.error('Save languages error:', e); }
+}
+
+async function saveMemberTokenLimit(memberId, limit){
+  try{
+    const val = limit===''||limit===null ? null : parseInt(limit);
+    await dbPatch('organization_members',{monthly_token_limit:val},`?id=eq.${memberId}`);
+  }catch(e){ alert('Błąd zapisu limitu: '+e.message); }
+}
+
 function renderTeamList(members){
   const roles={admin:'🔑 Admin',translator:'✏️ Translator',viewer:'👁 Viewer'};
   const roleClass={admin:'role-admin',translator:'role-translator',viewer:'role-viewer'};
   const list=document.getElementById('team-list');
   if(!members.length){list.innerHTML='<div style="padding:16px;text-align:center;color:#ccc;font-size:13px;">Brak członków</div>';return;}
-  list.innerHTML=`<div class="member-row" style="background:#fafaf8;font-size:11px;font-weight:600;color:#999;">
-    <div class="member-col">Użytkownik</div><div class="member-col">Rola</div><div class="member-col">Dołączył</div><div class="member-col"></div>
-  </div>`+
-  members.map(m=>{
+  const isAdmin=currentRole==='admin';
+
+  list.innerHTML=members.map(m=>{
     const isMe=m.user_id===currentUser.id;
-    const name=m.profiles?.full_name||m.user_id.substring(0,8)+'...';
-    const canRemove=currentRole==='admin'&&!isMe;
-    return`<div class="member-row">
-      <div class="member-col"><strong>${esc(name)}</strong>${isMe?' <span style="font-size:10px;color:#888;">(Ty)</span>':''}</div>
-      <div class="member-col"><span class="role-badge ${roleClass[m.role]||''}">${roles[m.role]||m.role}</span></div>
-      <div class="member-col" style="color:#aaa;font-size:11px;">${fmtDate(m.created_at)}</div>
-      <div class="member-col">${canRemove?`<button class="btn btn-red btn-sm" onclick="removeMember('${m.id}')">Usuń</button>`:''}</div>
+    const name=m.profiles?.full_name||(m.user_id.substring(0,8)+'...');
+    const canRemove=isAdmin&&!isMe;
+    const memberLangs=m.languages||[];
+    const langPills=PRIMARY.map(l=>`<span class="lang-tag${memberLangs.includes(l.code)?' selected':''}"
+      onclick="${isAdmin?`toggleMemberLang('${m.id}','${l.code}',this)`:'return false'}"
+      title="${l.label}">${l.flag} ${l.code.substring(0,2)}</span>`).join('');
+    const tokenLimit=m.monthly_token_limit;
+    const tokenUsed=m.tokens_used_this_month||0;
+    const limitPct=tokenLimit?Math.min(100,Math.round(tokenUsed/tokenLimit*100)):0;
+
+    return`<div style="border-bottom:1px solid #f0ede8;padding:12px 14px;">
+      <div style="display:grid;grid-template-columns:1fr 100px 90px;align-items:start;gap:8px;margin-bottom:10px;">
+        <div>
+          <strong style="font-size:13px;">${esc(name)}</strong>
+          ${isMe?'<span style="font-size:10px;color:#888;"> (Ty)</span>':''}
+        </div>
+        <div><span class="role-badge ${roleClass[m.role]||''}">${roles[m.role]||m.role}</span></div>
+        <div>${canRemove?`<button class="btn btn-red btn-sm" onclick="removeMember('${m.id}')">Usuń</button>`:''}</div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Języki:</div>
+        <div class="member-lang-tags">${langPills}</div>
+      </div>
+      ${m.role==='translator'?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="font-size:11px;color:#888;">Limit tokenów/mies.:</div>
+        ${isAdmin?`<input type="number" value="${tokenLimit||''}" placeholder="bez limitu"
+          style="width:120px;padding:4px 8px;font-size:12px;border:1px solid #ddd;border-radius:5px;"
+          onchange="saveMemberTokenLimit('${m.id}',this.value)" />`
+          :`<span style="font-size:12px;">${tokenLimit?tokenLimit.toLocaleString('pl-PL')+' tokenów':'bez limitu'}</span>`}
+        ${tokenLimit?`<div style="flex:1;min-width:100px;">
+          <div style="font-size:11px;color:#888;">${tokenUsed.toLocaleString('pl-PL')} / ${tokenLimit.toLocaleString('pl-PL')} (${limitPct}%)</div>
+          <div class="progress-bar-thin"><div class="progress-bar-fill" style="width:${limitPct}%;background:${limitPct>90?'#b32424':'#2a8a4a'};"></div></div>
+        </div>`:''}
+      </div>`:''}
     </div>`;
   }).join('');
+}
+
+async function toggleMemberLang(memberId, langCode, el){
+  const member = await dbGet('organization_members',`?id=eq.${memberId}`);
+  if(!member.length) return;
+  const langs = member[0].languages || [];
+  const idx = langs.indexOf(langCode);
+  if(idx>=0) langs.splice(idx,1); else langs.push(langCode);
+  el.classList.toggle('selected', langs.includes(langCode));
+  await saveMemberLanguages(memberId, langs);
+  // Update cache
+  teamMembersCache = teamMembersCache||[];
 }
 
 function renderPendingInvites(pending){
@@ -1630,6 +1848,523 @@ function applyPptxTranslations(xml,segs){
   Array.from(doc.querySelectorAll('sp')).forEach((shape,shapeIdx)=>{Array.from(shape.querySelectorAll('p')).forEach((para,paraIdx)=>{const seg=findSeg(`s${slideNum}_sh${shapeIdx}_p${paraIdx}`);if(!seg||!seg.target.trim())return;applyRunText(para,seg.target);});});
   Array.from(doc.querySelectorAll('graphicFrame')).forEach((frame,frameIdx)=>{Array.from(frame.querySelectorAll('tr')).forEach((row,rowIdx)=>{Array.from(row.querySelectorAll('tc')).forEach((cell,cellIdx)=>{Array.from(cell.querySelectorAll('p')).forEach((para,paraIdx)=>{const seg=findSeg(`s${slideNum}_tbl${frameIdx}_r${rowIdx}_c${cellIdx}_p${paraIdx}`);if(!seg||!seg.target.trim())return;applyRunText(para,seg.target);});});});});
   return xmlSer.serializeToString(doc);
+}
+
+
+// ══════════════════════════════════════════════════════════
+// PROJECTS SYSTEM
+// ══════════════════════════════════════════════════════════
+let projectsCache = [];
+let currentProject = null;
+let currentProjectLang = null;
+let currentProjectSegs = [];
+let currentAssignments = [];
+let autosaveTimers = {};
+let npFile = null;
+let npLangRows = [];
+let teamMembersCache = [];
+
+// ── PROJECT LIST ──
+
+async function loadProjects(){
+  if(!currentOrg) return;
+  document.getElementById('proj-loading').style.display='flex';
+  try{
+    projectsCache = await dbGet('projects',`?organization_id=eq.${currentOrg.id}&order=created_at.desc`);
+    // Load assignments for all projects
+    if(projectsCache.length){
+      const ids = projectsCache.map(p=>p.id).join(',');
+      const assignments = await dbGet('project_language_assignments',`?project_id=in.(${ids})`);
+      projectsCache.forEach(p=>{ p.assignments=assignments.filter(a=>a.project_id===p.id); });
+    }
+    document.getElementById('proj-count').textContent = projectsCache.length;
+    renderProjectList();
+  }catch(e){ console.error('loadProjects error:',e); }
+  document.getElementById('proj-loading').style.display='none';
+}
+
+function renderProjectList(){
+  const ft=(document.getElementById('proj-filter')?.value||'').toLowerCase();
+  const fs=document.getElementById('proj-filter-status')?.value||'all';
+  let data=projectsCache;
+  if(ft) data=data.filter(p=>p.name.toLowerCase().includes(ft)||(p.description||'').toLowerCase().includes(ft));
+  if(fs!=='all') data=data.filter(p=>p.status===fs);
+  const container=document.getElementById('proj-list-container');
+  if(!data.length){
+    container.innerHTML='<div style="padding:32px;text-align:center;color:#ccc;font-size:13px;">Brak projektów — utwórz pierwszy projekt klikając "+ Nowy projekt"</div>';
+    return;
+  }
+  container.innerHTML=data.map(p=>{
+    const asgn=p.assignments||[];
+    const langPills=asgn.map(a=>`<span class="lang-pill lp-${a.status}">${getLangFlag(a.lang)} ${a.lang.substring(0,2).toUpperCase()} <span style="font-size:10px;">${statusLabel(a.status)}</span></span>`).join('');
+    const done=asgn.filter(a=>a.status==='approved').length;
+    const total=asgn.length;
+    const pct=total>0?Math.round(done/total*100):0;
+    return`<div class="proj-card" onclick="openProject('${p.id}')">
+      <div class="proj-card-title">${esc(p.name)}</div>
+      <div class="proj-card-meta">
+        <span>📄 ${p.file_type?.toUpperCase()||'—'}</span>
+        <span>🌐 Źródło: ${getLangFlag(p.source_lang)} ${esc(p.source_lang)}</span>
+        <span>📅 ${fmtDate(p.created_at)}</span>
+        <span>${done}/${total} języków zatwierdzonych</span>
+      </div>
+      <div class="proj-langs">${langPills||'<span style="color:#ccc;font-size:12px;">Brak przypisanych języków</span>'}</div>
+      <div class="progress-bar-thin" style="margin-top:10px;"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      ${p.description?`<p style="font-size:12px;color:#aaa;margin-top:8px;">${esc(p.description)}</p>`:''}
+    </div>`;
+  }).join('');
+}
+
+function statusLabel(s){ return {pending:'Oczekuje',in_progress:'W toku',review:'Do weryfikacji',approved:'Zatwierdzone'}[s]||s; }
+function getLangFlag(lang){ return LANGS.find(l=>l.code===lang)?.flag||'🌐'; }
+
+// ── NEW PROJECT MODAL ──
+
+function showNewProjectModal(){
+  document.getElementById('new-proj-modal').style.display='flex';
+  npLangRows=[];
+  document.getElementById('np-lang-assignments').innerHTML='';
+  document.getElementById('np-name').value='';
+  document.getElementById('np-desc').value='';
+  document.getElementById('np-file-label').textContent='Kliknij lub przeciągnij plik';
+  document.getElementById('new-proj-error').style.display='none';
+  npFile=null;
+  addLangAssignment();
+}
+
+function closeNewProjectModal(){
+  document.getElementById('new-proj-modal').style.display='none';
+}
+
+function npFileSelected(file){
+  npFile=file;
+  document.getElementById('np-file-label').textContent='✓ '+file.name;
+  // Auto-detect file type
+  if(file.name.endsWith('.pptx')) document.getElementById('np-file-type').value='pptx';
+  else document.getElementById('np-file-type').value='xliff';
+}
+
+async function addLangAssignment(){
+  // Load team members for dropdown
+  if(!teamMembersCache.length && currentOrg){
+    teamMembersCache = await dbGet('organization_members',`?organization_id=eq.${currentOrg.id}`);
+    const profiles = await dbGet('profiles',`?id=in.(${teamMembersCache.map(m=>m.user_id).join(',')})`);
+    teamMembersCache = teamMembersCache.map(m=>({...m,profile:profiles.find(p=>p.id===m.user_id)}));
+  }
+  const rowId = 'la-'+Date.now();
+  npLangRows.push(rowId);
+  const memberOptions = teamMembersCache
+    .filter(m=>m.role!=='viewer')
+    .map(m=>`<option value="${m.user_id}">${esc(m.profile?.full_name||m.user_id.substring(0,8))} (${m.role})</option>`)
+    .join('');
+  const langOptions = PRIMARY.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('');
+  const div=document.createElement('div');
+  div.id=rowId;
+  div.style.cssText='display:grid;grid-template-columns:1fr 1fr 32px;gap:8px;align-items:center;';
+  div.innerHTML=`
+    <select class="la-lang" style="width:100%;">${langOptions}</select>
+    <select class="la-user" style="width:100%;"><option value="">— bez przypisania —</option>${memberOptions}</select>
+    <button class="del-btn" onclick="document.getElementById('${rowId}').remove()" style="font-size:18px;">×</button>`;
+  document.getElementById('np-lang-assignments').appendChild(div);
+}
+
+async function createProject(){
+  const name=document.getElementById('np-name').value.trim();
+  const srcLang=document.getElementById('np-src-lang').value;
+  const fileType=document.getElementById('np-file-type').value;
+  const desc=document.getElementById('np-desc').value.trim();
+  const errEl=document.getElementById('new-proj-error');
+
+  if(!name){ errEl.textContent='Wpisz nazwę projektu.'; errEl.style.display='block'; return; }
+  if(!npFile){ errEl.textContent='Wgraj plik źródłowy.'; errEl.style.display='block'; return; }
+
+  // Collect lang assignments
+  const assignments=[];
+  document.querySelectorAll('#np-lang-assignments > div').forEach(row=>{
+    const lang=row.querySelector('.la-lang')?.value;
+    const userId=row.querySelector('.la-user')?.value;
+    if(lang) assignments.push({lang, assigned_user_id:userId||null});
+  });
+  if(!assignments.length){ errEl.textContent='Dodaj co najmniej jeden język docelowy.'; errEl.style.display='block'; return; }
+
+  errEl.style.display='none';
+
+  try{
+    // Create project
+    const[proj]=await dbPost('projects',{
+      name, description:desc, source_lang:srcLang, file_type:fileType,
+      original_filename:npFile.name, organization_id:currentOrg.id, created_by:currentUser.id
+    });
+
+    // Parse file and create segments
+    let segments=[];
+    if(fileType==='xliff') segments=await parseXliffForProject(npFile, srcLang);
+    else segments=await parsePptxForProject(npFile, srcLang);
+
+    // Insert segments in batches
+    const BATCH=50;
+    for(let i=0;i<segments.length;i+=BATCH){
+      const batch=segments.slice(i,i+BATCH).map((s,idx)=>({
+        project_id:proj.id, segment_key:s.key, source_text:s.source,
+        translations:{}, segment_order:i+idx, metadata:s.metadata||{}
+      }));
+      await dbPost('project_segments',batch);
+    }
+
+    // Create language assignments
+    for(const a of assignments){
+      await dbPost('project_language_assignments',{
+        project_id:proj.id, lang:a.lang,
+        assigned_user_id:a.assigned_user_id||null, status:'pending'
+      });
+    }
+
+    closeNewProjectModal();
+    await loadProjects();
+    // Open the new project
+    openProject(proj.id);
+  }catch(e){ errEl.textContent='Błąd: '+e.message; errEl.style.display='block'; }
+}
+
+// ── PARSE FILES FOR PROJECT ──
+
+async function parseXliffForProject(file, srcLang){
+  const xml=await readFile(file);
+  const doc=domParser.parseFromString(xml,'application/xml');
+  const units=Array.from(doc.querySelectorAll('trans-unit'));
+  const segments=[];
+  units.forEach(unit=>{
+    const unitId=unit.getAttribute('id')||'';
+    const datatype=unit.getAttribute('datatype')||'';
+    const srcEl=unit.querySelector('source');
+    if(!srcEl) return;
+    if(datatype==='plaintext'){
+      const text=(srcEl.textContent||'').trim();
+      if(!text) return;
+      segments.push({key:unitId, source:text, metadata:{type:'plain',unitId}});
+    } else {
+      const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));
+      const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})).filter(n=>n.text.trim());
+      if(!textNodes.length) return;
+      // For rich segments: combine all text nodes into one display, keep metadata
+      const combinedText=textNodes.map(n=>n.text).join(' ');
+      segments.push({key:unitId, source:combinedText, metadata:{type:'rich',unitId,textNodes}});
+    }
+  });
+  return segments;
+}
+
+async function parsePptxForProject(file, srcLang){
+  const buf=await readFile(file,'array');
+  const zip=await JSZip.loadAsync(buf);
+  const segments=[];
+  const slideFiles=Object.keys(zip.files).filter(n=>n.match(/^ppt\/slides\/slide\d+\.xml$/)).sort((a,b)=>parseInt(a.match(/\d+/)[0])-parseInt(b.match(/\d+/)[0]));
+  for(let si=0;si<slideFiles.length;si++){
+    const path=slideFiles[si];
+    const slideNum=parseInt(path.match(/slide(\d+)/)[1]);
+    const xml=await zip.file(path).async('string');
+    const doc=domParser.parseFromString(xml,'application/xml');
+    const extract=(paras,keyPrefix,shapeName)=>{
+      paras.forEach((para,pi)=>{
+        const runs=Array.from(para.querySelectorAll('r'));
+        if(!runs.length) return;
+        const text=runs.map(r=>r.querySelector('t')?.textContent||'').join('');
+        if(!text.trim()) return;
+        segments.push({key:`${keyPrefix}_p${pi}`,source:text,metadata:{slideNum,shapeName,keyPrefix,paraIdx:pi}});
+      });
+    };
+    Array.from(doc.querySelectorAll('sp')).forEach((shape,si)=>{
+      const name=shape.querySelector('nvSpPr cNvPr')?.getAttribute('name')||`Shape${si}`;
+      extract(Array.from(shape.querySelectorAll('p')),`s${slideNum}_sh${si}`,name);
+    });
+    Array.from(doc.querySelectorAll('graphicFrame')).forEach((frame,fi)=>{
+      const name=frame.querySelector('nvGraphicFramePr cNvPr')?.getAttribute('name')||`Table${fi}`;
+      Array.from(frame.querySelectorAll('tr')).forEach((row,ri)=>{
+        Array.from(row.querySelectorAll('tc')).forEach((cell,ci)=>{
+          extract(Array.from(cell.querySelectorAll('p')),`s${slideNum}_tbl${fi}_r${ri}_c${ci}`,`${name}[W${ri+1}K${ci+1}]`);
+        });
+      });
+    });
+  }
+  return segments;
+}
+
+// ── PROJECT EDITOR ──
+
+async function openProject(projectId){
+  const proj=projectsCache.find(p=>p.id===projectId);
+  if(!proj) return;
+  currentProject=proj;
+  currentAssignments=proj.assignments||[];
+
+  // Load segments
+  const segs=await dbGet('project_segments',`?project_id=eq.${projectId}&order=segment_order.asc`);
+  currentProjectSegs=segs;
+
+  // Show editor
+  document.getElementById('proj-list-view').style.display='none';
+  document.getElementById('proj-editor-view').style.display='block';
+  document.getElementById('editor-proj-title').textContent=proj.name;
+
+  // Build language tabs — admin sees all, translator sees only their langs
+  buildEditorLangTabs();
+}
+
+function buildEditorLangTabs(){
+  const tabs=document.getElementById('editor-lang-tabs');
+  let langs=currentAssignments;
+
+  // Translators only see assigned languages
+  if(currentRole==='translator'){
+    langs=currentAssignments.filter(a=>a.assigned_user_id===currentUser.id);
+  }
+
+  if(!langs.length){
+    tabs.innerHTML='<span style="font-size:12px;color:#aaa;padding:6px 12px;">Brak przypisanych języków</span>';
+    return;
+  }
+
+  tabs.innerHTML=langs.map((a,i)=>`<div class="editor-lang-tab${a.status==='approved'?' approved':''}" onclick="switchEditorLang('${a.lang}')" id="etab-${a.lang}">
+    ${getLangFlag(a.lang)} ${a.lang.substring(0,2).toUpperCase()}
+    <span class="status-pill sp-${a.status==='approved'?'approved':a.status==='review'?'translated':'empty'}" style="margin-left:4px;">${statusLabel(a.status)}</span>
+  </div>`).join('');
+
+  // Switch to first language
+  switchEditorLang(langs[0].lang);
+}
+
+function switchEditorLang(lang){
+  currentProjectLang=lang;
+  document.querySelectorAll('.editor-lang-tab').forEach(t=>t.classList.remove('active'));
+  const tab=document.getElementById('etab-'+lang);
+  if(tab) tab.classList.add('active');
+
+  const proj=currentProject;
+  document.getElementById('editor-src-header').textContent=`Źródło (${getLangFlag(proj.source_lang)} ${proj.source_lang})`;
+  document.getElementById('editor-tgt-header').textContent=`Tłumaczenie (${getLangFlag(lang)} ${lang})`;
+
+  renderEditorTable(lang);
+  updateEditorProgress(lang);
+
+  // Update submit button
+  const assignment=currentAssignments.find(a=>a.lang===lang);
+  const submitBtn=document.getElementById('editor-submit-btn');
+  if(submitBtn){
+    if(assignment?.status==='approved'){
+      submitBtn.textContent='✓ Zatwierdzone';submitBtn.disabled=true;
+    } else if(assignment?.status==='review'){
+      submitBtn.textContent='W weryfikacji';submitBtn.disabled=currentRole!=='admin';
+      if(currentRole==='admin'){ submitBtn.textContent='✓ Zatwierdź'; submitBtn.disabled=false; submitBtn.onclick=()=>approveLanguage(lang); }
+    } else {
+      submitBtn.textContent='Wyślij do weryfikacji';submitBtn.disabled=false;submitBtn.onclick=()=>submitForReview(lang);
+    }
+  }
+}
+
+function renderEditorTable(lang){
+  const tbody=document.getElementById('editor-tbody');
+  const canEdit=currentRole!=='viewer';
+  const assignment=currentAssignments.find(a=>a.lang===lang);
+  const isLocked=assignment?.status==='approved';
+
+  tbody.innerHTML='';
+  currentProjectSegs.forEach((seg,i)=>{
+    const tData=seg.translations?.[lang];
+    const tText=tData?.text||'';
+    const tStatus=tData?.status||'empty';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="color:#ccc;font-size:11px;text-align:center;">${i+1}</td>
+      <td><div class="seg-src">${esc(seg.source_text)}</div></td>
+      <td><textarea class="seg-textarea" id="seg-${seg.id}"
+        rows="2" ${(!canEdit||isLocked)?'readonly':''}
+        onInput="onSegInput('${seg.id}','${lang}',this)"
+        >${esc(tText)}</textarea></td>
+      <td><span class="status-pill sp-${tStatus==='translated'?'translated':tStatus==='approved'?'approved':'empty'}" id="spill-${seg.id}-${lang}">
+        ${tStatus==='translated'?'Tłum.':tStatus==='approved'?'OK':'Puste'}
+      </span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function onSegInput(segId, lang, textarea){
+  // Mark as changed visually
+  textarea.className='seg-textarea changed';
+  // Autosave after 1.5s of inactivity
+  clearTimeout(autosaveTimers[segId+lang]);
+  autosaveTimers[segId+lang]=setTimeout(()=>saveSegment(segId,lang,textarea),1500);
+}
+
+async function saveSegment(segId, lang, textarea){
+  const text=textarea.value;
+  try{
+    const{data,error}=await supa.rpc('save_segment_translation',{seg_id:segId,lang,new_text:text});
+    if(error) throw new Error(error.message);
+    textarea.className='seg-textarea saved';
+    setTimeout(()=>textarea.className='seg-textarea',2000);
+    // Update local cache
+    const seg=currentProjectSegs.find(s=>s.id===segId);
+    if(seg){
+      if(!seg.translations) seg.translations={};
+      seg.translations[lang]={text,status:text?'translated':'empty',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+    }
+    // Update status pill
+    const pill=document.getElementById(`spill-${segId}-${lang}`);
+    if(pill){
+      pill.className='status-pill '+(text?'sp-translated':'sp-empty');
+      pill.textContent=text?'Tłum.':'Puste';
+    }
+    updateEditorProgress(lang);
+    setAutosaveIndicator('● Zapisano '+new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    textarea.className='seg-textarea';
+    setAutosaveIndicator('⚠ Błąd zapisu: '+e.message);
+  }
+}
+
+function setAutosaveIndicator(msg){
+  const el=document.getElementById('autosave-indicator');
+  if(el) el.textContent=msg;
+}
+
+function updateEditorProgress(lang){
+  const total=currentProjectSegs.length;
+  const done=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).length;
+  const badge=document.getElementById('editor-progress-badge');
+  if(badge){ badge.textContent=`${done}/${total} przetłumaczone`; badge.className='badge '+(done===total?'b-green':'b-yellow'); }
+}
+
+async function translateCurrentLangAI(){
+  const apiKey=getApiKey();
+  if(!apiKey){ alert('Wpisz klucz API w zakładce XLIFF lub PPTX.'); return; }
+  const lang=currentProjectLang;
+  if(!lang){ alert('Wybierz język.'); return; }
+
+  const toTranslate=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
+  if(!toTranslate.length){ alert('Wszystkie segmenty już przetłumaczone.'); return; }
+
+  const totalChars=toTranslate.reduce((a,s)=>a+s.source_text.length,0);
+  const needed=estimateTokensForTranslation(totalChars);
+  if(!checkTokenBalance(needed)) return;
+
+  const dict=buildDictPrompt(lang);
+  const CHUNK=25;
+  let done=0, totalCostUsd=0;
+  setAutosaveIndicator('⏳ Tłumaczenie AI w toku...');
+
+  // Update assignment status
+  await dbPatch('project_language_assignments',{status:'in_progress',ai_translated_at:new Date().toISOString()},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
+  const asgn=currentAssignments.find(a=>a.lang===lang);
+  if(asgn) asgn.status='in_progress';
+
+  for(let i=0;i<toTranslate.length;i+=CHUNK){
+    const chunk=toTranslate.slice(i,i+CHUNK);
+    const charsIn=chunk.reduce((a,s)=>a+s.source_text.length,0);
+    const prompt=`Przetłumacz segmenty kursu e-learningowego/prezentacji na: ${lang}.
+Zachowaj styl, zwięzłość, zmienne %...% bez zmian.${dict}
+JSON: [{"key":"...","translation":"..."}] — bez markdown.
+
+Segmenty:
+${JSON.stringify(chunk.map(s=>({key:s.id,text:s.source_text})))}`;
+
+    try{
+      const res=JSON.parse((await apiCall(apiKey,prompt)).replace(/```json|```/g,'').trim());
+      const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
+      totalCostUsd+=((charsIn/CPT)/1e6)*PRICE_IN+((charsOut/CPT)/1e6)*PRICE_OUT;
+
+      for(const r of res){
+        const seg=currentProjectSegs.find(s=>s.id===r.key);
+        if(!seg||!r.translation) continue;
+        // Save to DB
+        await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:r.translation});
+        if(!seg.translations) seg.translations={};
+        seg.translations[lang]={text:r.translation,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+        // Update textarea if visible
+        const ta=document.getElementById('seg-'+seg.id);
+        if(ta){ ta.value=r.translation; ta.className='seg-textarea saved'; setTimeout(()=>ta.className='seg-textarea',2000); }
+        const pill=document.getElementById(`spill-${seg.id}-${lang}`);
+        if(pill){ pill.className='status-pill sp-translated'; pill.textContent='Tłum.'; }
+      }
+    }catch(err){ console.error('AI translate error:',err); }
+
+    done+=chunk.length;
+    updateEditorProgress(lang);
+    await sleep(150);
+  }
+
+  await deductTokens(totalChars, currentProject.name+' → '+lang, lang);
+  setAutosaveIndicator(`✓ Tłumaczenie AI ukończone. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
+}
+
+async function submitForReview(lang){
+  if(!lang) lang=currentProjectLang;
+  if(!confirm(`Wysłać język ${lang} do weryfikacji?`)) return;
+  try{
+    await dbPatch('project_language_assignments',{status:'review',submitted_at:new Date().toISOString()},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
+    const asgn=currentAssignments.find(a=>a.lang===lang);
+    if(asgn) asgn.status='review';
+    switchEditorLang(lang);
+    setAutosaveIndicator('✓ Wysłano do weryfikacji');
+  }catch(e){ alert('Błąd: '+e.message); }
+}
+
+async function approveLanguage(lang){
+  if(!confirm(`Zatwierdzić tłumaczenie ${lang}?`)) return;
+  try{
+    await dbPatch('project_language_assignments',{status:'approved',approved_at:new Date().toISOString(),approved_by:currentUser.id},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
+    const asgn=currentAssignments.find(a=>a.lang===lang);
+    if(asgn) asgn.status='approved';
+    switchEditorLang(lang);
+    setAutosaveIndicator('✓ Język zatwierdzony');
+  }catch(e){ alert('Błąd: '+e.message); }
+}
+
+function closeProjectEditor(){
+  document.getElementById('proj-editor-view').style.display='none';
+  document.getElementById('proj-list-view').style.display='block';
+  currentProject=null; currentProjectLang=null; currentProjectSegs=[];
+  autosaveTimers={};
+  loadProjects();
+}
+
+// ── PROJECT EXCEL EXPORT/IMPORT ──
+
+function exportProjectExcel(){
+  if(!currentProject||!currentProjectLang) return;
+  const lang=currentProjectLang;
+  const rows=[['#','Klucz segmentu','Tekst źródłowy ('+currentProject.source_lang+')','Tłumaczenie ('+lang+')','Status']];
+  currentProjectSegs.forEach((seg,i)=>{
+    const t=seg.translations?.[lang];
+    rows.push([i+1, seg.segment_key, seg.source_text, t?.text||'', t?.status||'empty']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:5},{wch:20},{wch:45},{wch:45},{wch:12}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Tłumaczenia');
+  XLSX.writeFile(wb,`${currentProject.name}_${lang}.xlsx`);
+}
+
+async function importProjectExcel(e){
+  const f=e.target.files[0]; if(!f) return;
+  const buf=await readFile(f,'array');
+  const rows=XLSX.utils.sheet_to_json(XLSX.read(buf,{type:'array'}).Sheets[XLSX.read(buf,{type:'array'}).SheetNames[0]],{header:1});
+  const lang=currentProjectLang;
+  let n=0;
+  for(const row of rows.slice(1)){
+    const key=String(row[1]||'').trim();
+    const translation=String(row[3]||'').trim();
+    if(!key||!translation) continue;
+    const seg=currentProjectSegs.find(s=>s.segment_key===key);
+    if(!seg) continue;
+    await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:translation});
+    if(!seg.translations) seg.translations={};
+    seg.translations[lang]={text:translation,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+    n++;
+  }
+  renderEditorTable(lang);
+  updateEditorProgress(lang);
+  alert('Zaimportowano '+n+' tłumaczeń.');
+  e.target.value='';
 }
 
 // ══════════════════════════════════════════════════════════
