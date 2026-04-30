@@ -708,9 +708,18 @@ a{color:#2451b3}
       </div>
     </div>
 
-    <!-- Autosave indicator -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:#aaa;">
+    <!-- Autosave indicator + progress bar -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;color:#aaa;flex-wrap:wrap;">
       <span id="autosave-indicator">● Zmiany zapisywane automatycznie</span>
+    </div>
+    <div id="editor-progress-wrap" style="display:none;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:3px;">
+        <span id="editor-progress-label">Przetwarzanie...</span>
+        <span id="editor-progress-pct">0%</span>
+      </div>
+      <div style="height:4px;background:#eee;border-radius:2px;overflow:hidden;">
+        <div id="editor-progress-bar" style="height:100%;background:#2a8a4a;border-radius:2px;transition:width .2s;width:0%"></div>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -1011,7 +1020,7 @@ async function doRegister(){
   if(pass!==pass2){authErr('reg-error','Hasła nie są identyczne.');return;}
   const{data,error}=await supa.auth.signUp({email,password:pass,options:{
     data:{full_name:name},
-    emailRedirectTo:'https://translate-tool.zloty05.workers.dev'
+    emailRedirectTo:'https://translate-tool.pages.dev'
   }});
   if(error){authErr('reg-error',error.message);return;}
   // If session exists — email confirmation disabled, go straight to app
@@ -1352,7 +1361,7 @@ function renderPendingInvites(pending){
   const list=document.getElementById('pending-list');
   if(!pending||!pending.length){if(title)title.style.display='none';if(list)list.innerHTML='';return;}
   if(title)title.style.display='block';
-  const baseUrl='https://translate-tool.zloty05.workers.dev';
+  const baseUrl='https://translate-tool.pages.dev';
   list.innerHTML=`<div style="border:1px solid #eee;border-radius:8px;overflow:hidden;">`+
     pending.map(inv=>{
       const expired=new Date(inv.expires_at)<new Date();
@@ -2351,6 +2360,23 @@ function setAutosaveIndicator(msg){
   if(el) el.textContent=msg;
 }
 
+function showEditorProgress(label, pct){
+  const wrap=document.getElementById('editor-progress-wrap');
+  const bar=document.getElementById('editor-progress-bar');
+  const labelEl=document.getElementById('editor-progress-label');
+  const pctEl=document.getElementById('editor-progress-pct');
+  if(!wrap) return;
+  wrap.style.display='block';
+  if(labelEl) labelEl.textContent=label;
+  if(pctEl) pctEl.textContent=Math.round(pct)+'%';
+  if(bar) bar.style.width=Math.round(pct)+'%';
+}
+
+function hideEditorProgress(){
+  const wrap=document.getElementById('editor-progress-wrap');
+  if(wrap) wrap.style.display='none';
+}
+
 function updateEditorProgress(lang){
   const total=currentProjectSegs.length;
   const done=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).length;
@@ -2409,6 +2435,8 @@ ${JSON.stringify(chunk.map(s=>({key:s.id,text:s.source_text})))}`;
     }
 
     done+=chunk.length;
+    const aiPct=Math.round(done/toTranslate.length*100);
+    showEditorProgress(`Tłumaczenie AI: ${done}/${toTranslate.length} segmentów`,aiPct);
     setAutosaveIndicator(`⏳ Tłumaczenie AI: ${done}/${toTranslate.length} segmentów...`);
     updateEditorProgress(lang);
     await sleep(200);
@@ -2461,6 +2489,7 @@ async function translateCurrentLangAI(){
   const pairsAI=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
   await pushTMBatch(pairsAI,lang,'xliff');
   updateEditorProgress(lang);
+  hideEditorProgress();
   setAutosaveIndicator(`✓ Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
 }
 
@@ -2481,6 +2510,7 @@ async function translateEmptyAI(){
   const pairsEmpty=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
   await pushTMBatch(pairsEmpty,lang,'xliff');
   updateEditorProgress(lang);
+  hideEditorProgress();
   setAutosaveIndicator(`✓ Gotowe! Przetłumaczono ${toTranslate.length} segmentów. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
 }
 
@@ -2519,23 +2549,52 @@ async function approveLanguage(lang){
 async function applyTMToProject(){
   const lang=currentProjectLang;
   if(!lang) return;
-  let hits=0;
+
+  // Find all segments that have TM match
+  const toUpdate=[];
   for(const seg of currentProjectSegs){
-    if(seg.translations?.[lang]?.text) continue; // already translated
-    const found=lookupTM(seg.source_text, lang);
+    if(seg.translations?.[lang]?.text) continue;
+    const found=lookupTM(seg.source_text,lang);
     if(!found) continue;
-    await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:found});
-    if(!seg.translations) seg.translations={};
-    seg.translations[lang]={text:found,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
-    hits++;
+    toUpdate.push({seg,text:found});
   }
-  if(hits>0){
-    renderEditorTable(lang);
-    updateEditorProgress(lang);
-    setAutosaveIndicator(`✓ Uzupełniono ${hits} segmentów z pamięci TM`);
-  } else {
+
+  if(!toUpdate.length){
     setAutosaveIndicator('Brak dopasowań w pamięci TM dla tego języka');
+    return;
   }
+
+  setAutosaveIndicator(`⏳ Uzupełnianie z TM: 0/${toUpdate.length}...`);
+  showEditorProgress('Uzupełnianie z pamięci TM...',0);
+
+  // Batch save in groups of 20 (parallel within batch)
+  const BATCH=20;
+  let done=0;
+  for(let i=0;i<toUpdate.length;i+=BATCH){
+    const chunk=toUpdate.slice(i,i+BATCH);
+    // Save all in parallel
+    await Promise.all(chunk.map(async({seg,text})=>{
+      try{
+        await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:text});
+        // Update local cache
+        if(!seg.translations) seg.translations={};
+        seg.translations[lang]={text,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+        // Update DOM immediately
+        const ta=document.getElementById('seg-'+seg.id);
+        if(ta){ ta.value=text; ta.className='seg-textarea saved'; setTimeout(()=>ta.className='seg-textarea',1500); }
+        const pill=document.getElementById(`spill-${seg.id}-${lang}`);
+        if(pill){ pill.className='status-pill sp-translated'; pill.textContent='Tłum.'; }
+      }catch(e){ console.error('TM save error:',e); }
+    }));
+    done+=chunk.length;
+    const pct=Math.round(done/toUpdate.length*100);
+    showEditorProgress(`Uzupełnianie z TM: ${done}/${toUpdate.length}`,pct);
+    setAutosaveIndicator(`⏳ Uzupełnianie z TM: ${done}/${toUpdate.length}...`);
+    updateEditorProgress(lang);
+  }
+
+  hideEditorProgress();
+  setAutosaveIndicator(`✓ Uzupełniono ${toUpdate.length} segmentów z pamięci TM`);
 }
 
 // ── AI SUMMARY BEFORE TRANSLATION ──
