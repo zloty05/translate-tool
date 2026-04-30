@@ -1413,7 +1413,18 @@ async function loadXliff(file){
   renderXliffTable();updateXliffProgress();updateXliffCost();
 }
 
-function xliffLangChange(){applyTMToSegs(xliffSegs,document.getElementById('target-lang').value);renderXliffTable();updateXliffProgress();updateXliffCost();}
+function xliffLangChange(){
+  const lang=document.getElementById('target-lang').value;
+  // Reset all targets to empty, then re-apply TM for new language
+  xliffSegs.forEach(seg=>{
+    if(seg.type==='plain'){seg.target='';seg.status='pending';seg.fromTM=false;}
+    else{seg.targets.forEach(t=>t.text='');seg.status='pending';seg.fromTM=false;}
+  });
+  applyTMToSegs(xliffSegs,lang);
+  renderXliffTable();
+  updateXliffProgress();
+  updateXliffCost();
+}
 function xliffSrc(s){return s.type==='plain'?s.source:s.textNodes.map(n=>n.text).join('\n');}
 function xliffTgt(s){return s.type==='plain'?s.target:s.targets.map(n=>n.text).join('\n');}
 
@@ -1516,7 +1527,18 @@ async function loadPptx(file){
 }
 
 function buildPptxSlideFilter(count){const sel=document.getElementById('pptx-filter-slide');sel.innerHTML='<option value="all">Wszystkie slajdy</option>'+Array.from({length:count},(_,i)=>`<option value="${i+1}">Slajd ${i+1}</option>`).join('');}
-function pptxLangChange(){const lang=document.getElementById('pptx-target-lang').value;pptxSegs.forEach(seg=>{if(seg.status==='done'&&seg.fromTM)return;const f=lookupTM(seg.source,lang);if(f){seg.target=f;seg.status='done';seg.fromTM=true;}});renderPptxTable();updatePptxProgress();updatePptxCost();}
+function pptxLangChange(){
+  const lang=document.getElementById('pptx-target-lang').value;
+  // Reset all, then re-apply TM for new language
+  pptxSegs.forEach(seg=>{seg.target='';seg.status='pending';seg.fromTM=false;});
+  pptxSegs.forEach(seg=>{
+    const f=lookupTM(seg.source,lang);
+    if(f){seg.target=f;seg.status='done';seg.fromTM=true;}
+  });
+  renderPptxTable();
+  updatePptxProgress();
+  updatePptxCost();
+}
 
 function renderPptxTable(){
   const ft=(document.getElementById('pptx-filter')?.value||'').toLowerCase();
