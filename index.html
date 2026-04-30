@@ -1256,10 +1256,14 @@ function orgParam(){return currentOrg?`organization_id=eq.${currentOrg.id}`:'id=
 // TEAM MANAGEMENT
 // ══════════════════════════════════════════════════════════
 function getMemberName(m){
-  if(m.display_name&&m.display_name.trim()) return m.display_name.trim();
-  if(m.profiles?.full_name&&m.profiles.full_name.trim()) return m.profiles.full_name.trim();
+  // display_name from member_emails view
+  const dn=m.display_name?.trim();
+  if(dn && dn.length>0 && !dn.match(/^[0-9a-f-]{36}$/i)) return dn;
+  // full_name from profiles
+  if(m.profiles?.full_name?.trim()) return m.profiles.full_name.trim();
+  if(m.profile?.full_name?.trim()) return m.profile.full_name.trim();
+  // email fallback
   if(m.email) return m.email;
-  if(m.profile?.full_name&&m.profile.full_name.trim()) return m.profile.full_name.trim();
   return m.user_id.substring(0,8)+'...';
 }
 
