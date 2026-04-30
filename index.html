@@ -917,7 +917,9 @@ async function onboardStep2(){
     // Step 2: add current user as admin (security invoker — auth.uid() works)
     const{error:e2}=await supa.rpc('add_org_admin',{org_id:orgId});
     if(e2)throw new Error(e2.message);
-    // Step 3: fetch full org record
+    // Step 3: add welcome bonus tokens (10 000)
+    await supa.rpc('add_tokens',{org_id:orgId,amount:10000,desc_text:'Tokeny startowe — bonus powitalny'});
+    // Step 4: fetch full org record
     const orgs=await dbGet('organizations',`?id=eq.${orgId}`);
     currentOrg=orgs[0];
     currentRole='admin';
