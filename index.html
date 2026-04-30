@@ -1947,7 +1947,7 @@ function renderProjectList(){
   }
   container.innerHTML=data.map(p=>{
     const asgn=p.assignments||[];
-    const langPills=asgn.map(a=>`<span class="lang-pill lp-${a.status}">${getLangFlag(a.lang)} ${a.lang.substring(0,2).toUpperCase()} <span style="font-size:10px;">${statusLabel(a.status)}</span></span>`).join('');
+    const langPills=asgn.map(a=>`<span class="lang-pill lp-${a.status==='ready'?'approved':a.status}">${getLangFlag(a.lang)} ${a.lang.substring(0,2).toUpperCase()} <span style="font-size:10px;">${statusLabel(a.status)}</span>${a.status==='ready'?'<span style="margin-left:4px;">↓</span>':''}</span>`).join('');
     const done=asgn.filter(a=>a.status==='approved').length;
     const total=asgn.length;
     const pct=total>0?Math.round(done/total*100):0;
@@ -1970,7 +1970,7 @@ function renderProjectList(){
   }).join('');
 }
 
-function statusLabel(s){ return {pending:'Oczekuje',in_progress:'W toku',review:'Do weryfikacji',approved:'Zatwierdzone'}[s]||s; }
+function statusLabel(s){ return {pending:'Oczekuje',in_progress:'W toku',ready:'Gotowe do pobrania',approved:'Zatwierdzone'}[s]||s; }
 function getLangFlag(lang){ return LANGS.find(l=>l.code===lang)?.flag||'🌐'; }
 
 // ── NEW PROJECT MODAL ──
@@ -2196,9 +2196,9 @@ function buildEditorLangTabs(){
     return;
   }
 
-  tabs.innerHTML=langs.map((a,i)=>`<div class="editor-lang-tab${a.status==='approved'?' approved':''}" onclick="switchEditorLang('${a.lang}')" id="etab-${a.lang}">
+  tabs.innerHTML=langs.map((a,i)=>`<div class="editor-lang-tab${(a.status==='approved'||a.status==='ready')?' approved':''}" onclick="switchEditorLang('${a.lang}')" id="etab-${a.lang}">
     ${getLangFlag(a.lang)} ${a.lang.substring(0,2).toUpperCase()}
-    <span class="status-pill sp-${a.status==='approved'?'approved':a.status==='review'?'translated':'empty'}" style="margin-left:4px;">${statusLabel(a.status)}</span>
+    <span class="status-pill sp-${a.status==='approved'||a.status==='ready'?'approved':a.status==='in_progress'?'translated':'empty'}" style="margin-left:4px;">${statusLabel(a.status)}</span>
   </div>`).join('');
 
   // Switch to first language
@@ -2223,12 +2223,20 @@ function switchEditorLang(lang){
   const submitBtn=document.getElementById('editor-submit-btn');
   if(submitBtn){
     if(assignment?.status==='approved'){
-      submitBtn.textContent='✓ Zatwierdzone';submitBtn.disabled=true;
-    } else if(assignment?.status==='review'){
-      submitBtn.textContent='W weryfikacji';submitBtn.disabled=currentRole!=='admin';
-      if(currentRole==='admin'){ submitBtn.textContent='✓ Zatwierdź'; submitBtn.disabled=false; submitBtn.onclick=()=>approveLanguage(lang); }
+      submitBtn.textContent='✓ Pobrano';submitBtn.disabled=true;
+    } else if(assignment?.status==='ready'){
+      if(currentRole==='admin'){
+        submitBtn.textContent='✓ Pobrano XLIFF';submitBtn.disabled=false;
+        submitBtn.className='btn btn-dark btn-sm';
+        submitBtn.onclick=()=>{ exportProjectXliff(); approveLanguage(lang); };
+      } else {
+        submitBtn.textContent='✓ Gotowe do pobrania';submitBtn.disabled=true;
+        submitBtn.className='btn btn-sm b-green';
+      }
     } else {
-      submitBtn.textContent='Wyślij do weryfikacji';submitBtn.disabled=false;submitBtn.onclick=()=>submitForReview(lang);
+      submitBtn.textContent='Oznacz jako gotowe';submitBtn.disabled=false;
+      submitBtn.className='btn btn-dark btn-sm';
+      submitBtn.onclick=()=>submitForReview(lang);
     }
   }
 }
@@ -2454,29 +2462,32 @@ async function translateEmptyAI(){
 
 async function submitForReview(lang){
   if(!lang) lang=currentProjectLang;
-  if(!confirm(`Wysłać język ${lang} do weryfikacji?`)) return;
+  const done=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).length;
+  const total=currentProjectSegs.length;
+  if(!confirm(`Oznaczyć język ${lang} jako gotowy do pobrania?\n\nPrzetłumaczono: ${done}/${total} segmentów.\n\nAdmin zostanie poinformowany że może pobrać plik XLIFF.`)) return;
   try{
-    await dbPatch('project_language_assignments',{status:'review',submitted_at:new Date().toISOString()},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
+    await dbPatch('project_language_assignments',{status:'ready',submitted_at:new Date().toISOString()},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
     const asgn=currentAssignments.find(a=>a.lang===lang);
-    if(asgn) asgn.status='review';
+    if(asgn) asgn.status='ready';
     switchEditorLang(lang);
-    setAutosaveIndicator('✓ Wysłano do weryfikacji');
+    setAutosaveIndicator('✓ Oznaczono jako gotowe do pobrania — admin może teraz pobrać XLIFF');
   }catch(e){ alert('Błąd: '+e.message); }
 }
 
 async function approveLanguage(lang){
-  if(!confirm(`Zatwierdzić tłumaczenie ${lang}?`)) return;
+  // "Approve" = admin marks as downloaded/done after getting XLIFF
+  if(!confirm(`Oznaczyć ${lang} jako pobrany?\n\nUżyj tego po pobraniu XLIFF i zaimportowaniu do Storyline.`)) return;
   try{
     await dbPatch('project_language_assignments',{status:'approved',approved_at:new Date().toISOString(),approved_by:currentUser.id},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
     const asgn=currentAssignments.find(a=>a.lang===lang);
     if(asgn) asgn.status='approved';
-    // Save all approved translations to TM
-    const approvedPairs=currentProjectSegs
+    // Save all translations to TM
+    const pairs=currentProjectSegs
       .filter(s=>s.translations?.[lang]?.text)
       .map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
-    await pushTMBatch(approvedPairs,lang,'xliff');
+    await pushTMBatch(pairs,lang,'xliff');
     switchEditorLang(lang);
-    setAutosaveIndicator(`✓ Język zatwierdzony. Zapisano ${approvedPairs.length} tłumaczeń do pamięci TM.`);
+    setAutosaveIndicator(`✓ Oznaczono jako pobrany. Zapisano ${pairs.length} tłumaczeń do TM.`);
   }catch(e){ alert('Błąd: '+e.message); }
 }
 
