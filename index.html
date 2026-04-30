@@ -2292,8 +2292,7 @@ function renderEditorTable(lang){
     const tText=tData?.text||'';
     const tStatus=tData?.status||'empty';
     const tr=document.createElement('tr');
-    const rowCount=Math.max(2,(seg.source_text.match(/[
-]/g)||[]).length+1);
+    const rowCount=Math.max(2,(seg.source_text.split(/\r|\n/).length));
     tr.innerHTML=`
       <td style="color:#ccc;font-size:11px;text-align:center;">${i+1}</td>
       <td><div class="seg-src" style="white-space:pre-wrap;">${esc(seg.source_text)}</div></td>
