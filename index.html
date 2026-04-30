@@ -729,6 +729,49 @@ a{color:#2451b3}
 
 </div></div>
 
+<!-- EDIT PROJECT MODAL -->
+<div id="edit-proj-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;margin:20px;">
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">✏️ Edytuj projekt</h3>
+    <div class="auth-error" id="edit-proj-error" style="display:none;"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div style="grid-column:1/-1;">
+        <label>Nazwa projektu *</label>
+        <input type="text" id="ep-name" placeholder="np. Szkolenie BHP Q2 2025" />
+      </div>
+      <div style="grid-column:1/-1;">
+        <label>Opis</label>
+        <input type="text" id="ep-desc" placeholder="np. Wersja dla działu produkcji" />
+      </div>
+      <div>
+        <label>Status projektu</label>
+        <select id="ep-status" style="width:100%;">
+          <option value="active">Aktywny</option>
+          <option value="completed">Ukończony</option>
+          <option value="archived">Zarchiwizowany</option>
+        </select>
+      </div>
+      <div>
+        <label>Język źródłowy</label>
+        <input type="text" id="ep-src-lang" readonly style="background:#fafaf8;color:#888;" />
+      </div>
+    </div>
+
+    <!-- Language assignments -->
+    <div style="margin-bottom:16px;">
+      <p style="font-size:13px;font-weight:600;margin-bottom:10px;">Przypisania języków i tłumaczy</p>
+      <div id="ep-assignments" style="display:grid;gap:8px;"></div>
+      <button class="btn btn-sm" style="margin-top:8px;" onclick="addEpLangRow()">+ Dodaj język</button>
+    </div>
+
+    <div class="row" style="justify-content:flex-end;gap:8px;">
+      <button class="btn btn-sm" onclick="closeEditProjectModal()">Anuluj</button>
+      <button class="btn btn-dark" onclick="saveProjectEdits()">Zapisz zmiany</button>
+    </div>
+  </div>
+</div>
+
 <!-- NEW PROJECT MODAL -->
 <div id="new-proj-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:28px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;margin:20px;">
@@ -1911,6 +1954,7 @@ function renderProjectList(){
     return`<div class="proj-card">
       <div style="display:flex;align-items:start;justify-content:space-between;gap:8px;">
         <div class="proj-card-title" onclick="openProject('${p.id}')" style="flex:1;cursor:pointer;">${esc(p.name)}</div>
+        <button class="btn btn-sm hide-viewer" onclick="event.stopPropagation();editProject('${p.id}')" title="Edytuj projekt" style="flex-shrink:0;">✏️</button>
         <button class="btn btn-red btn-sm hide-viewer" onclick="event.stopPropagation();deleteProject('${p.id}','${esc(p.name)}')" title="Usuń projekt" style="flex-shrink:0;">🗑</button>
       </div>
       <div class="proj-card-meta" onclick="openProject('${p.id}')" style="cursor:pointer;">
@@ -2555,6 +2599,133 @@ async function exportProjectXliff(){
     alert('Błąd eksportu: '+e.message);
     console.error(e);
   }
+}
+
+// ── EDIT PROJECT ──
+let editingProjectId = null;
+
+async function editProject(projectId){
+  const proj = projectsCache.find(p=>p.id===projectId);
+  if(!proj) return;
+  editingProjectId = projectId;
+
+  // Load team members if not cached
+  if(!teamMembersCache.length && currentOrg){
+    teamMembersCache = await dbGet('organization_members',`?organization_id=eq.${currentOrg.id}`);
+    const profiles = await dbGet('profiles',`?id=in.(${teamMembersCache.map(m=>m.user_id).join(',')})`);
+    teamMembersCache = teamMembersCache.map(m=>({...m,profile:profiles.find(p=>p.id===m.user_id)}));
+  }
+
+  // Fill form
+  document.getElementById('ep-name').value = proj.name;
+  document.getElementById('ep-desc').value = proj.description||'';
+  document.getElementById('ep-status').value = proj.status||'active';
+  document.getElementById('ep-src-lang').value = proj.source_lang;
+  document.getElementById('edit-proj-error').style.display='none';
+
+  // Fill assignments
+  const assignments = proj.assignments||[];
+  const container = document.getElementById('ep-assignments');
+  container.innerHTML = '';
+  assignments.forEach(a => addEpLangRow(a.lang, a.assigned_user_id, a.status));
+  if(!assignments.length) addEpLangRow();
+
+  document.getElementById('edit-proj-modal').style.display='flex';
+}
+
+function addEpLangRow(lang='', userId='', status='pending'){
+  const memberOptions = teamMembersCache
+    .filter(m=>m.role!=='viewer')
+    .map(m=>`<option value="${m.user_id}" ${m.user_id===userId?'selected':''}>${esc(m.profile?.full_name||m.user_id.substring(0,8))} (${m.role})</option>`)
+    .join('');
+  const langOptions = PRIMARY.map(l=>`<option value="${l.code}" ${l.code===lang?'selected':''}>${l.flag} ${l.label}</option>`).join('');
+  const statusOptions = ['pending','in_progress','review','approved']
+    .map(s=>`<option value="${s}" ${s===status?'selected':''}>${statusLabel(s)}</option>`).join('');
+  const rowId='ep-'+Date.now()+Math.random().toString(36).slice(2,6);
+  const div=document.createElement('div');
+  div.id=rowId;
+  div.style.cssText='display:grid;grid-template-columns:1fr 1fr 130px 32px;gap:8px;align-items:center;background:#fafaf8;padding:8px;border-radius:6px;border:1px solid #eee;';
+  div.innerHTML=`
+    <div>
+      <div style="font-size:10px;color:#999;margin-bottom:2px;">Język</div>
+      <select class="ep-lang" style="width:100%;">${langOptions}</select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#999;margin-bottom:2px;">Tłumacz / weryfikator</div>
+      <select class="ep-user" style="width:100%;"><option value="">— bez przypisania —</option>${memberOptions}</select>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#999;margin-bottom:2px;">Status</div>
+      <select class="ep-status-row" style="width:100%;">${statusOptions}</select>
+    </div>
+    <button class="del-btn" onclick="document.getElementById('${rowId}').remove()" style="font-size:18px;margin-top:16px;">×</button>`;
+  document.getElementById('ep-assignments').appendChild(div);
+}
+
+async function saveProjectEdits(){
+  const name = document.getElementById('ep-name').value.trim();
+  const desc = document.getElementById('ep-desc').value.trim();
+  const status = document.getElementById('ep-status').value;
+  const errEl = document.getElementById('edit-proj-error');
+
+  if(!name){ errEl.textContent='Wpisz nazwę projektu.'; errEl.style.display='block'; return; }
+  errEl.style.display='none';
+
+  try{
+    // Update project
+    await dbPatch('projects',{name,description:desc,status},`?id=eq.${editingProjectId}`);
+
+    // Collect new assignments from form
+    const rows = document.querySelectorAll('#ep-assignments > div');
+    const newAssignments = [];
+    rows.forEach(row=>{
+      const lang = row.querySelector('.ep-lang')?.value;
+      const userId = row.querySelector('.ep-user')?.value||null;
+      const rowStatus = row.querySelector('.ep-status-row')?.value||'pending';
+      if(lang) newAssignments.push({lang, assigned_user_id:userId||null, status:rowStatus});
+    });
+
+    // Get existing assignments
+    const existing = await dbGet('project_language_assignments',`?project_id=eq.${editingProjectId}`);
+    const existingLangs = existing.map(a=>a.lang);
+    const newLangs = newAssignments.map(a=>a.lang);
+
+    // Delete removed languages
+    for(const a of existing){
+      if(!newLangs.includes(a.lang)){
+        await dbDelete('project_language_assignments',`?id=eq.${a.id}`);
+      }
+    }
+
+    // Update existing or insert new
+    for(const a of newAssignments){
+      const ex = existing.find(e=>e.lang===a.lang);
+      if(ex){
+        // Update existing assignment
+        await dbPatch('project_language_assignments',{
+          assigned_user_id:a.assigned_user_id,
+          status:a.status
+        },`?id=eq.${ex.id}`);
+      } else {
+        // Insert new
+        await dbPost('project_language_assignments',{
+          project_id:editingProjectId,
+          lang:a.lang,
+          assigned_user_id:a.assigned_user_id||null,
+          status:a.status
+        });
+      }
+    }
+
+    closeEditProjectModal();
+    await loadProjects();
+
+  }catch(e){ errEl.textContent='Błąd: '+e.message; errEl.style.display='block'; }
+}
+
+function closeEditProjectModal(){
+  document.getElementById('edit-proj-modal').style.display='none';
+  editingProjectId=null;
 }
 
 async function deleteProject(projectId, projectName){
