@@ -1246,6 +1246,14 @@ function orgParam(){return currentOrg?`organization_id=eq.${currentOrg.id}`:'id=
 // ══════════════════════════════════════════════════════════
 // TEAM MANAGEMENT
 // ══════════════════════════════════════════════════════════
+function getMemberName(m){
+  if(m.display_name&&m.display_name.trim()) return m.display_name.trim();
+  if(m.profiles?.full_name&&m.profiles.full_name.trim()) return m.profiles.full_name.trim();
+  if(m.email) return m.email;
+  if(m.profile?.full_name&&m.profile.full_name.trim()) return m.profile.full_name.trim();
+  return m.user_id.substring(0,8)+'...';
+}
+
 async function loadTeam(){
   document.getElementById('team-org-info').textContent=`Organizacja: ${currentOrg?.name||'—'} · Twoja rola: ${currentRole||'—'}`;
   document.getElementById('team-loading').style.display='flex';
@@ -1290,7 +1298,7 @@ function renderTeamList(members){
 
   list.innerHTML=members.map(m=>{
     const isMe=m.user_id===currentUser.id;
-    const name=m.profiles?.full_name||(m.user_id.substring(0,8)+'...');
+    const name=getMemberName(m);
     const canRemove=isAdmin&&!isMe;
     const memberLangs=m.languages||[];
     const langPills=PRIMARY.map(l=>`<span class="lang-tag${memberLangs.includes(l.code)?' selected':''}"
@@ -2004,13 +2012,23 @@ async function addLangAssignment(){
   if(!teamMembersCache.length && currentOrg){
     teamMembersCache = await dbGet('organization_members',`?organization_id=eq.${currentOrg.id}`);
     const profiles = await dbGet('profiles',`?id=in.(${teamMembersCache.map(m=>m.user_id).join(',')})`);
-    teamMembersCache = teamMembersCache.map(m=>({...m,profile:profiles.find(p=>p.id===m.user_id)}));
+    let emailMap2={};
+    try{
+      const ed=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
+      ed.forEach(e=>{ emailMap2[e.user_id]={email:e.email,display_name:e.display_name}; });
+    }catch(e){}
+    teamMembersCache = teamMembersCache.map(m=>({
+      ...m,
+      profile:profiles.find(p=>p.id===m.user_id),
+      email:emailMap2[m.user_id]?.email||null,
+      display_name:emailMap2[m.user_id]?.display_name||null
+    }));
   }
   const rowId = 'la-'+Date.now();
   npLangRows.push(rowId);
   const memberOptions = teamMembersCache
     .filter(m=>m.role!=='viewer')
-    .map(m=>`<option value="${m.user_id}">${esc(m.profile?.full_name||m.user_id.substring(0,8))} (${m.role})</option>`)
+    .map(m=>`<option value="${m.user_id}">${esc(getMemberName(m))} (${m.role})</option>`)
     .join('');
   const langOptions = PRIMARY.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('');
   const div=document.createElement('div');
@@ -2624,7 +2642,17 @@ async function editProject(projectId){
   if(!teamMembersCache.length && currentOrg){
     teamMembersCache = await dbGet('organization_members',`?organization_id=eq.${currentOrg.id}`);
     const profiles = await dbGet('profiles',`?id=in.(${teamMembersCache.map(m=>m.user_id).join(',')})`);
-    teamMembersCache = teamMembersCache.map(m=>({...m,profile:profiles.find(p=>p.id===m.user_id)}));
+    let emailMap2={};
+    try{
+      const ed=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
+      ed.forEach(e=>{ emailMap2[e.user_id]={email:e.email,display_name:e.display_name}; });
+    }catch(e){}
+    teamMembersCache = teamMembersCache.map(m=>({
+      ...m,
+      profile:profiles.find(p=>p.id===m.user_id),
+      email:emailMap2[m.user_id]?.email||null,
+      display_name:emailMap2[m.user_id]?.display_name||null
+    }));
   }
 
   // Fill form
@@ -2647,7 +2675,7 @@ async function editProject(projectId){
 function addEpLangRow(lang='', userId='', status='pending'){
   const memberOptions = teamMembersCache
     .filter(m=>m.role!=='viewer')
-    .map(m=>`<option value="${m.user_id}" ${m.user_id===userId?'selected':''}>${esc(m.profile?.full_name||m.user_id.substring(0,8))} (${m.role})</option>`)
+    .map(m=>`<option value="${m.user_id}" ${m.user_id===userId?'selected':''}>${esc(getMemberName(m))} (${m.role})</option>`)
     .join('');
   const langOptions = PRIMARY.map(l=>`<option value="${l.code}" ${l.code===lang?'selected':''}>${l.flag} ${l.label}</option>`).join('');
   const statusOptions = ['pending','in_progress','review','approved']
