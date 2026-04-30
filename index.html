@@ -1902,17 +1902,20 @@ function renderProjectList(){
     const done=asgn.filter(a=>a.status==='approved').length;
     const total=asgn.length;
     const pct=total>0?Math.round(done/total*100):0;
-    return`<div class="proj-card" onclick="openProject('${p.id}')">
-      <div class="proj-card-title">${esc(p.name)}</div>
-      <div class="proj-card-meta">
+    return`<div class="proj-card">
+      <div style="display:flex;align-items:start;justify-content:space-between;gap:8px;">
+        <div class="proj-card-title" onclick="openProject('${p.id}')" style="flex:1;cursor:pointer;">${esc(p.name)}</div>
+        <button class="btn btn-red btn-sm hide-viewer" onclick="event.stopPropagation();deleteProject('${p.id}','${esc(p.name)}')" title="Usuń projekt" style="flex-shrink:0;">🗑</button>
+      </div>
+      <div class="proj-card-meta" onclick="openProject('${p.id}')" style="cursor:pointer;">
         <span>📄 ${p.file_type?.toUpperCase()||'—'}</span>
         <span>🌐 Źródło: ${getLangFlag(p.source_lang)} ${esc(p.source_lang)}</span>
         <span>📅 ${fmtDate(p.created_at)}</span>
         <span>${done}/${total} języków zatwierdzonych</span>
       </div>
-      <div class="proj-langs">${langPills||'<span style="color:#ccc;font-size:12px;">Brak przypisanych języków</span>'}</div>
-      <div class="progress-bar-thin" style="margin-top:10px;"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-      ${p.description?`<p style="font-size:12px;color:#aaa;margin-top:8px;">${esc(p.description)}</p>`:''}
+      <div class="proj-langs" onclick="openProject('${p.id}')" style="cursor:pointer;">${langPills||'<span style="color:#ccc;font-size:12px;">Brak przypisanych języków</span>'}</div>
+      <div class="progress-bar-thin" style="margin-top:10px;" onclick="openProject('${p.id}')"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      ${p.description?`<p style="font-size:12px;color:#aaa;margin-top:8px;" onclick="openProject('${p.id}')">${esc(p.description)}</p>`:''}
     </div>`;
   }).join('');
 }
@@ -2048,9 +2051,15 @@ async function parseXliffForProject(file, srcLang){
       const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));
       const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})).filter(n=>n.text.trim());
       if(!textNodes.length) return;
-      // For rich segments: combine all text nodes into one display, keep metadata
-      const combinedText=textNodes.map(n=>n.text).join(' ');
-      segments.push({key:unitId, source:combinedText, metadata:{type:'rich',unitId,textNodes}});
+      if(textNodes.length===1){
+        // Single text node — store as one segment
+        segments.push({key:unitId+'__'+textNodes[0].gId, source:textNodes[0].text, metadata:{type:'rich',unitId,gId:textNodes[0].gId,textNodes}});
+      } else {
+        // Multiple text nodes — store each separately so TM lookup works per node
+        textNodes.forEach(n=>{
+          segments.push({key:unitId+'__'+n.gId, source:n.text, metadata:{type:'rich',unitId,gId:n.gId,textNodes}});
+        });
+      }
     }
   });
   return segments;
@@ -2403,6 +2412,16 @@ ${units}
 
   const fname=`${proj.name}_${lang}.xliff`.replace(/[^a-z0-9_.-]/gi,'_');
   download(xliff, fname, 'application/xliff+xml');
+}
+
+async function deleteProject(projectId, projectName){
+  if(!confirm(`Usunąć projekt "${projectName}"?\n\nTo działanie jest nieodwracalne — usuwa projekt, wszystkie segmenty i przypisania.`)) return;
+  try{
+    await dbDelete('projects',`?id=eq.${projectId}`);
+    projectsCache=projectsCache.filter(p=>p.id!==projectId);
+    document.getElementById('proj-count').textContent=projectsCache.length;
+    renderProjectList();
+  }catch(e){ alert('Błąd usuwania projektu: '+e.message); }
 }
 
 function closeProjectEditor(){
