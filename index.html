@@ -1629,16 +1629,91 @@ async function importDictJSON(e){const f=e.target.files[0];if(!f)return;const da
 async function clearDict(){if(!confirm('Wyczyścić słownik?'))return;await dbDelete('dictionary',`?${orgParam()}`);dictCache=[];renderDict();}
 async function fillDictWithAI(){
   const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}
-  const toFill=[];dictCache.forEach(entry=>PRIMARY.forEach(l=>{if(!entry.translations?.[l.code])toFill.push({id:entry.id,src:entry.src,lang:l.code,note:entry.note||''});}));
+  const toFill=[];
+  dictCache.forEach(entry=>PRIMARY.forEach(l=>{
+    if(!entry.translations?.[l.code]) toFill.push({id:entry.id,src:entry.src,lang:l.code,note:entry.note||''});
+  }));
   if(!toFill.length){alert('Brak brakujących tłumaczeń.');return;}
-  if(!confirm(`Uzupełnić ${toFill.length} brakujących AI?`))return;
-  const C=30;for(let i=0;i<toFill.length;i+=C){
-    const chunk=toFill.slice(i,i+C);
-    const prompt=`Przetłumacz terminy słownikowe. TYLKO JSON: [{"id":"...","lang":"...","translation":"..."}]. Bez markdown.\n\n${JSON.stringify(chunk.map(t=>({id:t.id,src:t.src,lang:t.lang,note:t.note})))}`;
-    try{const res=JSON.parse((await apiCall(apiKey,prompt)).replace(/```json|```/g,'').trim());for(const r of res){const entry=dictCache.find(e=>e.id===r.id);if(entry&&r.translation){entry.translations={...entry.translations,[r.lang]:r.translation};await dbPatch('dictionary',{translations:entry.translations},`?id=eq.${r.id}`);}}}catch(err){console.error(err);}
+  if(!confirm(`Uzupełnić ${toFill.length} brakujących tłumaczeń AI?\n\nTo może chwilę potrwać.`)) return;
+
+  // Show progress in dict filter row
+  const statusEl=document.createElement('div');
+  statusEl.id='dict-ai-status';
+  statusEl.style.cssText='font-size:12px;color:#888;margin-bottom:8px;';
+  const progressWrap=document.createElement('div');
+  progressWrap.style.cssText='height:4px;background:#eee;border-radius:2px;overflow:hidden;margin-bottom:10px;';
+  const progressBar=document.createElement('div');
+  progressBar.style.cssText='height:100%;background:#2a8a4a;border-radius:2px;transition:width .2s;width:0%;';
+  progressWrap.appendChild(progressBar);
+  const filterRow=document.querySelector('#tab-dict .filter-row');
+  if(filterRow){filterRow.before(statusEl);filterRow.before(progressWrap);}
+
+  const setStatus=(msg,pct)=>{
+    if(statusEl) statusEl.textContent=msg;
+    if(progressBar) progressBar.style.width=pct+'%';
+  };
+
+  const CHUNK=15; // smaller chunks = fewer missing
+  const failed=[];
+  let done=0;
+
+  for(let i=0;i<toFill.length;i+=CHUNK){
+    const chunk=toFill.slice(i,i+CHUNK);
+    setStatus(`⏳ Uzupełnianie: ${done}/${toFill.length} terminów...`, Math.round(done/toFill.length*100));
+
+    const prompt=`Przetłumacz terminy słownikowe na podane języki.
+WAŻNE: Odpowiedz dla KAŻDEGO podanego elementu.
+TYLKO JSON: [{"id":"...","lang":"...","translation":"..."}]. Bez markdown, bez preambuły.
+
+Terminy:
+${JSON.stringify(chunk.map(t=>({id:t.id,src:t.src,lang:t.lang,note:t.note})))}`;
+
+    try{
+      const raw=(await apiCall(apiKey,prompt)).replace(/\`\`\`json|\`\`\`/g,'').trim();
+      const res=JSON.parse(raw);
+      const returnedIds=new Set(res.map(r=>r.id+'__'+r.lang));
+      // Track missing
+      chunk.forEach(t=>{if(!returnedIds.has(t.id+'__'+t.lang)) failed.push(t);});
+      // Save returned
+      for(const r of res){
+        if(!r.translation) continue;
+        const entry=dictCache.find(e=>e.id===r.id);
+        if(!entry) continue;
+        entry.translations={...entry.translations,[r.lang]:r.translation};
+        await dbPatch('dictionary',{translations:entry.translations},`?id=eq.${r.id}`);
+      }
+    }catch(err){
+      console.error('Dict AI chunk error:',err);
+      failed.push(...chunk);
+    }
+    done+=chunk.length;
     await sleep(200);
   }
-  renderDict();alert('Uzupełniono!');
+
+  // Retry failed one by one
+  if(failed.length){
+    setStatus(`⏳ Ponawiam ${failed.length} brakujących...`, 90);
+    for(const t of failed){
+      const prompt=`Przetłumacz termin "${t.src}" na język ${t.lang}${t.note?' (kontekst: '+t.note+')':''}. Odpowiedz TYLKO JSON: {"translation":"..."}`;
+      try{
+        const raw=(await apiCall(apiKey,prompt)).replace(/\`\`\`json|\`\`\`/g,'').trim();
+        const res=JSON.parse(raw);
+        const tText=res.translation||'';
+        if(!tText) continue;
+        const entry=dictCache.find(e=>e.id===t.id);
+        if(!entry) continue;
+        entry.translations={...entry.translations,[t.lang]:tText};
+        await dbPatch('dictionary',{translations:entry.translations},`?id=eq.${t.id}`);
+      }catch(err){console.error('Dict retry error:',err);}
+      await sleep(150);
+    }
+  }
+
+  // Cleanup progress UI
+  statusEl?.remove();
+  progressWrap?.remove();
+  renderDict();
+  alert(`Uzupełniono! ${toFill.length-failed.length}/${toFill.length} tłumaczeń.`);
 }
 
 // ══════════════════════════════════════════════════════════
