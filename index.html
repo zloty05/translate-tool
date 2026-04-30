@@ -1439,9 +1439,9 @@ function updateXliffProgress(){const done=xliffSegs.filter(s=>s.status==='done')
 async function startXliffTranslation(){
   const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}
   const toT=xliffSegs.filter(s=>s.status!=='done');if(!toT.length){setXS('Wszystko przetłumaczone!');return;}
-  // Check token balance
-  const totalChars=toT.reduce((a,s)=>a+(s.type==='plain'?s.source.length:s.textNodes.reduce((b,n)=>b+n.text.length,0)),0);
-  const needed=estimateTokensForTranslation(totalChars);
+  // Count ONLY chars from segments that need translation
+  const charsToTranslate=toT.reduce((a,s)=>a+(s.type==='plain'?s.source.length:s.textNodes.reduce((b,n)=>b+n.text.length,0)),0);
+  const needed=estimateTokensForTranslation(charsToTranslate);
   if(!checkTokenBalance(needed))return;
   await runXliffBatch(toT,apiKey);
 }
@@ -1470,8 +1470,9 @@ async function runXliffBatch(toT,apiKey){
   await pushTMBatch(xliffSegs.filter(s=>s.status==='done').flatMap(s=>s.type==='plain'?[{src:s.source,tgt:s.target}]:s.textNodes.map((n,i)=>({src:n.text,tgt:s.targets[i]?.text||''}))),lang,'xliff');
   await updateHistoryEntry(histId,finalDone,xliffSegs.filter(s=>s.fromTM).length,totalCostUsd,totalCostUsd*PLN_USD);
   updateXliffCost();
-  const totalCharsTranslated=xliffSegs.filter(s=>s.status==='done').reduce((a,s)=>a+(s.type==='plain'?s.source.length:s.textNodes.reduce((b,n)=>b+n.text.length,0)),0);
-  await deductTokens(totalCharsTranslated, document.getElementById('xliff-fname').textContent, lang);
+  // Deduct only for segments translated in THIS batch (not TM hits)
+  const charsThisBatch=items.reduce((a,it)=>a+it.text.length,0);
+  await deductTokens(charsThisBatch, document.getElementById('xliff-fname').textContent, lang);
   setXS(`Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} tokenów.`);
 }
 function setXS(m){document.getElementById('xliff-status').textContent=m;}
@@ -1540,8 +1541,9 @@ function updatePptxProgress(){const done=pptxSegs.filter(s=>s.status==='done').l
 async function startPptxTranslation(){
   const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}
   const toT=pptxSegs.filter(s=>s.status!=='done');if(!toT.length){setPPS('Wszystko przetłumaczone!');return;}
-  const totalChars=toT.reduce((a,s)=>a+s.source.length,0);
-  const needed=estimateTokensForTranslation(totalChars);
+  // Count ONLY chars from segments that need translation
+  const charsToTranslate=toT.reduce((a,s)=>a+s.source.length,0);
+  const needed=estimateTokensForTranslation(charsToTranslate);
   if(!checkTokenBalance(needed))return;
   await runPptxBatch(toT,apiKey);
 }
@@ -1568,8 +1570,9 @@ async function runPptxBatch(toT,apiKey){
   await pushTMBatch(pptxSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target})),lang,'pptx');
   await updateHistoryEntry(histId,finalDone,pptxSegs.filter(s=>s.fromTM).length,totalCostUsd,totalCostUsd*PLN_USD);
   updatePptxCost();
-  const totalCharsTranslated=pptxSegs.filter(s=>s.status==='done').reduce((a,s)=>a+s.source.length,0);
-  await deductTokens(totalCharsTranslated, pptxFilename, lang);
+  // Deduct only for segments translated in THIS batch (not TM hits)
+  const charsThisBatch=toT.reduce((a,s)=>a+s.source.length,0);
+  await deductTokens(charsThisBatch, pptxFilename, lang);
   setPPS(`Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} tokenów.`);
 }
 function setPPS(m){document.getElementById('pptx-status').textContent=m;}
@@ -1630,9 +1633,7 @@ function updateTokenBadge(){
 }
 
 function formatTokens(n){
-  if(n >= 1000000) return (n/1000000).toFixed(1)+'M';
-  if(n >= 1000) return Math.floor(n/1000)+'K';
-  return String(n);
+  return Number(n).toLocaleString('pl-PL');
 }
 
 function updateShopBalance(){
