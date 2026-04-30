@@ -693,8 +693,14 @@ a{color:#2451b3}
       <div class="editor-lang-tabs" id="editor-lang-tabs"></div>
       <div class="row" style="gap:8px;">
         <span class="badge b-gray" id="editor-progress-badge">0/0</span>
-        <button class="btn btn-sm hide-viewer" onclick="applyTMToProject()">🧠 Uzupełnij z TM</button>
-        <button class="btn btn-sm hide-viewer" id="editor-ai-btn" onclick="showAISummary()">✦ Tłumacz AI</button>
+        <select id="editor-sort" onchange="renderEditorTable(currentProjectLang)" style="width:130px;font-size:12px;padding:4px 8px;">
+          <option value="order">Kolejność (#)</option>
+          <option value="status-empty">Puste pierwsze</option>
+          <option value="status-done">Przetłumaczone pierwsze</option>
+        </select>
+        <button class="btn btn-sm hide-viewer" onclick="applyTMToProject()">🧠 Z TM</button>
+        <button class="btn btn-sm hide-viewer" onclick="translateEmptyAI()">✦ Przetłumacz puste</button>
+        <button class="btn btn-sm hide-viewer" id="editor-ai-btn" onclick="showAISummary()">✦ Tłumacz wszystko</button>
         <button class="btn btn-sm" onclick="exportProjectExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
         <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
@@ -2188,9 +2194,28 @@ function renderEditorTable(lang){
   const canEdit=currentRole!=='viewer';
   const assignment=currentAssignments.find(a=>a.lang===lang);
   const isLocked=assignment?.status==='approved';
+  const sortMode=document.getElementById('editor-sort')?.value||'order';
+
+  // Sort segments
+  let segs=[...currentProjectSegs];
+  if(sortMode==='status-empty'){
+    segs.sort((a,b)=>{
+      const aHas=!!(a.translations?.[lang]?.text);
+      const bHas=!!(b.translations?.[lang]?.text);
+      if(aHas!==bHas) return aHas?1:-1;
+      return a.segment_order-b.segment_order;
+    });
+  } else if(sortMode==='status-done'){
+    segs.sort((a,b)=>{
+      const aHas=!!(a.translations?.[lang]?.text);
+      const bHas=!!(b.translations?.[lang]?.text);
+      if(aHas!==bHas) return aHas?-1:1;
+      return a.segment_order-b.segment_order;
+    });
+  }
 
   tbody.innerHTML='';
-  currentProjectSegs.forEach((seg,i)=>{
+  segs.forEach((seg,i)=>{
     const tData=seg.translations?.[lang];
     const tText=tData?.text||'';
     const tStatus=tData?.status||'empty';
@@ -2230,6 +2255,10 @@ async function saveSegment(segId, lang, textarea){
       if(!seg.translations) seg.translations={};
       seg.translations[lang]={text,status:text?'translated':'empty',updated_by:currentUser.id,updated_at:new Date().toISOString()};
     }
+    // Save to TM if text is not empty
+    if(text.trim()&&seg){
+      pushTMBatch([{src:seg.source_text,tgt:text}],lang,'xliff');
+    }
     // Update status pill
     const pill=document.getElementById(`spill-${segId}-${lang}`);
     if(pill){
@@ -2256,66 +2285,127 @@ function updateEditorProgress(lang){
   if(badge){ badge.textContent=`${done}/${total} przetłumaczone`; badge.className='badge '+(done===total?'b-green':'b-yellow'); }
 }
 
-async function translateCurrentLangAI(){
-  const apiKey=getApiKey();
-  if(!apiKey){ alert('Wpisz klucz API w zakładce XLIFF lub PPTX.'); return; }
-  const lang=currentProjectLang;
-  if(!lang){ alert('Wybierz język.'); return; }
-
-  const toTranslate=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
-  if(!toTranslate.length){ alert('Wszystkie segmenty już przetłumaczone.'); return; }
-
-  const totalChars=toTranslate.reduce((a,s)=>a+s.source_text.length,0);
-  const needed=estimateTokensForTranslation(totalChars);
-  if(!checkTokenBalance(needed)) return;
-
+async function runAITranslation(toTranslate, lang, apiKey){
+  if(!toTranslate.length) return;
   const dict=buildDictPrompt(lang);
-  const CHUNK=25;
+  const CHUNK=15; // smaller chunks = fewer missing segments
   let done=0, totalCostUsd=0;
-  setAutosaveIndicator('⏳ Tłumaczenie AI w toku...');
-
-  // Update assignment status
-  await dbPatch('project_language_assignments',{status:'in_progress',ai_translated_at:new Date().toISOString()},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
-  const asgn=currentAssignments.find(a=>a.lang===lang);
-  if(asgn) asgn.status='in_progress';
+  const failed=[]; // track failed segments for retry
 
   for(let i=0;i<toTranslate.length;i+=CHUNK){
     const chunk=toTranslate.slice(i,i+CHUNK);
     const charsIn=chunk.reduce((a,s)=>a+s.source_text.length,0);
-    const prompt=`Przetłumacz segmenty kursu e-learningowego/prezentacji na: ${lang}.
-Zachowaj styl, zwięzłość, zmienne %...% bez zmian.${dict}
-JSON: [{"key":"...","translation":"..."}] — bez markdown.
 
-Segmenty:
+    const prompt=`Jesteś tłumaczem materiałów e-learningowych. Przetłumacz KAŻDY segment na: ${lang}.
+WAŻNE: Odpowiedź musi zawierać tłumaczenie dla KAŻDEGO podanego klucza.
+Zachowaj styl, zmienne %...% przepisuj bez zmian.${dict}
+Odpowiedz TYLKO JSON: [{"key":"...","translation":"..."}] — bez markdown, bez preambuły.
+
+Segmenty (${chunk.length} szt.):
 ${JSON.stringify(chunk.map(s=>({key:s.id,text:s.source_text})))}`;
 
     try{
-      const res=JSON.parse((await apiCall(apiKey,prompt)).replace(/```json|```/g,'').trim());
+      const raw=await apiCall(apiKey,prompt);
+      const res=JSON.parse(raw.replace(/```json|```/g,'').trim());
       const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
       totalCostUsd+=((charsIn/CPT)/1e6)*PRICE_IN+((charsOut/CPT)/1e6)*PRICE_OUT;
 
+      // Track which keys came back
+      const returnedKeys=new Set(res.map(r=>r.key));
+      const missingInChunk=chunk.filter(s=>!returnedKeys.has(s.id));
+      if(missingInChunk.length) failed.push(...missingInChunk);
+
       for(const r of res){
+        if(!r.translation) continue;
         const seg=currentProjectSegs.find(s=>s.id===r.key);
-        if(!seg||!r.translation) continue;
-        // Save to DB
+        if(!seg) continue;
         await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:r.translation});
         if(!seg.translations) seg.translations={};
         seg.translations[lang]={text:r.translation,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
-        // Update textarea if visible
         const ta=document.getElementById('seg-'+seg.id);
         if(ta){ ta.value=r.translation; ta.className='seg-textarea saved'; setTimeout(()=>ta.className='seg-textarea',2000); }
         const pill=document.getElementById(`spill-${seg.id}-${lang}`);
         if(pill){ pill.className='status-pill sp-translated'; pill.textContent='Tłum.'; }
       }
-    }catch(err){ console.error('AI translate error:',err); }
+    }catch(err){
+      console.error('AI chunk error:',err);
+      failed.push(...chunk);
+    }
 
     done+=chunk.length;
+    setAutosaveIndicator(`⏳ Tłumaczenie AI: ${done}/${toTranslate.length} segmentów...`);
     updateEditorProgress(lang);
-    await sleep(150);
+    await sleep(200);
   }
 
-  await deductTokens(totalChars, currentProject.name+' → '+lang, lang);
-  setAutosaveIndicator(`✓ Tłumaczenie AI ukończone. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
+  // Retry failed segments one by one
+  if(failed.length>0){
+    setAutosaveIndicator(`⏳ Ponawiam ${failed.length} brakujących segmentów...`);
+    for(const seg of failed){
+      const prompt=`Przetłumacz ten jeden segment na ${lang}. Odpowiedz TYLKO JSON: {"translation":"..."}
+
+Tekst: ${JSON.stringify(seg.source_text)}`;
+      try{
+        const raw=await apiCall(apiKey,prompt);
+        const res=JSON.parse(raw.replace(/```json|```/g,'').trim());
+        const tText=res.translation||res.text||'';
+        if(!tText) continue;
+        await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:tText});
+        if(!seg.translations) seg.translations={};
+        seg.translations[lang]={text:tText,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+        const ta=document.getElementById('seg-'+seg.id);
+        if(ta){ ta.value=tText; ta.className='seg-textarea saved'; setTimeout(()=>ta.className='seg-textarea',2000); }
+        const pill=document.getElementById(`spill-${seg.id}-${lang}`);
+        if(pill){ pill.className='status-pill sp-translated'; pill.textContent='Tłum.'; }
+      }catch(err){ console.error('Retry error:',err); }
+      await sleep(200);
+    }
+  }
+
+  return totalCostUsd;
+}
+
+async function translateCurrentLangAI(){
+  const apiKey=getApiKey();
+  if(!apiKey){ alert('Wpisz klucz API w zakładce XLIFF lub PPTX.'); return; }
+  const lang=currentProjectLang;
+  if(!lang){ alert('Wybierz język.'); return; }
+  const toTranslate=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
+  if(!toTranslate.length){ alert('Wszystkie segmenty już przetłumaczone.'); return; }
+  const totalChars=toTranslate.reduce((a,s)=>a+s.source_text.length,0);
+  const needed=estimateTokensForTranslation(totalChars);
+  if(!checkTokenBalance(needed)) return;
+  await dbPatch('project_language_assignments',{status:'in_progress',ai_translated_at:new Date().toISOString()},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
+  const asgn=currentAssignments.find(a=>a.lang===lang);
+  if(asgn) asgn.status='in_progress';
+  setAutosaveIndicator('⏳ Tłumaczenie AI w toku...');
+  const totalCostUsd=await runAITranslation(toTranslate,lang,apiKey)||0;
+  await deductTokens(totalChars,currentProject.name+' → '+lang,lang);
+  // Save to TM
+  const pairsAI=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
+  await pushTMBatch(pairsAI,lang,'xliff');
+  updateEditorProgress(lang);
+  setAutosaveIndicator(`✓ Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
+}
+
+async function translateEmptyAI(){
+  const apiKey=getApiKey();
+  if(!apiKey){ alert('Wpisz klucz API w zakładce XLIFF lub PPTX.'); return; }
+  const lang=currentProjectLang;
+  if(!lang){ alert('Wybierz język.'); return; }
+  const toTranslate=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
+  if(!toTranslate.length){ setAutosaveIndicator('✓ Brak pustych segmentów.'); return; }
+  const totalChars=toTranslate.reduce((a,s)=>a+s.source_text.length,0);
+  const needed=estimateTokensForTranslation(totalChars);
+  if(!checkTokenBalance(needed)) return;
+  setAutosaveIndicator(`⏳ Tłumaczenie ${toTranslate.length} pustych segmentów...`);
+  const totalCostUsd=await runAITranslation(toTranslate,lang,apiKey)||0;
+  await deductTokens(totalChars,currentProject.name+' → '+lang+' (puste)',lang);
+  // Save to TM
+  const pairsEmpty=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
+  await pushTMBatch(pairsEmpty,lang,'xliff');
+  updateEditorProgress(lang);
+  setAutosaveIndicator(`✓ Gotowe! Przetłumaczono ${toTranslate.length} segmentów. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
 }
 
 async function submitForReview(lang){
@@ -2336,8 +2426,13 @@ async function approveLanguage(lang){
     await dbPatch('project_language_assignments',{status:'approved',approved_at:new Date().toISOString(),approved_by:currentUser.id},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
     const asgn=currentAssignments.find(a=>a.lang===lang);
     if(asgn) asgn.status='approved';
+    // Save all approved translations to TM
+    const approvedPairs=currentProjectSegs
+      .filter(s=>s.translations?.[lang]?.text)
+      .map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
+    await pushTMBatch(approvedPairs,lang,'xliff');
     switchEditorLang(lang);
-    setAutosaveIndicator('✓ Język zatwierdzony');
+    setAutosaveIndicator(`✓ Język zatwierdzony. Zapisano ${approvedPairs.length} tłumaczeń do pamięci TM.`);
   }catch(e){ alert('Błąd: '+e.message); }
 }
 
