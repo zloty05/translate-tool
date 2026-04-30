@@ -1679,7 +1679,7 @@ async function loadXliff(file){
     const unitId=unit.getAttribute('id')||'',datatype=unit.getAttribute('datatype')||'';
     const srcEl=unit.querySelector('source');if(!srcEl)return;
     if(datatype==='plaintext'){const text=(srcEl.textContent||'').trim();if(!text)return;const tgt=unit.querySelector('target');xliffSegs.push({id:unitId,unitId,type:'plain',source:text,target:tgt?(tgt.textContent||''):'',status:(tgt&&tgt.textContent.trim())?'done':'pending',fromTM:false});}
-    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:(g.textContent||'').trim()})).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
+    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:(g.textContent||'').replace(/^[ \t]+|[ \t]+$/g,'')})).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
   });
   const tmHits=applyTMToSegs(xliffSegs,document.getElementById('target-lang').value);
   const fc=xliffSegs.reduce((a,s)=>a+(s.type==='rich'?s.textNodes.length:1),0);
@@ -2137,7 +2137,13 @@ async function parseXliffForProject(file, srcLang){
       if(!textNodes.length) return;
       // Store each non-empty text node as separate segment for TM compatibility
       textNodes.forEach(n=>{
-        segments.push({key:unitId+'__'+n.gId, source:n.text.trim(), metadata:{type:'rich',unitId,gId:n.gId,allTextNodes:gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||''}))}});
+        // Preserve line breaks: &#xD; = 
+ (soft break), 
+ (hard break)
+        // Only trim leading/trailing spaces, NOT line breaks
+        const srcText = n.text.replace(/^[ 	]+|[ 	]+$/g, '');
+        if(!srcText) return;
+        segments.push({key:unitId+'__'+n.gId, source:srcText, metadata:{type:'rich',unitId,gId:n.gId,allTextNodes:gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||''}))}});
       });
     }
   });
@@ -2292,9 +2298,9 @@ function renderEditorTable(lang){
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td style="color:#ccc;font-size:11px;text-align:center;">${i+1}</td>
-      <td><div class="seg-src">${esc(seg.source_text)}</div></td>
+      <td><div class="seg-src" style="white-space:pre-wrap;">${esc(seg.source_text)}</div></td>
       <td><textarea class="seg-textarea" id="seg-${seg.id}"
-        rows="2" ${(!canEdit||isLocked)?'readonly':''}
+        rows="${Math.max(2,(seg.source_text.match(/[\r\n]/g)||[]).length+1)}" ${(!canEdit||isLocked)?'readonly':''}
         onInput="onSegInput('${seg.id}','${lang}',this)"
         >${esc(tText)}</textarea></td>
       <td><span class="status-pill sp-${tStatus==='translated'?'translated':tStatus==='approved'?'approved':'empty'}" id="spill-${seg.id}-${lang}">
@@ -2367,8 +2373,11 @@ async function runAITranslation(toTranslate, lang, apiKey){
     const charsIn=chunk.reduce((a,s)=>a+s.source_text.length,0);
 
     const prompt=`Jesteś tłumaczem materiałów e-learningowych. Przetłumacz KAŻDY segment na: ${lang}.
-WAŻNE: Odpowiedź musi zawierać tłumaczenie dla KAŻDEGO podanego klucza.
-Zachowaj styl, zmienne %...% przepisuj bez zmian.${dict}
+WAŻNE:
+- Odpowiedź musi zawierać tłumaczenie dla KAŻDEGO podanego klucza
+- Zachowaj wszystkie znaki nowej linii (\r, \n) dokładnie w tych samych miejscach co w oryginale
+- Znak \r to miękki enter (Shift+Enter) — musi pozostać w tłumaczeniu
+- Zachowaj styl, zmienne %...% przepisuj bez zmian${dict}
 Odpowiedz TYLKO JSON: [{"key":"...","translation":"..."}] — bez markdown, bez preambuły.
 
 Segmenty (${chunk.length} szt.):
