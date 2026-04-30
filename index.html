@@ -376,12 +376,12 @@ a{color:#2451b3}
 <div class="tabs">
   <div class="tab active" onclick="switchTab('xliff')">📄 XLIFF</div>
   <div class="tab" onclick="switchTab('pptx')">📊 PowerPoint <span class="tab-badge" id="pptx-count"></span></div>
+  <div class="tab" onclick="switchTab('projects')">📁 Projekty <span class="tab-badge" id="proj-count">0</span></div>
   <div class="tab-sep"></div>
   <div class="tab" onclick="switchTab('history')">🕐 Historia <span class="tab-badge" id="hist-count">0</span></div>
   <div class="tab" onclick="switchTab('dict')">📖 Słownik <span class="tab-badge" id="dict-count">0</span></div>
   <div class="tab" onclick="switchTab('tm')">🧠 Pamięć TM <span class="tab-badge" id="tm-count">0</span></div>
   <div class="tab" onclick="switchTab('team')">👥 Zespół</div>
-  <div class="tab" onclick="switchTab('projects')">📁 Projekty <span class="tab-badge" id="proj-count">0</span></div>
   <div class="tab" onclick="switchTab('shop')">🪙 Kup tokeny</div>
 </div>
 
@@ -693,10 +693,12 @@ a{color:#2451b3}
       <div class="editor-lang-tabs" id="editor-lang-tabs"></div>
       <div class="row" style="gap:8px;">
         <span class="badge b-gray" id="editor-progress-badge">0/0</span>
-        <button class="btn btn-sm hide-viewer" id="editor-ai-btn" onclick="translateCurrentLangAI()">✦ Tłumacz AI</button>
+        <button class="btn btn-sm hide-viewer" onclick="applyTMToProject()">🧠 Uzupełnij z TM</button>
+        <button class="btn btn-sm hide-viewer" id="editor-ai-btn" onclick="showAISummary()">✦ Tłumacz AI</button>
         <button class="btn btn-sm" onclick="exportProjectExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
         <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
+        <button class="btn btn-sm" onclick="exportProjectXliff()">↓ XLIFF</button>
         <button class="btn btn-dark btn-sm hide-viewer" id="editor-submit-btn" onclick="submitForReview()">Wyślij do weryfikacji</button>
       </div>
     </div>
@@ -2317,6 +2319,90 @@ async function approveLanguage(lang){
     switchEditorLang(lang);
     setAutosaveIndicator('✓ Język zatwierdzony');
   }catch(e){ alert('Błąd: '+e.message); }
+}
+
+// ── APPLY TM TO PROJECT ──
+async function applyTMToProject(){
+  const lang=currentProjectLang;
+  if(!lang) return;
+  let hits=0;
+  for(const seg of currentProjectSegs){
+    if(seg.translations?.[lang]?.text) continue; // already translated
+    const found=lookupTM(seg.source_text, lang);
+    if(!found) continue;
+    await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:found});
+    if(!seg.translations) seg.translations={};
+    seg.translations[lang]={text:found,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+    hits++;
+  }
+  if(hits>0){
+    renderEditorTable(lang);
+    updateEditorProgress(lang);
+    setAutosaveIndicator(`✓ Uzupełniono ${hits} segmentów z pamięci TM`);
+  } else {
+    setAutosaveIndicator('Brak dopasowań w pamięci TM dla tego języka');
+  }
+}
+
+// ── AI SUMMARY BEFORE TRANSLATION ──
+function showAISummary(){
+  const lang=currentProjectLang;
+  if(!lang){ alert('Wybierz język.'); return; }
+  const toTranslate=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
+  if(!toTranslate.length){ alert('Wszystkie segmenty już przetłumaczone!'); return; }
+  const totalChars=toTranslate.reduce((a,s)=>a+s.source_text.length,0);
+  const tokensNeeded=estimateTokensForTranslation(totalChars);
+  const balance=currentOrg?.tokens_balance||0;
+  const hasEnough=balance>=tokensNeeded;
+  const msg=`Podsumowanie tłumaczenia AI:\n\n` +
+    `Język: ${lang}\n` +
+    `Segmentów do tłumaczenia: ${toTranslate.length} z ${currentProjectSegs.length}\n` +
+    `Znaków do przetłumaczenia: ${totalChars.toLocaleString('pl-PL')}\n` +
+    `Tokenów z salda: ${tokensNeeded.toLocaleString('pl-PL')}\n` +
+    `Twoje saldo: ${balance.toLocaleString('pl-PL')} tokenów\n` +
+    `${hasEnough ? '✓ Saldo wystarczy' : '✗ Brakuje ' + (tokensNeeded-balance).toLocaleString('pl-PL') + ' tokenów'}\n\n` +
+    `${hasEnough ? 'Uruchomić tłumaczenie AI?' : 'Przejdź do zakupu tokenów.'}`;
+  if(hasEnough){
+    if(confirm(msg)) translateCurrentLangAI();
+  } else {
+    alert(msg);
+    switchTab('shop');
+  }
+}
+
+// ── EXPORT XLIFF FROM PROJECT ──
+async function exportProjectXliff(){
+  if(!currentProject||!currentProjectLang){ alert('Brak projektu lub języka.'); return; }
+  const lang=currentProjectLang;
+  const proj=currentProject;
+
+  // We need the original file — ask user to provide it
+  // Since we store segments as text, rebuild a simple XLIFF
+  const segs=currentProjectSegs;
+  const srcLang=proj.source_lang;
+
+  // Build XLIFF XML
+  const units=segs.map(seg=>{
+    const tText=seg.translations?.[lang]?.text||'';
+    const srcText=esc(seg.source_text);
+    const tgtText=esc(tText);
+    return `  <trans-unit id="${esc(seg.segment_key)}" datatype="plaintext">
+    <source>${srcText}</source>
+    <target state="${tText?'translated':'needs-translation'}">${tgtText}</target>
+  </trans-unit>`;
+  }).join('\n');
+
+  const xliff=`<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="${esc(srcLang)}" target-language="${esc(lang)}" datatype="plaintext" original="${esc(proj.original_filename||proj.name)}">
+    <body>
+${units}
+    </body>
+  </file>
+</xliff>`;
+
+  const fname=`${proj.name}_${lang}.xliff`.replace(/[^a-z0-9_.-]/gi,'_');
+  download(xliff, fname, 'application/xliff+xml');
 }
 
 function closeProjectEditor(){
