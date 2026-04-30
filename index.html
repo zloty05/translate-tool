@@ -2136,10 +2136,7 @@ async function parseXliffForProject(file, srcLang){
       if(!textNodes.length) return;
       // Store each non-empty text node as separate segment for TM compatibility
       textNodes.forEach(n=>{
-        // Preserve line breaks: &#xD; = 
- (soft break), 
- (hard break)
-        // Only trim leading/trailing spaces, NOT line breaks
+        // Preserve CR (\r) and LF (\n) - only trim spaces and tabs
         const srcText = n.text.replace(/^[ 	]+|[ 	]+$/g, '');
         if(!srcText) return;
         segments.push({key:unitId+'__'+n.gId, source:srcText, metadata:{type:'rich',unitId,gId:n.gId,allTextNodes:gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||''}))}});
