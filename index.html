@@ -2001,6 +2001,20 @@ async function createProject(){
       original_filename:npFile.name, organization_id:currentOrg.id, created_by:currentUser.id
     });
 
+    // Upload original file to Supabase Storage
+    const filePath=`${currentOrg.id}/${proj.id}/${npFile.name}`;
+    const fileContent = fileType==='xliff' ? await readFile(npFile) : await readFile(npFile,'array');
+    const{error:uploadErr}=await supa.storage.from('project-files').upload(
+      filePath,
+      fileType==='xliff' ? new Blob([fileContent],{type:'application/xml'}) : new Blob([fileContent]),
+      {upsert:true}
+    );
+    if(uploadErr) console.warn('File upload warning:',uploadErr.message);
+    else {
+      // Save file path to project
+      await dbPatch('projects',{original_file_path:filePath},`?id=eq.${proj.id}`);
+    }
+
     // Parse file and create segments
     let segments=[];
     if(fileType==='xliff') segments=await parseXliffForProject(npFile, srcLang);
@@ -2385,33 +2399,70 @@ async function exportProjectXliff(){
   const lang=currentProjectLang;
   const proj=currentProject;
 
-  // We need the original file — ask user to provide it
-  // Since we store segments as text, rebuild a simple XLIFF
-  const segs=currentProjectSegs;
-  const srcLang=proj.source_lang;
+  // Check if we have original file in Storage
+  if(!proj.original_file_path){
+    alert('Brak oryginalnego pliku XLIFF — ten projekt był utworzony bez uploadu pliku.\n\nUtwórz projekt ponownie aby eksport zachował strukturę Storyline.');
+    return;
+  }
 
-  // Build XLIFF XML
-  const units=segs.map(seg=>{
-    const tText=seg.translations?.[lang]?.text||'';
-    const srcText=esc(seg.source_text);
-    const tgtText=esc(tText);
-    return `  <trans-unit id="${esc(seg.segment_key)}" datatype="plaintext">
-    <source>${srcText}</source>
-    <target state="${tText?'translated':'needs-translation'}">${tgtText}</target>
-  </trans-unit>`;
-  }).join('\n');
+  try{
+    // Download original file from Storage
+    const{data,error}=await supa.storage.from('project-files').download(proj.original_file_path);
+    if(error) throw new Error('Błąd pobierania pliku: '+error.message);
 
-  const xliff=`<?xml version="1.0" encoding="utf-8"?>
-<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
-  <file source-language="${esc(srcLang)}" target-language="${esc(lang)}" datatype="plaintext" original="${esc(proj.original_filename||proj.name)}">
-    <body>
-${units}
-    </body>
-  </file>
-</xliff>`;
+    const originalXml=await data.text();
+    const workDoc=domParser.parseFromString(originalXml,'application/xml');
+    const NS='urn:oasis:names:tc:xliff:document:1.2';
 
-  const fname=`${proj.name}_${lang}.xliff`.replace(/[^a-z0-9_.-]/gi,'_');
-  download(xliff, fname, 'application/xliff+xml');
+    // Inject translations into original XML structure
+    // Build lookup: segment_key -> translated text
+    const translationMap={};
+    currentProjectSegs.forEach(seg=>{
+      const tText=seg.translations?.[lang]?.text||'';
+      if(tText) translationMap[seg.segment_key]=tText;
+    });
+
+    // Process each trans-unit
+    Array.from(workDoc.querySelectorAll('trans-unit')).forEach(unit=>{
+      const unitId=unit.getAttribute('id')||'';
+      const datatype=unit.getAttribute('datatype')||'';
+      const srcEl=unit.querySelector('source');
+      if(!srcEl) return;
+
+      // Remove existing target
+      const existingTarget=unit.querySelector('target');
+      if(existingTarget) existingTarget.remove();
+
+      const targetEl=workDoc.createElementNS(NS,'target');
+      targetEl.setAttribute('state','translated');
+
+      if(datatype==='plaintext'){
+        const tText=translationMap[unitId]||srcEl.textContent||'';
+        targetEl.textContent=tText;
+      } else {
+        // Rich segment — clone source structure and inject per-gId translations
+        const sourceClone=srcEl.cloneNode(true);
+        sourceClone.querySelectorAll('g[ctype="x-text"]').forEach(g=>{
+          const gId=g.getAttribute('id');
+          const segKey=unitId+'__'+gId;
+          const tText=translationMap[segKey];
+          if(tText) g.textContent=tText;
+        });
+        while(sourceClone.firstChild) targetEl.appendChild(sourceClone.firstChild);
+      }
+
+      srcEl.after(targetEl);
+    });
+
+    let xmlStr=xmlSer.serializeToString(workDoc);
+    if(!xmlStr.startsWith('<?xml')) xmlStr='<?xml version="1.0" encoding="utf-8"?>'+xmlStr;
+    const fname=`${proj.name}_${lang}.xliff`.replace(/[^a-z0-9_.-]/gi,'_');
+    download(xmlStr, fname, 'application/xliff+xml');
+
+  }catch(e){
+    alert('Błąd eksportu: '+e.message);
+    console.error(e);
+  }
 }
 
 async function deleteProject(projectId, projectName){
