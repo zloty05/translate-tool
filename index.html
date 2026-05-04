@@ -1628,6 +1628,8 @@ async function loadApp(){
   }catch(e){setDbStatus(false);console.error(e);}
   // Init dark mode
   initDarkMode();
+  // Load projects (default tab)
+  await loadProjects();
   // Load notifications for admins
   if(currentRole==='admin') loadNotifications();
 }
