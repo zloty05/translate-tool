@@ -4,6 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>TranslateTool</title>
+<script>
+// Apply dark mode immediately to prevent flash
+if(localStorage.getItem('darkMode')==='true'){
+  document.documentElement.classList.add('dark');
+  document.documentElement.style.background='#0f0f0f';
+  document.body && document.body.classList.add('dark');
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -13,6 +21,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ── AUTH SCREENS ── */
 .auth-screen{display:none;min-height:100vh;align-items:center;justify-content:center;background:#f5f4f0}
+body.dark .auth-screen{background:#0f0f0f}
 .auth-screen.active{display:flex}
 .auth-box{background:#fff;border-radius:16px;border:1px solid #e8e6e0;padding:40px;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
 .auth-logo{font-size:20px;font-weight:700;text-align:center;margin-bottom:8px;letter-spacing:-.5px}
@@ -3977,7 +3986,7 @@ async function deductTokens(charsTranslated, filename, lang){
 // ══════════════════════════════════════════════════════════
 function initDarkMode(){
   const dark = localStorage.getItem('darkMode') === 'true';
-  if(dark) applyDarkMode(true);
+  applyDarkMode(dark);
 }
 
 function applyDarkMode(on){
