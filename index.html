@@ -345,6 +345,47 @@ body.dark .user-menu-item:hover{background:#222}
 body.dark .user-menu-item.danger{color:#f87171}
 body.dark .user-menu-sep{background:#2a2a2a}
 body.dark .hdr-org{background:#2a2a2a;color:#aaa}
+.dict-add-form{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:12px;}
+body.dark .dict-add-form{background:#1a1a1a !important;border-color:#2a2a2a !important}
+body.dark .dict-add-form p{color:#fff}
+.shop-balance-card{background:#f8fdf9;border:1px solid #c8e8d0;}
+body.dark .shop-balance-card{background:#0a1a0a !important;border-color:#1a3a1a !important}
+body.dark #shop-balance{color:#4ade80}
+body.dark #shop-balance-equiv{color:#888}
+/* Modal backgrounds */
+body.dark #new-proj-modal > div{background:#1a1a1a !important;border-color:#2a2a2a}
+body.dark #edit-proj-modal > div{background:#1a1a1a !important;border-color:#2a2a2a}
+body.dark #new-proj-modal h3,body.dark #edit-proj-modal h3{color:#fff}
+body.dark #new-proj-modal label,body.dark #edit-proj-modal label{color:#888}
+body.dark #new-proj-modal p,body.dark #edit-proj-modal p{color:#888}
+body.dark #new-proj-modal .drop-zone{background:#111;border-color:#2a2a2a;color:#888}
+body.dark #ep-assignments > div{background:#111 !important;border-color:#2a2a2a !important}
+/* Dictionary add form */
+body.dark #tab-dict .card > div[style*="background:#fafaf8"]{background:#1a1a1a !important;border-color:#2a2a2a !important}
+body.dark #tab-dict .card > div[style*="fafaf8"]{background:#1a1a1a !important}
+body.dark #dict-new-langs > div{color:#888}
+body.dark #dict-new-langs label{color:#666}
+/* Shop balance card */
+body.dark #tab-shop .card > div[style*="background:#fafaf8"],
+body.dark #tab-shop .card > div[style*="background:#fff"]{background:#111 !important;border-color:#2a2a2a !important}
+body.dark #shop-balance{color:#fff}
+body.dark #shop-balance-equiv{color:#888}
+/* Shop pkg cards */
+body.dark .pkg-card{background:#1a1a1a !important;border-color:#2a2a2a !important;color:#ccc}
+body.dark .pkg-btn{background:#fff;color:#000}
+/* TX list in shop */
+body.dark .tx-list{background:#111;border-color:#2a2a2a}
+body.dark .tx-row{border-color:#1a1a1a}
+body.dark .tx-col{color:#ccc}
+/* Invite box in team */
+body.dark .invite-box{background:#111 !important;border-color:#2a2a2a !important}
+body.dark .invite-box p{color:#888}
+body.dark #team-list{background:#1a1a1a !important;border-color:#2a2a2a !important}
+body.dark #pending-list > div{border-color:#2a2a2a;background:#1a1a1a}
+body.dark #pending-list > div > div{border-color:#2a2a2a;color:#ccc}
+body.dark #admin-token-panel{background:#1a1500 !important;border-color:#3a3000 !important;color:#ccc}
+/* Cost box in shop */
+body.dark #tab-shop .cost-box{background:#1a1a1a !important;border-color:#2a2a2a !important}
 /* NOTIFICATIONS */
 .notif-dropdown{position:absolute;top:48px;right:60px;width:320px;background:var(--color-bg,#fff);border:1px solid #e8e6e0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);z-index:200;display:none;max-height:480px;overflow-y:auto}
 body.dark .notif-dropdown{background:#1a1a1a;border-color:#2a2a2a}
@@ -820,7 +861,7 @@ body.dark .dash-metric-value{color:#fff;}
   <div class="card">
     <p class="card-title">Słownik terminologii — wielojęzyczny</p>
     <p class="card-sub">Jeden wpis = jeden termin z tłumaczeniami na wszystkie języki. Claude stosuje słownik przy każdym tłumaczeniu. Dane współdzielone w ramach organizacji.</p>
-    <div class="hide-viewer" style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:12px;">
+    <div class="hide-viewer dict-add-form">
       <p style="font-size:12px;font-weight:600;margin-bottom:8px;">Dodaj nowy termin</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div><label>Termin źródłowy (PL) *</label><input type="text" id="dict-src" placeholder="np. pasta stykowa" /></div>
@@ -1219,12 +1260,16 @@ body.dark .dash-metric-value{color:#fff;}
     <!-- Aktualne saldo -->
     <div style="background:#fafaf8;border:1px solid #eee;border-radius:10px;padding:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <div>
+        <div class="shop-balance-card">
+      <div>
         <div style="font-size:12px;color:#888;margin-bottom:2px;">Aktualne saldo organizacji</div>
         <div style="font-size:28px;font-weight:700;" id="shop-balance">—</div>
         <div style="font-size:12px;color:#aaa;">tokenów</div>
       </div>
       <div style="font-size:12px;color:#888;text-align:right;">
         <div id="shop-balance-equiv">—</div>
+      </div>
+    </div>
       </div>
     </div>
 
