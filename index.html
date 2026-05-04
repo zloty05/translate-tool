@@ -3378,21 +3378,9 @@ async function runSubtitleBatch(toT,apiKey){
     const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source));
     const charsIn=chunk.reduce((a,s)=>a+s.source.length,0);
 
-    const prompt=`Tłumacz napisy wideo na: ${lang}.
-
-Zasady:
-- Tłumacz KAŻDY blok z listy "do tłumaczenia"
-- Zachowaj zbliżoną długość tekstu (napisy muszą być czytelne w czasie wyświetlania)
-- Nie łącz ani nie dziel bloków
-- Zachowaj styl mówiony, interpunkcję
-- Zmienne %...% przepisuj bez zmian${dict}
-
-${ctxBefore.length?'Kontekst poprzedzający (tylko do odczytu):
-'+ctxBefore.map(t=>`"${t}"`).join('\n')+'\n\n':''}Do tłumaczenia (${chunk.length} bloków):
-${JSON.stringify(chunk.map(s=>({key:subtitleSegs.indexOf(s),text:s.source})))}
-${ctxAfter.length?'\nKontekst następujący (tylko do odczytu):\n'+ctxAfter.map(t=>`"${t}"`).join('\n'):''}
-
-Odpowiedz TYLKO JSON: [{"key":0,"translation":"..."}] — bez markdown.`;
+    const ctxBeforeStr=ctxBefore.length?'Kontekst poprzedzający (tylko do odczytu):\n'+ctxBefore.map(t=>'"'+t+'"').join('\n')+'\n\n':'';
+    const ctxAfterStr=ctxAfter.length?'\nKontekst następujący (tylko do odczytu):\n'+ctxAfter.map(t=>'"'+t+'"').join('\n'):'';
+    const prompt='Tłumacz napisy wideo na: '+lang+'.\n\nZasady:\n- Tłumacz KAŻDY blok z listy "do tłumaczenia"\n- Zachowaj zbliżoną długość tekstu\n- Nie łącz ani nie dziel bloków\n- Zachowaj styl mówiony, interpunkcję\n- Zmienne %...% przepisuj bez zmian'+dict+'\n\n'+ctxBeforeStr+'Do tłumaczenia ('+chunk.length+' bloków):\n'+JSON.stringify(chunk.map(s=>({key:subtitleSegs.indexOf(s),text:s.source})))+ctxAfterStr+'\n\nOdpowiedz TYLKO JSON: [{"key":0,"translation":"..."}] — bez markdown.';
 
     try{
       const raw=await apiCall(apiKey,prompt,2000);
