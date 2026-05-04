@@ -350,6 +350,13 @@ body.dark .dict-add-form{background:#1a1a1a !important;border-color:#2a2a2a !imp
 body.dark .dict-add-form p{color:#fff}
 .shop-balance-card{background:#f8fdf9;border:1px solid #c8e8d0;}
 body.dark .shop-balance-card{background:#0a1a0a !important;border-color:#1a3a1a !important}
+.shop-balance-card{background:#f8fdf9;border:1px solid #c8e8d0;}
+.admin-token-panel{background:#fef9e6;border:1px solid #f0d080;}
+body.dark .admin-token-panel{background:#1a1500 !important;border-color:#3a3000 !important}
+body.dark .admin-token-panel p,body.dark .admin-token-panel span{color:#aaa}
+.roles-legend{background:#fafaf8;}
+body.dark .roles-legend{background:#1a1a1a !important;border:0.5px solid #2a2a2a}
+body.dark .roles-legend strong{color:#fff}
 body.dark #shop-balance{color:#4ade80}
 body.dark #shop-balance-equiv{color:#888}
 /* Modal backgrounds */
@@ -381,8 +388,9 @@ body.dark .tx-col{color:#ccc}
 body.dark .invite-box{background:#111 !important;border-color:#2a2a2a !important}
 body.dark .invite-box p{color:#888}
 body.dark #team-list{background:#1a1a1a !important;border-color:#2a2a2a !important}
-body.dark #pending-list > div{border-color:#2a2a2a;background:#1a1a1a}
+body.dark #pending-list > div{border-color:#2a2a2a !important;background:#1a1a1a !important}
 body.dark #pending-list > div > div{border-color:#2a2a2a;color:#ccc}
+body.dark #pending-list input{background:#111;border-color:#2a2a2a;color:#ccc}
 body.dark #admin-token-panel{background:#1a1500 !important;border-color:#3a3000 !important;color:#ccc}
 /* Cost box in shop */
 body.dark #tab-shop .cost-box{background:#1a1a1a !important;border-color:#2a2a2a !important}
@@ -948,7 +956,7 @@ body.dark .dash-metric-value{color:#fff;}
     <div id="pending-list"></div>
 
     <!-- Admin: manual token top-up for testing -->
-    <div class="hide-viewer" style="margin-top:16px;background:#fef9e6;border:1px solid #f0d080;border-radius:8px;padding:14px;">
+    <div class="hide-viewer admin-token-panel" style="margin-top:16px;border-radius:8px;padding:14px;">
       <p style="font-size:12px;font-weight:600;margin-bottom:8px;">🛠 Panel admina — ręczne doładowanie tokenów (tryb testowy)</p>
       <div class="row">
         <select id="admin-token-amount" style="width:220px;">
@@ -963,7 +971,7 @@ body.dark .dash-metric-value{color:#fff;}
     </div>
 
     <!-- Legendy ról -->
-    <div style="margin-top:16px;padding:12px;background:#fafaf8;border-radius:8px;font-size:12px;color:#888;line-height:1.8;">
+    <div class="roles-legend" style="margin-top:16px;padding:12px;border-radius:8px;font-size:12px;color:#888;line-height:1.8;">
       <strong>Role:</strong><br>
       🔑 <strong>Admin</strong> — pełny dostęp, zarządzanie zespołem, usuwanie danych<br>
       ✏️ <strong>Translator</strong> — tłumaczenie, edycja słownika i TM, pobieranie plików<br>
@@ -1260,7 +1268,7 @@ body.dark .dash-metric-value{color:#fff;}
     <!-- Aktualne saldo -->
     <div style="background:#fafaf8;border:1px solid #eee;border-radius:10px;padding:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <div>
-        <div class="shop-balance-card">
+        <div class="shop-balance-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:16px;border-radius:10px;margin-bottom:20px;">
       <div>
         <div style="font-size:12px;color:#888;margin-bottom:2px;">Aktualne saldo organizacji</div>
         <div style="font-size:28px;font-weight:700;" id="shop-balance">—</div>
