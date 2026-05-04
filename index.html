@@ -186,6 +186,136 @@ a{color:#2451b3}
 .token-amount.empty{color:#f87171;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .token-label{font-size:10px;color:#666}
+/* DARK MODE */
+body.dark{color-scheme:dark}
+body.dark #app-shell header{background:#111}
+body.dark .tabs{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .tab{color:#666}
+body.dark .tab.active{color:#fff;border-color:#fff}
+body.dark .card{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .tab-content{background:#0f0f0f}
+body.dark input,body.dark select,body.dark textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .btn{background:#1a1a1a;border-color:#333;color:#ccc}
+body.dark .btn:hover{background:#222}
+body.dark .btn-dark{background:#fff;color:#000;border-color:#fff}
+body.dark .btn-dark:hover{background:#e0e0e0}
+body.dark .drop-zone{border-color:#2a2a2a;background:#111}
+body.dark .drop-zone:hover{background:#1a1a1a}
+body.dark .table-wrap{border-color:#2a2a2a}
+body.dark table th{background:#111;color:#666;border-color:#2a2a2a}
+body.dark table td{border-color:#1a1a1a;color:#ccc}
+body.dark table tr:hover td{background:#1a1a1a}
+body.dark textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .auth-box{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .auth-field input{background:#111;border-color:#333;color:#ccc}
+body.dark .auth-btn{background:#fff;color:#000}
+body.dark .auth-btn.secondary{background:#1a1a1a;border-color:#333;color:#ccc}
+body.dark .stat-box{background:#111;border-color:#2a2a2a}
+body.dark .cost-box{background:#111;border-color:#2a2a2a}
+body.dark .dict-wrap{border-color:#2a2a2a}
+body.dark .dict-grid th{background:#111;color:#666}
+body.dark .dict-grid td{border-color:#1a1a1a}
+body.dark .dict-inp{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .tm-list{border-color:#2a2a2a}
+body.dark .tm-row{border-color:#1a1a1a}
+body.dark .tm-col{border-color:#1a1a1a;color:#aaa}
+body.dark .hist-list{border-color:#2a2a2a}
+body.dark .hist-row{border-color:#1a1a1a}
+body.dark .hist-row:hover{background:#1a1a1a}
+body.dark .proj-card{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .proj-card:hover{border-color:#444}
+body.dark .member-row-m,.dark .member-row{border-color:#2a2a2a}
+body.dark .invite-box{background:#111;border-color:#2a2a2a}
+body.dark .shop-grid .pkg-card{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .pkg-card:hover{border-color:#fff}
+body.dark .seg-textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .seg-src{color:#aaa}
+body.dark .editor-header{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .editor-lang-tab{background:#111;color:#666;border-color:#2a2a2a}
+body.dark .editor-lang-tab.active{background:#fff;color:#000}
+body.dark .sub-row{border-color:#1a1a1a}
+body.dark .sub-src{color:#aaa}
+body.dark .sub-textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+/* NOTIFICATIONS */
+.notif-dropdown{position:absolute;top:48px;right:60px;width:320px;background:var(--color-bg,#fff);border:1px solid #e8e6e0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);z-index:200;display:none;max-height:480px;overflow-y:auto}
+body.dark .notif-dropdown{background:#1a1a1a;border-color:#2a2a2a}
+.notif-dropdown.open{display:block}
+.notif-hdr{padding:12px 16px;border-bottom:1px solid #f0ede8;display:flex;align-items:center;justify-content:space-between}
+body.dark .notif-hdr{border-color:#2a2a2a}
+.notif-hdr-title{font-size:13px;font-weight:600}
+.notif-clear{font-size:11px;color:#2451b3;cursor:pointer}
+.notif-item{padding:10px 16px;border-bottom:1px solid #f0ede8;display:flex;gap:10px;align-items:start;cursor:pointer;transition:background .1s}
+body.dark .notif-item{border-color:#2a2a2a}
+.notif-item:hover{background:#fafaf8}
+body.dark .notif-item:hover{background:#222}
+.notif-item.unread{background:#f0f6ff}
+body.dark .notif-item.unread{background:#0a1a2a}
+.notif-item:last-child{border-bottom:none}
+.notif-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.ni-green{background:#e6f5ec}
+.ni-yellow{background:#fef9e6}
+.ni-blue{background:#e8f0ff}
+.notif-text{font-size:12px;line-height:1.5;color:#1a1a1a}
+body.dark .notif-text{color:#ccc}
+.notif-time{font-size:10px;color:#aaa;margin-top:3px}
+.notif-action{font-size:11px;color:#2451b3;margin-top:3px}
+.notif-empty{padding:24px;text-align:center;color:#aaa;font-size:12px}
+/* DASHBOARD PROJ CARDS */
+.dash-proj-card{background:#fff;border:1px solid #e8e6e0;border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+body.dark .dash-proj-card{background:#1a1a1a;border-color:#2a2a2a}
+.dash-proj-card:hover{border-color:#1a1a1a;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+body.dark .dash-proj-card:hover{border-color:#444}
+.dpc-top{display:flex;align-items:start;justify-content:space-between;margin-bottom:10px}
+.dpc-title{font-size:14px;font-weight:600}
+.dpc-meta{font-size:11px;color:#888;margin-top:2px}
+.dpc-actions{display:flex;gap:6px;flex-shrink:0}
+.dpc-bar-wrap{height:5px;background:#eee;border-radius:3px;overflow:hidden;margin-bottom:10px}
+body.dark .dpc-bar-wrap{background:#2a2a2a}
+.dpc-bar{height:100%;border-radius:3px;transition:width .3s}
+.dpc-langs{display:flex;flex-wrap:wrap;gap:5px}
+.dlp{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.dlp-ok{background:#e6f5ec;color:#1a7a3f}
+.dlp-go{background:#e8f0ff;color:#2451b3}
+.dlp-wait{background:#f0ede8;color:#888}
+.dlp-ready{background:#fef9e6;color:#8a6a00}
+.dpc-done-badge{display:inline-flex;align-items:center;gap:4px;background:#e6f5ec;color:#1a7a3f;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px}
+/* FILTER TABS */
+.filter-tabs{display:flex;background:#f0ede8;border-radius:8px;padding:3px;gap:2px}
+body.dark .filter-tabs{background:#111}
+.ftab{padding:5px 14px;font-size:12px;border-radius:6px;color:#888;cursor:pointer;transition:background .15s,color .15s}
+.ftab.active{background:#fff;color:#1a1a1a;box-shadow:0 0 0 0.5px #e0ddd8}
+body.dark .ftab.active{background:#2a2a2a;color:#fff}
+/* DARK TOGGLE in menu */
+.dark-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer}
+.toggle-track{width:32px;height:18px;background:#ccc;border-radius:9px;position:relative;transition:background .2s;flex-shrink:0}
+.toggle-track.on{background:#1a1a1a}
+.toggle-thumb{width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:left .2s}
+.toggle-track.on .toggle-thumb{left:16px}
+/* TASK CARDS for translator */
+.task-card{background:#fff;border:1px solid #e8e6e0;border-radius:12px;padding:14px;margin-bottom:10px}
+body.dark .task-card{background:#1a1a1a;border-color:#2a2a2a}
+.tc-proj-label{font-size:10px;color:#888;margin-bottom:4px}
+.tc-lang-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.tc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.tc-stat{background:#fafaf8;border-radius:6px;padding:8px;text-align:center}
+body.dark .tc-stat{background:#111}
+.tc-stat-v{font-size:16px;font-weight:600}
+.tc-stat-l{font-size:9px;color:#aaa;margin-top:1px}
+.tc-prog{height:4px;background:#eee;border-radius:2px;overflow:hidden;margin-bottom:10px}
+body.dark .tc-prog{background:#2a2a2a}
+.tc-actions{display:flex;gap:6px}
+.tc-btn{font-size:11px;border:1px solid #e8e6e0;border-radius:6px;padding:6px 10px;background:#fff;color:#1a1a1a;cursor:pointer;flex:1;text-align:center;transition:background .1s}
+body.dark .tc-btn{background:#111;border-color:#2a2a2a;color:#ccc}
+.tc-btn:hover{background:#f5f4f0}
+.tc-btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;flex:none}
+body.dark .tc-btn.primary{background:#fff;color:#000}
+/* TOKEN LIMIT BAR */
+.token-limit-bar{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+body.dark .token-limit-bar{background:#111;border-color:#2a2a2a}
+.tlb-label{font-size:12px;color:#888;white-space:nowrap}
+.tlb-bar{flex:1;height:4px;background:#eee;border-radius:2px;overflow:hidden}
+body.dark .tlb-bar{background:#2a2a2a}
+.tlb-val{font-size:12px;font-weight:600;white-space:nowrap}
 /* SUBTITLES */
 .sub-row{display:grid;grid-template-columns:40px 160px 1fr 1fr;border-bottom:1px solid #f0ede8;align-items:start;}
 .sub-row:last-child{border-bottom:none}
@@ -370,6 +500,20 @@ a{color:#2451b3}
       </div>
     </div>
     <span><span class="db-dot" id="db-dot"></span></span>
+    <!-- Notification Bell -->
+    <div style="position:relative;">
+      <div onclick="toggleNotifications()" style="width:32px;height:32px;border-radius:8px;background:#2a2a2a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;" title="Powiadomienia">
+        <svg width="15" height="15" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div id="notif-dot" style="display:none;width:8px;height:8px;border-radius:50%;background:#f87171;position:absolute;top:4px;right:4px;border:1.5px solid #1a1a1a;"></div>
+      </div>
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-hdr">
+          <span class="notif-hdr-title">Powiadomienia</span>
+          <span class="notif-clear" onclick="markAllRead()">Oznacz jako przeczytane</span>
+        </div>
+        <div id="notif-list"><div class="notif-empty">Brak powiadomień</div></div>
+      </div>
+    </div>
     <div class="hdr-user" onclick="toggleUserMenu()">
       <div class="avatar" id="hdr-avatar">?</div>
       <div class="user-menu" id="user-menu">
@@ -378,6 +522,11 @@ a{color:#2451b3}
         <div class="user-menu-sep"></div>
         <div class="user-menu-item" onclick="switchTab('team')">👥 Zarządzaj zespołem</div>
         <div class="user-menu-sep"></div>
+        <div class="dark-toggle-row" onclick="toggleDarkMode()">
+          <span style="font-size:13px;">🌙 Ciemny motyw</span>
+          <div class="toggle-track" id="dark-toggle-track"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="user-menu-sep"></div>
         <div class="user-menu-item danger" onclick="doLogout()">↩ Wyloguj się</div>
       </div>
     </div>
@@ -385,20 +534,20 @@ a{color:#2451b3}
 </header>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('xliff')">📄 XLIFF</div>
-  <div class="tab" onclick="switchTab('pptx')">📊 PowerPoint <span class="tab-badge" id="pptx-count"></span></div>
   <div class="tab" onclick="switchTab('projects')">📁 Projekty <span class="tab-badge" id="proj-count">0</span></div>
-  <div class="tab" onclick="switchTab('subtitles')">🎬 Napisy</div>
+  <div class="tab hide-viewer" onclick="switchTab('xliff')">📄 XLIFF</div>
+  <div class="tab hide-viewer" onclick="switchTab('pptx')">📊 PowerPoint <span class="tab-badge" id="pptx-count"></span></div>
+  <div class="tab hide-viewer" onclick="switchTab('subtitles')">🎬 Napisy</div>
   <div class="tab-sep"></div>
   <div class="tab" onclick="switchTab('history')">🕐 Historia <span class="tab-badge" id="hist-count">0</span></div>
   <div class="tab" onclick="switchTab('dict')">📖 Słownik <span class="tab-badge" id="dict-count">0</span></div>
   <div class="tab" onclick="switchTab('tm')">🧠 Pamięć TM <span class="tab-badge" id="tm-count">0</span></div>
   <div class="tab" onclick="switchTab('team')">👥 Zespół</div>
   <div class="tab" onclick="switchTab('shop')">🪙 Kup tokeny</div>
-</div>
+</div></div>
 
 <!-- XLIFF -->
-<div class="tab-content active" id="tab-xliff"><div class="container">
+<div class="tab-content" id="tab-xliff"><div class="container">
   <div class="card">
     <p class="card-title">Klucz API Anthropic</p>
     <div class="input-row">
@@ -745,32 +894,53 @@ a{color:#2451b3}
 </div></div>
 
 <!-- PROJECTS -->
-<div class="tab-content" id="tab-projects"><div class="container">
+<div class="tab-content active" id="tab-projects"><div class="container">
 
   <!-- Project LIST view -->
   <div id="proj-list-view">
-    <div class="toolbar" style="margin-bottom:14px;">
-      <div>
-        <h2 style="font-size:16px;font-weight:600;">Projekty tłumaczeń</h2>
-        <p style="font-size:12px;color:#888;margin-top:2px;">Zarządzaj projektami i śledź postęp tłumaczeń</p>
+    <!-- Metrics (admin only) -->
+    <div id="proj-metrics" class="hide-viewer" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+      <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Aktywne projekty</div>
+        <div style="font-size:20px;font-weight:600;" id="dash-active">—</div>
       </div>
-      <button class="btn btn-dark hide-viewer" onclick="showNewProjectModal()">+ Nowy projekt</button>
+      <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Tokeny</div>
+        <div style="font-size:20px;font-weight:600;color:#1a7a3f;" id="dash-tokens">—</div>
+      </div>
+      <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Ukończone projekty</div>
+        <div style="font-size:20px;font-weight:600;" id="dash-done">—</div>
+      </div>
+      <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Koszt miesięczny</div>
+        <div style="font-size:20px;font-weight:600;" id="dash-cost">— PLN</div>
+      </div>
     </div>
 
-    <div class="filter-row">
-      <input type="search" id="proj-filter" placeholder="Szukaj projektu..." oninput="renderProjectList()" style="max-width:280px;" />
-      <select id="proj-filter-status" onchange="renderProjectList()" style="width:160px;">
-        <option value="all">Wszystkie statusy</option>
-        <option value="active">Aktywne</option>
-        <option value="completed">Ukończone</option>
-        <option value="archived">Zarchiwizowane</option>
-      </select>
-      <button class="btn btn-sm" onclick="loadProjects()">↺ Odśwież</button>
+    <!-- Translator token limit bar -->
+    <div id="proj-token-bar" style="display:none;" class="token-limit-bar">
+      <div class="tlb-label">Tokeny miesięczne:</div>
+      <div class="tlb-bar"><div id="tlb-fill" style="height:100%;border-radius:2px;background:#2451b3;transition:width .3s;"></div></div>
+      <div class="tlb-val" id="tlb-val">—</div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div class="filter-tabs">
+        <div class="ftab active" onclick="setProjFilter('active',this)">Aktywne</div>
+        <div class="ftab" onclick="setProjFilter('completed',this)">Ukończone</div>
+        <div class="ftab" onclick="setProjFilter('all',this)">Wszystkie</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="search" id="proj-filter" placeholder="Szukaj..." oninput="renderProjectList()" style="width:200px;" />
+        <button class="btn btn-sm" onclick="loadProjects()">↺</button>
+        <button class="btn btn-dark btn-sm hide-viewer" onclick="showNewProjectModal()">+ Nowy projekt</button>
+      </div>
     </div>
 
     <div id="proj-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie projektów...</div>
-    <div class="proj-list" id="proj-list-container">
-      <div style="padding:32px;text-align:center;color:#ccc;font-size:13px;">Brak projektów — utwórz pierwszy projekt</div>
+    <div id="proj-list-container">
+      <div style="padding:32px;text-align:center;color:#ccc;font-size:13px;">Brak projektów</div>
     </div>
   </div>
 
@@ -1288,6 +1458,10 @@ async function loadApp(){
     updateTMUI();
     setDbStatus(true);
   }catch(e){setDbStatus(false);console.error(e);}
+  // Init dark mode
+  initDarkMode();
+  // Load notifications for admins
+  if(currentRole==='admin') loadNotifications();
 }
 
 async function loadOrgBalance(){
@@ -1315,7 +1489,7 @@ document.addEventListener('click',e=>{
 // TABS
 // ══════════════════════════════════════════════════════════
 function switchTab(name){
-  const names=['xliff','pptx','subtitles','projects','history','dict','tm','team','shop'];
+  const names=['projects','xliff','pptx','subtitles','history','dict','tm','team','shop'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
@@ -2200,7 +2374,6 @@ async function loadProjects(){
   document.getElementById('proj-loading').style.display='flex';
   try{
     projectsCache = await dbGet('projects',`?organization_id=eq.${currentOrg.id}&order=created_at.desc`);
-    // Load assignments for all projects
     if(projectsCache.length){
       const ids = projectsCache.map(p=>p.id).join(',');
       const assignments = await dbGet('project_language_assignments',`?project_id=in.(${ids})`);
@@ -2208,45 +2381,61 @@ async function loadProjects(){
     }
     document.getElementById('proj-count').textContent = projectsCache.length;
     renderProjectList();
+    await loadDashMetrics();
   }catch(e){ console.error('loadProjects error:',e); }
   document.getElementById('proj-loading').style.display='none';
 }
 
 function renderProjectList(){
   const ft=(document.getElementById('proj-filter')?.value||'').toLowerCase();
-  const fs=document.getElementById('proj-filter-status')?.value||'all';
-  let data=projectsCache;
+  let data=[...projectsCache];
+  if(projFilterMode==='active') data=data.filter(p=>p.status==='active');
+  else if(projFilterMode==='completed') data=data.filter(p=>p.status==='completed'||p.status==='archived');
   if(ft) data=data.filter(p=>p.name.toLowerCase().includes(ft)||(p.description||'').toLowerCase().includes(ft));
-  if(fs!=='all') data=data.filter(p=>p.status===fs);
+  if(currentRole==='translator'){
+    data=data.filter(p=>(p.assignments||[]).some(a=>a.assigned_user_id===currentUser.id));
+  }
   const container=document.getElementById('proj-list-container');
   if(!data.length){
-    container.innerHTML='<div style="padding:32px;text-align:center;color:#ccc;font-size:13px;">Brak projektów — utwórz pierwszy projekt klikając "+ Nowy projekt"</div>';
+    const msg=projFilterMode==='active'?'Brak aktywnych projektów':projFilterMode==='completed'?'Brak ukończonych projektów':'Brak projektów';
+    container.innerHTML=`<div style="padding:40px;text-align:center;color:#ccc;font-size:13px;background:#fff;border:1px solid #eee;border-radius:10px;">${msg}</div>`;
     return;
   }
+  const isDone=projFilterMode==='completed';
   container.innerHTML=data.map(p=>{
     const asgn=p.assignments||[];
-    const langPills=asgn.map(a=>`<span class="lang-pill lp-${a.status==='ready'?'approved':a.status}">${getLangFlag(a.lang)} ${a.lang.substring(0,2).toUpperCase()} <span style="font-size:10px;">${statusLabel(a.status)}</span>${a.status==='ready'?'<span style="margin-left:4px;">↓</span>':''}</span>`).join('');
-    const done=asgn.filter(a=>a.status==='approved').length;
+    const readyCount=asgn.filter(a=>a.status==='ready'||a.status==='approved').length;
     const total=asgn.length;
-    const pct=total>0?Math.round(done/total*100):0;
-    return`<div class="proj-card">
-      <div style="display:flex;align-items:start;justify-content:space-between;gap:8px;">
-        <div class="proj-card-title" onclick="openProject('${p.id}')" style="flex:1;cursor:pointer;">${esc(p.name)}</div>
-        <button class="btn btn-sm hide-viewer" onclick="event.stopPropagation();editProject('${p.id}')" title="Edytuj projekt" style="flex-shrink:0;">✏️</button>
-        <button class="btn btn-red btn-sm hide-viewer" onclick="event.stopPropagation();deleteProject('${p.id}','${esc(p.name)}')" title="Usuń projekt" style="flex-shrink:0;">🗑</button>
+    const pct=total>0?Math.round(readyCount/total*100):0;
+    const barColor=pct===100?'#2a8a4a':'#1a1a1a';
+    const visibleAsgn=currentRole==='translator'?asgn.filter(a=>a.assigned_user_id===currentUser.id):asgn;
+    const langPills=visibleAsgn.map(a=>{
+      const cls=a.status==='approved'?'dlp-ok':a.status==='ready'?'dlp-ready':a.status==='in_progress'?'dlp-go':'dlp-wait';
+      return`<span class="dlp ${cls}">${getLangFlag(a.lang)} ${a.lang.substring(0,2).toUpperCase()} · ${statusLabel(a.status)}</span>`;
+    }).join('');
+    return`<div class="dash-proj-card" style="${isDone?'opacity:.75;':''}" onclick="openProject('${p.id}')">
+      <div class="dpc-top">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="dpc-title">${esc(p.name)}</div>
+            ${isDone?'<span class="dpc-done-badge">✓ Ukończony</span>':''}
+          </div>
+          <div class="dpc-meta">${p.file_type?.toUpperCase()||'—'} · ${getLangFlag(p.source_lang)} ${esc(p.source_lang)} · ${fmtDate(p.created_at)}</div>
+        </div>
+        <div class="dpc-actions" onclick="event.stopPropagation()">
+          ${!isDone?`<button class="btn btn-sm hide-viewer" onclick="editProject('${p.id}')" title="Edytuj">✏️</button>`:''}
+          <button class="btn btn-sm hide-viewer" onclick="deleteProject('${p.id}','${esc(p.name)}')" title="Usuń">🗑</button>
+        </div>
       </div>
-      <div class="proj-card-meta" onclick="openProject('${p.id}')" style="cursor:pointer;">
-        <span>📄 ${p.file_type?.toUpperCase()||'—'}</span>
-        <span>🌐 Źródło: ${getLangFlag(p.source_lang)} ${esc(p.source_lang)}</span>
-        <span>📅 ${fmtDate(p.created_at)}</span>
-        <span>${done}/${total} języków zatwierdzonych</span>
+      <div class="dpc-bar-wrap"><div class="dpc-bar" style="width:${pct}%;background:${barColor};"></div></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="dpc-langs">${langPills||'<span style="color:#ccc;font-size:12px;">Brak języków</span>'}</div>
+        <div style="font-size:11px;color:#888;white-space:nowrap;margin-left:8px;">${readyCount}/${total} języków</div>
       </div>
-      <div class="proj-langs" onclick="openProject('${p.id}')" style="cursor:pointer;">${langPills||'<span style="color:#ccc;font-size:12px;">Brak przypisanych języków</span>'}</div>
-      <div class="progress-bar-thin" style="margin-top:10px;" onclick="openProject('${p.id}')"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-      ${p.description?`<p style="font-size:12px;color:#aaa;margin-top:8px;" onclick="openProject('${p.id}')">${esc(p.description)}</p>`:''}
     </div>`;
   }).join('');
 }
+
 
 function statusLabel(s){ return {pending:'Oczekuje',in_progress:'W toku',ready:'Gotowe do pobrania',approved:'Zatwierdzone'}[s]||s; }
 function getLangFlag(lang){ return LANGS.find(l=>l.code===lang)?.flag||'🌐'; }
@@ -2787,6 +2976,12 @@ async function submitForReview(lang){
     if(asgn) asgn.status='ready';
     switchEditorLang(lang);
     setAutosaveIndicator('✓ Oznaczono jako gotowe do pobrania — admin może teraz pobrać XLIFF');
+    // Notify admins
+    await createNotification('lang_ready',
+      `${getLangFlag(lang)} ${lang} gotowy do pobrania`,
+      `Projekt: ${currentProject.name}`,
+      currentProject.id, lang);
+    await loadNotifications();
   }catch(e){ alert('Błąd: '+e.message); }
 }
 
@@ -3483,6 +3678,12 @@ function updateTokenBadge(){
   if(!el) return;
   el.textContent = formatTokens(balance);
   el.className = 'token-amount' + (balance < 10000 ? ' low' : '') + (balance <= 0 ? ' empty' : '');
+  // Notify admins if low (only once per session)
+  if(balance < 10000 && balance > 0 && !sessionStorage.getItem('lowTokenNotifSent') && currentRole==='admin'){
+    sessionStorage.setItem('lowTokenNotifSent','1');
+    createNotification('tokens_low','Niskie saldo tokenów',
+      `Pozostało ${formatTokens(balance)} tokenów — rozważ doładowanie`);
+  }
 }
 
 function formatTokens(n){
@@ -3598,6 +3799,197 @@ async function deductTokens(charsTranslated, filename, lang){
     currentOrg.tokens_balance = data.balance_after;
     updateTokenBadge();
   }catch(e){ console.error('Token deduction error:', e); }
+}
+
+
+// ══════════════════════════════════════════════════════════
+// DARK MODE
+// ══════════════════════════════════════════════════════════
+function initDarkMode(){
+  const dark = localStorage.getItem('darkMode') === 'true';
+  if(dark) applyDarkMode(true);
+}
+
+function applyDarkMode(on){
+  document.body.classList.toggle('dark', on);
+  const track = document.getElementById('dark-toggle-track');
+  if(track) track.classList.toggle('on', on);
+}
+
+function toggleDarkMode(){
+  const isDark = document.body.classList.contains('dark');
+  applyDarkMode(!isDark);
+  localStorage.setItem('darkMode', !isDark);
+}
+
+// ══════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════════════════════
+let notificationsCache = [];
+
+async function loadNotifications(){
+  if(!currentOrg||!currentUser) return;
+  try{
+    const data = await dbGet('notifications',
+      `?user_id=eq.${currentUser.id}&order=created_at.desc&limit=20`);
+    notificationsCache = data;
+    renderNotifications();
+    updateNotifDot();
+  }catch(e){ console.error('Notifications error:', e); }
+}
+
+function updateNotifDot(){
+  const unread = notificationsCache.filter(n=>!n.is_read).length;
+  const dot = document.getElementById('notif-dot');
+  if(dot) dot.style.display = unread > 0 ? 'block' : 'none';
+}
+
+function renderNotifications(){
+  const list = document.getElementById('notif-list');
+  if(!list) return;
+  if(!notificationsCache.length){
+    list.innerHTML = '<div class="notif-empty">Brak powiadomień</div>';
+    return;
+  }
+  const icons = {
+    lang_ready: {icon:'✓', cls:'ni-green'},
+    tokens_low: {icon:'🪙', cls:'ni-yellow'},
+    project_created: {icon:'📁', cls:'ni-blue'},
+    project_done: {icon:'✓', cls:'ni-green'},
+  };
+  list.innerHTML = notificationsCache.map(n => {
+    const ic = icons[n.type] || {icon:'●', cls:'ni-blue'};
+    const timeStr = fmtTimeAgo(n.created_at);
+    return `<div class="notif-item${n.is_read?'':' unread'}" onclick="onNotifClick('${n.id}','${n.link_project_id||''}')">
+      <div class="notif-icon ${ic.cls}">${ic.icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="notif-text">${esc(n.title)}</div>
+        ${n.message?`<div class="notif-text" style="color:#888;margin-top:2px;">${esc(n.message)}</div>`:''}
+        ${n.link_project_id?`<div class="notif-action">Otwórz projekt →</div>`:''}
+        <div class="notif-time">${timeStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtTimeAgo(iso){
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff/60000);
+  if(mins < 1) return 'przed chwilą';
+  if(mins < 60) return `przed ${mins} min`;
+  const hrs = Math.floor(mins/60);
+  if(hrs < 24) return `przed ${hrs} godz.`;
+  const days = Math.floor(hrs/24);
+  return `przed ${days} dni`;
+}
+
+async function onNotifClick(notifId, projectId){
+  // Mark as read
+  await dbPatch('notifications', {is_read: true}, `?id=eq.${notifId}`);
+  notificationsCache = notificationsCache.map(n => n.id===notifId?{...n,is_read:true}:n);
+  renderNotifications();
+  updateNotifDot();
+  // Navigate to project if applicable
+  if(projectId && projectId !== 'null'){
+    document.getElementById('notif-dropdown').classList.remove('open');
+    switchTab('projects');
+    setTimeout(()=>openProject(projectId), 300);
+  }
+}
+
+async function markAllRead(){
+  if(!notificationsCache.length) return;
+  const unread = notificationsCache.filter(n=>!n.is_read);
+  for(const n of unread){
+    await dbPatch('notifications', {is_read:true}, `?id=eq.${n.id}`);
+  }
+  notificationsCache = notificationsCache.map(n=>({...n,is_read:true}));
+  renderNotifications();
+  updateNotifDot();
+}
+
+function toggleNotifications(){
+  const dd = document.getElementById('notif-dropdown');
+  dd.classList.toggle('open');
+  if(dd.classList.contains('open')) loadNotifications();
+  document.getElementById('user-menu')?.classList.remove('open');
+}
+
+// Close notifications when clicking outside
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#notif-dropdown') && !e.target.closest('[onclick="toggleNotifications()"]')){
+    document.getElementById('notif-dropdown')?.classList.remove('open');
+  }
+});
+
+async function createNotification(type, title, message, projectId=null, lang=null){
+  if(!currentOrg) return;
+  try{
+    await supa.rpc('notify_admins', {
+      org_id: currentOrg.id,
+      notif_type: type,
+      notif_title: title,
+      notif_message: message,
+      proj_id: projectId || null,
+      lang: lang || null
+    });
+  }catch(e){ console.error('Notification error:', e); }
+}
+
+// ══════════════════════════════════════════════════════════
+// DASHBOARD METRICS
+// ══════════════════════════════════════════════════════════
+let projFilterMode = 'active';
+
+function setProjFilter(mode, el){
+  projFilterMode = mode;
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderProjectList();
+}
+
+async function loadDashMetrics(){
+  if(!currentOrg) return;
+  // Active projects
+  const active = projectsCache.filter(p=>p.status==='active').length;
+  const done = projectsCache.filter(p=>p.status==='completed').length;
+  const elA = document.getElementById('dash-active');
+  const elD = document.getElementById('dash-done');
+  const elT = document.getElementById('dash-tokens');
+  const elC = document.getElementById('dash-cost');
+  if(elA) elA.textContent = active;
+  if(elD) elD.textContent = done;
+  if(elT) elT.textContent = formatTokens(currentOrg.tokens_balance||0);
+  // Monthly cost from history
+  try{
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const hist = await dbGet('translation_history',
+      `?${orgParam()}&created_at=gte.${monthStart}&select=cost_pln`);
+    const total = hist.reduce((a,h)=>a+Number(h.cost_pln||0),0);
+    if(elC) elC.textContent = fmtPLN(total)+' PLN';
+  }catch(e){}
+
+  // Show translator token limit bar
+  if(currentRole === 'translator'){
+    const members = await dbGet('organization_members',
+      `?user_id=eq.${currentUser.id}&organization_id=eq.${currentOrg.id}`);
+    const m = members[0];
+    const bar = document.getElementById('proj-token-bar');
+    const fill = document.getElementById('tlb-fill');
+    const val = document.getElementById('tlb-val');
+    if(bar && m){
+      if(m.monthly_token_limit){
+        bar.style.display='flex';
+        const pct = Math.min(100, Math.round((m.tokens_used_this_month||0)/m.monthly_token_limit*100));
+        if(fill){fill.style.width=pct+'%';fill.style.background=pct>90?'#b32424':'#2451b3';}
+        if(val) val.textContent=`${formatTokens(m.tokens_used_this_month||0)} / ${formatTokens(m.monthly_token_limit)}`;
+      }
+    }
+    // Hide admin metrics
+    const metrics = document.getElementById('proj-metrics');
+    if(metrics) metrics.style.display='none';
+  }
 }
 
 // ══════════════════════════════════════════════════════════
