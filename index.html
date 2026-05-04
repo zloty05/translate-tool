@@ -6,7 +6,7 @@
 <title>TranslateTool</title>
 <script>
 // Apply dark mode immediately to prevent flash
-if(localStorage.getItem('darkMode')==='true'){
+if(localStorage.getItem('darkMode')!=='false'){
   document.documentElement.classList.add('dark');
   document.documentElement.style.background='#0f0f0f';
   document.body && document.body.classList.add('dark');
@@ -3985,7 +3985,7 @@ async function deductTokens(charsTranslated, filename, lang){
 // DARK MODE
 // ══════════════════════════════════════════════════════════
 function initDarkMode(){
-  const dark = localStorage.getItem('darkMode') === 'true';
+  const dark = localStorage.getItem('darkMode') !== 'false';
   applyDarkMode(dark);
 }
 
