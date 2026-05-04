@@ -186,6 +186,18 @@ a{color:#2451b3}
 .token-amount.empty{color:#f87171;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .token-label{font-size:10px;color:#666}
+/* SUBTITLES */
+.sub-row{display:grid;grid-template-columns:40px 160px 1fr 1fr;border-bottom:1px solid #f0ede8;align-items:start;}
+.sub-row:last-child{border-bottom:none}
+.sub-row:hover{background:#fdfcfa}
+.sub-col{padding:6px 8px;font-size:12px;}
+.sub-num{color:#ccc;text-align:center;font-size:11px;padding-top:10px;}
+.sub-time{font-family:monospace;font-size:10px;color:#888;line-height:1.6;padding-top:8px;}
+.sub-src{color:#555;line-height:1.5;padding:6px 8px;}
+.sub-textarea{width:100%;font-size:12px;font-family:inherit;border:1px solid #e0ddd8;border-radius:5px;padding:5px 8px;resize:vertical;min-height:40px;background:#fafaf8;color:#1a1a1a;transition:border-color .15s;}
+.sub-textarea:focus{outline:none;border-color:#1a1a1a;}
+.sub-textarea.changed{border-color:#f0c040;background:#fffdf0;}
+.sub-textarea.saved{border-color:#2a8a4a;background:#f8fdf9;}
 /* PROJECTS */
 .proj-list{display:grid;gap:12px}
 .proj-card{background:#fff;border:1px solid #e8e6e0;border-radius:12px;padding:18px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
@@ -376,6 +388,7 @@ a{color:#2451b3}
   <div class="tab active" onclick="switchTab('xliff')">📄 XLIFF</div>
   <div class="tab" onclick="switchTab('pptx')">📊 PowerPoint <span class="tab-badge" id="pptx-count"></span></div>
   <div class="tab" onclick="switchTab('projects')">📁 Projekty <span class="tab-badge" id="proj-count">0</span></div>
+  <div class="tab" onclick="switchTab('subtitles')">🎬 Napisy</div>
   <div class="tab-sep"></div>
   <div class="tab" onclick="switchTab('history')">🕐 Historia <span class="tab-badge" id="hist-count">0</span></div>
   <div class="tab" onclick="switchTab('dict')">📖 Słownik <span class="tab-badge" id="dict-count">0</span></div>
@@ -650,6 +663,83 @@ a{color:#2451b3}
       🔑 <strong>Admin</strong> — pełny dostęp, zarządzanie zespołem, usuwanie danych<br>
       ✏️ <strong>Translator</strong> — tłumaczenie, edycja słownika i TM, pobieranie plików<br>
       👁 <strong>Viewer</strong> — tylko podgląd historii i słownika, pobieranie plików
+    </div>
+  </div>
+</div></div>
+
+<!-- SUBTITLES -->
+<div class="tab-content" id="tab-subtitles"><div class="container">
+  <div class="card">
+    <p class="card-title">Klucz API Anthropic</p>
+    <div class="input-row">
+      <input type="password" id="sub-api-key" placeholder="sk-ant-api03-..." />
+      <button class="btn btn-sm" onclick="toggleKey('sub-api-key',this)">Pokaż</button>
+    </div>
+    <p style="font-size:11px;color:#aaa;margin-top:6px;"><a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a> · Klucz nie jest zapisywany.</p>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Plik napisów</p>
+    <p class="card-sub">Obsługiwane formaty: <strong>.srt</strong> (SubRip) i <strong>.vtt</strong> (WebVTT). Znaczniki czasowe zostają bez zmian.</p>
+    <div class="drop-zone" id="sub-drop" onclick="document.getElementById('sub-file').click()"
+      ondragover="dzOver(event,'sub-drop')" ondragleave="dzLeave('sub-drop')" ondrop="dzDrop(event,'sub-drop',loadSubtitles)">
+      <input type="file" id="sub-file" accept=".srt,.vtt" onchange="loadSubtitles(event.target.files[0])" />
+      <div style="font-size:22px;color:#ccc;margin-bottom:6px;">↑</div>
+      <p style="font-weight:600;font-size:14px;">Przeciągnij plik .srt lub .vtt tutaj</p>
+      <p style="font-size:12px;color:#aaa;margin-top:3px;">lub kliknij</p>
+    </div>
+    <div class="badges" id="sub-badges" style="display:none;">
+      <span class="badge b-blue" id="sub-fname"></span>
+      <span class="badge b-green" id="sub-count"></span>
+      <span class="badge b-purple" id="sub-tm-hits" style="display:none;"></span>
+    </div>
+  </div>
+
+  <div class="card" id="sub-lang-card" style="display:none;">
+    <div class="row">
+      <div><label>Język docelowy</label><select id="sub-target-lang" style="width:220px;" onchange="subLangChange()"></select></div>
+      <div style="margin-top:19px;">
+        <button class="btn btn-dark" onclick="startSubtitleTranslation()">✦ Tłumacz napisy</button>
+      </div>
+    </div>
+    <div class="cost-box" id="sub-cost-box" style="display:none;">
+      <div class="cost-tm-savings" id="sub-cost-tm" style="display:none;"></div>
+      <div class="cost-grid" id="sub-cost-grid"></div>
+      <div class="cost-note" id="sub-cost-note"></div>
+    </div>
+    <div class="progress-wrap" id="sub-pw"><div class="progress-fill" id="sub-pf" style="width:0%"></div></div>
+    <p class="status-line" id="sub-status"></p>
+  </div>
+
+  <div class="card" id="sub-segs-card" style="display:none;">
+    <div class="toolbar">
+      <p class="card-title" style="margin:0;">Napisy</p>
+      <div class="row">
+        <span class="badge b-yellow" id="sub-prog-badge">0/0</span>
+        <select id="sub-filter-status" onchange="renderSubtitleTable()" style="width:145px;font-size:12px;">
+          <option value="all">Wszystkie</option>
+          <option value="pending">Oczekujące</option>
+          <option value="done">Przetłumaczone</option>
+          <option value="tm">Z TM</option>
+        </select>
+        <button class="btn btn-sm" onclick="subtitleRetranslateEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-sm" onclick="exportSubtitles('srt')">↓ SRT</button>
+        <button class="btn btn-sm" onclick="exportSubtitles('vtt')">↓ VTT</button>
+      </div>
+    </div>
+    <p class="hint">Znaczniki czasowe są zachowane bez zmian. <span style="color:#6b21a8;">Fioletowe</span> = z TM.</p>
+    <div class="table-wrap" style="margin-top:6px;">
+      <div style="display:grid;grid-template-columns:40px 160px 1fr 1fr;background:#fafaf8;border-bottom:1px solid #eee;">
+        <div style="padding:7px 8px;font-size:11px;font-weight:600;color:#999;">#</div>
+        <div style="padding:7px 8px;font-size:11px;font-weight:600;color:#999;">Czas</div>
+        <div style="padding:7px 8px;font-size:11px;font-weight:600;color:#999;" id="sub-src-header">Źródło</div>
+        <div style="padding:7px 8px;font-size:11px;font-weight:600;color:#999;" id="sub-tgt-header">Tłumaczenie</div>
+      </div>
+      <div id="sub-tbody"></div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn btn-dark" onclick="exportSubtitles('srt')">↓ Pobierz SRT</button>
+      <button class="btn btn-sm" onclick="exportSubtitles('vtt')">↓ Pobierz VTT</button>
     </div>
   </div>
 </div></div>
@@ -1190,6 +1280,7 @@ async function loadApp(){
   // Init UI
   document.getElementById('target-lang').innerHTML=langOptionsHTML();
   document.getElementById('pptx-target-lang').innerHTML=langOptionsHTML();
+  document.getElementById('sub-target-lang').innerHTML=langOptionsHTML();
   buildDictNewRow();buildDictLangFilter();
   // Load data
   try{
@@ -1224,7 +1315,7 @@ document.addEventListener('click',e=>{
 // TABS
 // ══════════════════════════════════════════════════════════
 function switchTab(name){
-  const names=['xliff','pptx','projects','history','dict','tm','team','shop'];
+  const names=['xliff','pptx','subtitles','projects','history','dict','tm','team','shop'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
@@ -1234,6 +1325,7 @@ function switchTab(name){
   if(name==='team')loadTeam();
   if(name==='shop'){updateShopBalance();loadTokenHistory();}
   if(name==='projects'){loadProjects();}
+  if(name==='subtitles'){renderSubtitleTable();}
 }
 
 // ══════════════════════════════════════════════════════════
@@ -3066,6 +3158,319 @@ async function importProjectExcel(e){
   updateEditorProgress(lang);
   alert('Zaimportowano '+n+' tłumaczeń.');
   e.target.value='';
+}
+
+
+// ══════════════════════════════════════════════════════════
+// SUBTITLES (SRT / VTT)
+// ══════════════════════════════════════════════════════════
+let subtitleSegs=[];
+let subtitleFormat='srt';
+let subtitleFilename='';
+
+// ── PARSERS ──
+
+function parseSRT(text){
+  const blocks=text.trim().split(/\n\s*\n/);
+  const segs=[];
+  blocks.forEach(block=>{
+    const lines=block.trim().split(/\n/);
+    if(lines.length<3) return;
+    const num=lines[0].trim();
+    const time=lines[1].trim();
+    if(!time.includes('-->')) return;
+    const txt=lines.slice(2).join('\n').trim();
+    if(!txt) return;
+    segs.push({num,time,source:txt,target:'',status:'pending',fromTM:false});
+  });
+  return segs;
+}
+
+function parseVTT(text){
+  // Remove VTT header
+  const body=text.replace(/^WEBVTT[^\n]*\n/,'').trim();
+  const blocks=body.split(/\n\s*\n/);
+  const segs=[];
+  let numCounter=1;
+  blocks.forEach(block=>{
+    const lines=block.trim().split(/\n/);
+    if(!lines.length) return;
+    let timeIdx=0;
+    let num=String(numCounter);
+    // Check if first line is a cue identifier (not a timestamp)
+    if(!lines[0].includes('-->') && lines.length>1 && lines[1].includes('-->')){
+      num=lines[0].trim();
+      timeIdx=1;
+    } else if(!lines[0].includes('-->')) return;
+    const time=lines[timeIdx].trim();
+    const txt=lines.slice(timeIdx+1).join('\n').trim();
+    if(!txt) return;
+    segs.push({num,time,source:txt,target:'',status:'pending',fromTM:false});
+    numCounter++;
+  });
+  return segs;
+}
+
+// ── LOAD FILE ──
+
+async function loadSubtitles(file){
+  if(!file) return;
+  subtitleFilename=file.name;
+  subtitleFormat=file.name.toLowerCase().endsWith('.vtt')?'vtt':'srt';
+  const text=await readFile(file);
+  subtitleSegs=subtitleFormat==='vtt'?parseVTT(text):parseSRT(text);
+
+  // Apply TM
+  const lang=document.getElementById('sub-target-lang').value||'English';
+  await subApplyTM(lang);
+
+  // Update badges
+  document.getElementById('sub-badges').style.display='flex';
+  document.getElementById('sub-fname').textContent=file.name;
+  document.getElementById('sub-count').textContent=subtitleSegs.length+' bloków';
+  const tmHits=subtitleSegs.filter(s=>s.fromTM).length;
+  const thEl=document.getElementById('sub-tm-hits');
+  if(tmHits>0){thEl.style.display='';thEl.textContent=tmHits+' z TM';}
+  else thEl.style.display='none';
+
+  document.getElementById('sub-lang-card').style.display='block';
+  document.getElementById('sub-segs-card').style.display='block';
+  document.getElementById('sub-target-lang').innerHTML=langOptionsHTML();
+  renderSubtitleTable();
+  updateSubtitleProgress();
+  updateSubCostBox();
+}
+
+async function subApplyTM(lang){
+  if(!subtitleSegs.length) return;
+  const sources=[...new Set(subtitleSegs.map(s=>s.source))];
+  const tmMap=await lookupTMBatch(sources,lang);
+  let hits=0;
+  subtitleSegs.forEach(seg=>{
+    if(seg.status==='done') return;
+    const f=tmMap[tmKey(seg.source)];
+    if(f){seg.target=f;seg.status='done';seg.fromTM=true;hits++;tmApiSaved++;}
+  });
+  return hits;
+}
+
+async function subLangChange(){
+  const lang=document.getElementById('sub-target-lang').value;
+  subtitleSegs.forEach(s=>{s.target='';s.status='pending';s.fromTM=false;});
+  await subApplyTM(lang);
+  renderSubtitleTable();
+  updateSubtitleProgress();
+  updateSubCostBox();
+}
+
+// ── RENDER ──
+
+function renderSubtitleTable(){
+  const fs=document.getElementById('sub-filter-status')?.value||'all';
+  const lang=document.getElementById('sub-target-lang')?.value||'';
+  document.getElementById('sub-src-header').textContent='Źródło';
+  document.getElementById('sub-tgt-header').textContent='Tłumaczenie ('+lang+')';
+  const tbody=document.getElementById('sub-tbody');
+  tbody.innerHTML='';
+
+  subtitleSegs.forEach((seg,i)=>{
+    if(fs==='pending'&&seg.status==='done') return;
+    if(fs==='done'&&seg.status!=='done') return;
+    if(fs==='tm'&&!seg.fromTM) return;
+
+    const div=document.createElement('div');
+    div.className='sub-row';
+    div.innerHTML=`
+      <div class="sub-num">${seg.num}</div>
+      <div class="sub-time">${esc(seg.time).replace('-->','→')}</div>
+      <div class="sub-src">${seg.fromTM?'<div class="tm-hint">↩ z TM</div>':''}${esc(seg.source).replace(/\n/g,'<br>')}</div>
+      <div class="sub-col">
+        <textarea class="sub-textarea" id="subta-${i}" rows="${Math.max(2,seg.source.split('\n').length)}"
+          onchange="subEdit(${i},this.value)">${esc(seg.target)}</textarea>
+      </div>`;
+    tbody.appendChild(div);
+  });
+}
+
+function subEdit(i,val){
+  subtitleSegs[i].target=val;
+  subtitleSegs[i].status=val.trim()?'done':'pending';
+  subtitleSegs[i].fromTM=false;
+  updateSubtitleProgress();
+}
+
+function updateSubtitleProgress(){
+  const done=subtitleSegs.filter(s=>s.status==='done').length;
+  const b=document.getElementById('sub-prog-badge');
+  if(b){b.textContent=done+'/'+subtitleSegs.length;b.className='badge '+(done===subtitleSegs.length?'b-green':'b-yellow');}
+}
+
+function updateSubCostBox(){
+  const toT=subtitleSegs.filter(s=>s.status!=='done');
+  const totalChars=subtitleSegs.reduce((a,s)=>a+s.source.length,0);
+  const tmChars=subtitleSegs.filter(s=>s.fromTM).reduce((a,s)=>a+s.source.length,0);
+  const charsToT=toT.reduce((a,s)=>a+s.source.length,0);
+  const tokens=estimateTokensForTranslation(charsToT);
+  const balance=currentOrg?.tokens_balance||0;
+  const hasEnough=balance>=tokens;
+  const box=document.getElementById('sub-cost-box');
+  const grid=document.getElementById('sub-cost-grid');
+  const note=document.getElementById('sub-cost-note');
+  const tmEl=document.getElementById('sub-cost-tm');
+  if(!box) return;
+  box.style.display='block';
+  const done=subtitleSegs.filter(s=>s.fromTM).length;
+  if(done>0){tmEl.style.display='block';tmEl.textContent=`✓ TM: ${done} bloków bezpłatnie`;}
+  else tmEl.style.display='none';
+  if(!toT.length){grid.innerHTML='<div class="cost-cell"><div class="cost-num green">0,00 PLN</div><div class="cost-lbl">Koszt</div></div>';note.innerHTML='Wszystkie z TM.';return;}
+  const est=estimateCost(charsToT,0);
+  const balColor=hasEnough?'#1a7a3f':'#b32424';
+  const balInfo=hasEnough?`<span style="color:#1a7a3f;">✓ Wystarczy (masz ${formatTokens(balance)})</span>`:`<span style="color:#b32424;">✗ Brakuje ${formatTokens(tokens-balance)} tokenów</span>`;
+  grid.innerHTML=`<div class="cost-cell"><div class="cost-num">${fmtPLN(est.pln)} PLN</div><div class="cost-lbl">Koszt API</div></div>
+    <div class="cost-cell"><div class="cost-num" style="color:${balColor};">${formatTokens(tokens)}</div><div class="cost-lbl">Tokenów z salda</div></div>
+    <div class="cost-cell"><div class="cost-num">${toT.length}</div><div class="cost-lbl">Bloków do tłum.</div></div>
+    <div class="cost-cell"><div class="cost-num" style="color:${balColor};">${formatTokens(balance)}</div><div class="cost-lbl">Twoje saldo</div></div>`;
+  note.innerHTML=`${balInfo}<br><span style="font-size:11px;color:#999;">1 token ≈ 4 znaki · ${charsToT.toLocaleString('pl-PL')} znaków do przetłumaczenia</span>`;
+}
+
+// ── TRANSLATION ──
+
+async function startSubtitleTranslation(){
+  const apiKey=document.getElementById('sub-api-key').value.trim()||getApiKey();
+  if(!apiKey){alert('Wpisz klucz API.');return;}
+  const toT=subtitleSegs.filter(s=>s.status!=='done');
+  if(!toT.length){setSubStatus('Wszystko przetłumaczone!');return;}
+  const totalChars=toT.reduce((a,s)=>a+s.source.length,0);
+  if(!checkTokenBalance(estimateTokensForTranslation(totalChars))) return;
+  await runSubtitleBatch(toT,apiKey);
+}
+
+async function subtitleRetranslateEmpty(){
+  const apiKey=document.getElementById('sub-api-key').value.trim()||getApiKey();
+  if(!apiKey){alert('Wpisz klucz API.');return;}
+  const toT=subtitleSegs.filter(s=>!s.target.trim());
+  if(!toT.length){setSubStatus('Brak pustych bloków.');return;}
+  const totalChars=toT.reduce((a,s)=>a+s.source.length,0);
+  if(!checkTokenBalance(estimateTokensForTranslation(totalChars))) return;
+  await runSubtitleBatch(toT,apiKey);
+}
+
+async function runSubtitleBatch(toT,apiKey){
+  const lang=document.getElementById('sub-target-lang').value;
+  document.getElementById('sub-pw').style.display='block';
+  document.getElementById('sub-pf').style.width='0%';
+  setSubStatus('Tłumaczenie '+toT.length+' bloków na '+lang+'...');
+
+  const CHUNK=15;
+  const CONTEXT=3; // bloki kontekstu przed/po
+  const failed=[];
+  let done=0,totalCostUsd=0;
+
+  for(let i=0;i<toT.length;i+=CHUNK){
+    const chunk=toT.slice(i,i+CHUNK);
+
+    // Build context - 3 blocks before and after chunk in original array
+    const firstIdx=subtitleSegs.indexOf(chunk[0]);
+    const lastIdx=subtitleSegs.indexOf(chunk[chunk.length-1]);
+    const ctxBefore=subtitleSegs.slice(Math.max(0,firstIdx-CONTEXT),firstIdx).map(s=>s.source);
+    const ctxAfter=subtitleSegs.slice(lastIdx+1,lastIdx+1+CONTEXT).map(s=>s.source);
+
+    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source));
+    const charsIn=chunk.reduce((a,s)=>a+s.source.length,0);
+
+    const prompt=`Tłumacz napisy wideo na: ${lang}.
+
+Zasady:
+- Tłumacz KAŻDY blok z listy "do tłumaczenia"
+- Zachowaj zbliżoną długość tekstu (napisy muszą być czytelne w czasie wyświetlania)
+- Nie łącz ani nie dziel bloków
+- Zachowaj styl mówiony, interpunkcję
+- Zmienne %...% przepisuj bez zmian${dict}
+
+${ctxBefore.length?'Kontekst poprzedzający (tylko do odczytu):
+'+ctxBefore.map(t=>`"${t}"`).join('\n')+'\n\n':''}Do tłumaczenia (${chunk.length} bloków):
+${JSON.stringify(chunk.map(s=>({key:subtitleSegs.indexOf(s),text:s.source})))}
+${ctxAfter.length?'\nKontekst następujący (tylko do odczytu):\n'+ctxAfter.map(t=>`"${t}"`).join('\n'):''}
+
+Odpowiedz TYLKO JSON: [{"key":0,"translation":"..."}] — bez markdown.`;
+
+    try{
+      const raw=await apiCall(apiKey,prompt,2000);
+      const res=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
+      totalCostUsd+=((charsIn/CPT)/1e6)*PRICE_IN+((charsOut/CPT)/1e6)*PRICE_OUT;
+
+      const returnedKeys=new Set(res.map(r=>r.key));
+      chunk.forEach(s=>{if(!returnedKeys.has(subtitleSegs.indexOf(s))) failed.push(s);});
+
+      res.forEach(r=>{
+        const seg=subtitleSegs[r.key];
+        if(!seg||!r.translation) return;
+        seg.target=r.translation;seg.status='done';seg.fromTM=false;
+        const idx=subtitleSegs.indexOf(seg);
+        const ta=document.getElementById('subta-'+idx);
+        if(ta){ta.value=r.translation;ta.className='sub-textarea saved';setTimeout(()=>ta.className='sub-textarea',2000);}
+      });
+    }catch(err){
+      console.error('Subtitle chunk error:',err);
+      failed.push(...chunk);
+    }
+
+    done+=chunk.length;
+    document.getElementById('sub-pf').style.width=Math.round(done/toT.length*100)+'%';
+    updateSubtitleProgress();
+    await sleep(150);
+  }
+
+  // Retry failed
+  if(failed.length){
+    setSubStatus('Ponawiam '+failed.length+' brakujących bloków...');
+    for(const seg of failed){
+      const prompt=`Przetłumacz ten napis na ${lang}. Odpowiedz TYLKO JSON: {"translation":"..."}\n\nTekst: ${JSON.stringify(seg.source)}`;
+      try{
+        const raw=await apiCall(apiKey,prompt,500);
+        const res=JSON.parse(raw.replace(/```json|```/g,'').trim());
+        const t=res.translation||'';
+        if(!t) continue;
+        seg.target=t;seg.status='done';
+        const idx=subtitleSegs.indexOf(seg);
+        const ta=document.getElementById('subta-'+idx);
+        if(ta){ta.value=t;ta.className='sub-textarea saved';setTimeout(()=>ta.className='sub-textarea',2000);}
+      }catch(e){console.error('Sub retry error:',e);}
+      await sleep(150);
+    }
+  }
+
+  // Save to TM
+  const pairs=subtitleSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target}));
+  await pushTMBatch(pairs,lang,'srt');
+
+  // Deduct tokens
+  const totalChars=toT.reduce((a,s)=>a+s.source.length,0);
+  await deductTokens(totalChars,subtitleFilename+' → '+lang,lang);
+
+  updateSubCostBox();
+  setSubStatus(`Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN.`);
+}
+
+function setSubStatus(m){document.getElementById('sub-status').textContent=m;}
+
+// ── EXPORT ──
+
+function exportSubtitles(fmt){
+  if(!subtitleSegs.length){alert('Brak napisów.');return;}
+  const lang=document.getElementById('sub-target-lang')?.value||'translated';
+  let output='';
+
+  if(fmt==='srt'){
+    output=subtitleSegs.map(seg=>`${seg.num}\n${seg.time}\n${seg.target||seg.source}`).join('\n\n');
+  } else {
+    // VTT
+    output='WEBVTT\n\n'+subtitleSegs.map(seg=>`${seg.num}\n${seg.time}\n${seg.target||seg.source}`).join('\n\n');
+  }
+
+  const baseName=subtitleFilename.replace(/\.(srt|vtt)$/i,'');
+  download(output, `${baseName}_${lang.toLowerCase().replace(/\s+/g,'_')}.${fmt}`, 'text/plain;charset=utf-8');
 }
 
 // ══════════════════════════════════════════════════════════
