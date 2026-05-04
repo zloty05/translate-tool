@@ -187,55 +187,164 @@ a{color:#2451b3}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .token-label{font-size:10px;color:#666}
 /* DARK MODE */
-body.dark{color-scheme:dark}
+body.dark{color-scheme:dark;background:#0f0f0f;color:#ccc}
+body.dark #app-shell{background:#0f0f0f}
 body.dark #app-shell header{background:#111}
 body.dark .tabs{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .tab{color:#666}
 body.dark .tab.active{color:#fff;border-color:#fff}
-body.dark .card{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .tab-content{background:#0f0f0f}
+body.dark .container{background:#0f0f0f}
+/* Cards and surfaces */
+body.dark .card{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
+body.dark .card-title{color:#fff}
+body.dark .card-sub{color:#888}
+body.dark .card p{color:#ccc}
+body.dark label{color:#888}
+body.dark .hint{color:#666}
+/* Dashboard metric cards */
+body.dark #proj-metrics > div{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
+body.dark #proj-metrics > div > div:first-child{color:#888}
+body.dark #proj-metrics > div > div:nth-child(2){color:#fff}
+body.dark .dash-proj-card{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .dash-proj-card:hover{border-color:#555}
+body.dark .dpc-title{color:#fff}
+body.dark .dpc-meta{color:#666}
+body.dark .dpc-bar-wrap{background:#2a2a2a}
+body.dark .dpc-bar{background:#4ade80 !important}
+body.dark .dpc-done-badge{background:#0a2a1a;color:#4ade80}
+/* Progress bars */
+body.dark .progress-bar-thin,.dark .dpc-bar-wrap{background:#2a2a2a}
+body.dark .progress-bar-fill{background:#4ade80}
+/* Inputs */
 body.dark input,body.dark select,body.dark textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark input::placeholder{color:#555}
+body.dark textarea::placeholder{color:#555}
+/* Buttons */
 body.dark .btn{background:#1a1a1a;border-color:#333;color:#ccc}
 body.dark .btn:hover{background:#222}
 body.dark .btn-dark{background:#fff;color:#000;border-color:#fff}
 body.dark .btn-dark:hover{background:#e0e0e0}
-body.dark .drop-zone{border-color:#2a2a2a;background:#111}
+body.dark .btn-red{background:#2a0a0a;color:#f87171;border-color:#3a1a1a}
+/* Drop zones */
+body.dark .drop-zone{border-color:#2a2a2a;background:#111;color:#888}
 body.dark .drop-zone:hover{background:#1a1a1a}
-body.dark .table-wrap{border-color:#2a2a2a}
-body.dark table th{background:#111;color:#666;border-color:#2a2a2a}
+/* Tables */
+body.dark .table-wrap{border-color:#2a2a2a;background:#111}
+body.dark table{background:#111}
+body.dark table th{background:#1a1a1a;color:#666;border-color:#2a2a2a}
 body.dark table td{border-color:#1a1a1a;color:#ccc}
 body.dark table tr:hover td{background:#1a1a1a}
-body.dark textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .src-cell{color:#aaa}
+body.dark .id-cell{color:#555}
+/* Auth */
 body.dark .auth-box{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .auth-field input{background:#111;border-color:#333;color:#ccc}
 body.dark .auth-btn{background:#fff;color:#000}
 body.dark .auth-btn.secondary{background:#1a1a1a;border-color:#333;color:#ccc}
-body.dark .stat-box{background:#111;border-color:#2a2a2a}
-body.dark .cost-box{background:#111;border-color:#2a2a2a}
-body.dark .dict-wrap{border-color:#2a2a2a}
-body.dark .dict-grid th{background:#111;color:#666}
+body.dark .auth-logo{color:#fff}
+body.dark .auth-sub{color:#666}
+body.dark .auth-link{color:#888}
+body.dark .auth-link a{color:#fff}
+/* Stats */
+body.dark .stat-box{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
+body.dark .stat-num{color:#fff}
+body.dark .stat-lbl{color:#666}
+/* Cost box */
+body.dark .cost-box{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .cost-num{color:#fff}
+body.dark .cost-lbl{color:#666}
+body.dark .cost-note{color:#888;border-color:#2a2a2a}
+/* Dictionary */
+body.dark .dict-wrap{border-color:#2a2a2a;background:#111}
+body.dark .dict-grid{background:#111}
+body.dark .dict-grid th{background:#1a1a1a;color:#666;border-color:#2a2a2a}
 body.dark .dict-grid td{border-color:#1a1a1a}
 body.dark .dict-inp{background:#111;border-color:#2a2a2a;color:#ccc}
-body.dark .tm-list{border-color:#2a2a2a}
+body.dark .dict-inp.missing{background:#1a1500;border-color:#3a3000}
+/* TM */
+body.dark .tm-list{border-color:#2a2a2a;background:#111}
 body.dark .tm-row{border-color:#1a1a1a}
 body.dark .tm-col{border-color:#1a1a1a;color:#aaa}
-body.dark .hist-list{border-color:#2a2a2a}
-body.dark .hist-row{border-color:#1a1a1a}
+/* History */
+body.dark .hist-list{border-color:#2a2a2a;background:#111}
+body.dark .hist-thead{background:#1a1a1a}
+body.dark .hist-th{color:#666}
+body.dark .hist-row{border-color:#1a1a1a;color:#ccc}
 body.dark .hist-row:hover{background:#1a1a1a}
-body.dark .proj-card{background:#1a1a1a;border-color:#2a2a2a}
-body.dark .proj-card:hover{border-color:#444}
-body.dark .member-row-m,.dark .member-row{border-color:#2a2a2a}
+body.dark .hist-col{color:#ccc}
+body.dark .hist-empty{color:#555}
+/* Team */
+body.dark .member-row{border-color:#2a2a2a}
+body.dark .member-col{color:#ccc}
+body.dark .role-badge{filter:brightness(0.7)}
 body.dark .invite-box{background:#111;border-color:#2a2a2a}
-body.dark .shop-grid .pkg-card{background:#1a1a1a;border-color:#2a2a2a}
+body.dark #team-list{border-color:#2a2a2a;background:#1a1a1a}
+body.dark .lang-tag{background:#1a2a3a;color:#5a9eff}
+body.dark .lang-tag.selected{background:#fff;color:#000}
+/* Shop */
+body.dark .shop-grid .pkg-card{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
 body.dark .pkg-card:hover{border-color:#fff}
+body.dark .pkg-name{color:#fff}
+body.dark .pkg-tokens{color:#fff}
+body.dark .pkg-price{color:#fff}
+body.dark .pkg-equiv{color:#888}
+body.dark .pkg-btn{background:#fff;color:#000}
+body.dark .pkg-popular-badge{background:#fff;color:#000}
+body.dark .tx-list{border-color:#2a2a2a;background:#111}
+body.dark .tx-row{border-color:#1a1a1a}
+body.dark .tx-col{color:#aaa}
+/* Project editor */
 body.dark .seg-textarea{background:#111;border-color:#2a2a2a;color:#ccc}
 body.dark .seg-src{color:#aaa}
 body.dark .editor-header{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .editor-lang-tab{background:#111;color:#666;border-color:#2a2a2a}
 body.dark .editor-lang-tab.active{background:#fff;color:#000}
+body.dark .editor-lang-tab.approved{background:#0a2a1a;color:#4ade80}
+body.dark #autosave-indicator{color:#666}
+body.dark .editor-progress-wrap{background:#2a2a2a}
+body.dark .progress-fill{background:#4ade80}
+/* Subtitles */
 body.dark .sub-row{border-color:#1a1a1a}
 body.dark .sub-src{color:#aaa}
+body.dark .sub-time{color:#666}
+body.dark .sub-num{color:#555}
 body.dark .sub-textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+/* New project modal */
+body.dark #new-proj-modal > div,body.dark #edit-proj-modal > div{background:#1a1a1a;border-color:#2a2a2a}
+body.dark #new-proj-modal h3,body.dark #edit-proj-modal h3{color:#fff}
+/* Token limit bar */
+body.dark .token-limit-bar{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .tlb-label{color:#888}
+body.dark .tlb-bar{background:#2a2a2a}
+body.dark .tlb-val{color:#fff}
+/* Badges */
+body.dark .badge{filter:brightness(0.8)}
+/* Bottom white bar fix */
+body.dark body,html{background:#0f0f0f}
+html.dark{background:#0f0f0f}
+body.dark .filter-tabs{background:#111}
+body.dark .ftab{color:#666}
+body.dark .ftab.active{background:#2a2a2a;color:#fff;box-shadow:none}
+/* Notif dropdown */
+body.dark .notif-dropdown{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .notif-hdr{border-color:#2a2a2a}
+body.dark .notif-hdr-title{color:#fff}
+body.dark .notif-item{border-color:#2a2a2a}
+body.dark .notif-item:hover{background:#222}
+body.dark .notif-item.unread{background:#0a1a2a}
+body.dark .notif-text{color:#ccc}
+body.dark .notif-time{color:#555}
+/* Loading */
+body.dark .loading{color:#666}
+body.dark .spinner{border-color:#333;border-top-color:#888}
+/* User menu */
+body.dark .user-menu{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .user-menu-item{color:#ccc}
+body.dark .user-menu-item:hover{background:#222}
+body.dark .user-menu-item.danger{color:#f87171}
+body.dark .user-menu-sep{background:#2a2a2a}
+body.dark .hdr-org{background:#2a2a2a;color:#aaa}
 /* NOTIFICATIONS */
 .notif-dropdown{position:absolute;top:48px;right:60px;width:320px;background:var(--color-bg,#fff);border:1px solid #e8e6e0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12);z-index:200;display:none;max-height:480px;overflow-y:auto}
 body.dark .notif-dropdown{background:#1a1a1a;border-color:#2a2a2a}
@@ -316,6 +425,12 @@ body.dark .token-limit-bar{background:#111;border-color:#2a2a2a}
 .tlb-bar{flex:1;height:4px;background:#eee;border-radius:2px;overflow:hidden}
 body.dark .tlb-bar{background:#2a2a2a}
 .tlb-val{font-size:12px;font-weight:600;white-space:nowrap}
+.dash-metric-card{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;}
+.dash-metric-label{font-size:11px;color:#888;margin-bottom:4px;}
+.dash-metric-value{font-size:20px;font-weight:600;color:#1a1a1a;}
+body.dark .dash-metric-card{background:#1a1a1a;border-color:#2a2a2a;}
+body.dark .dash-metric-label{color:#666;}
+body.dark .dash-metric-value{color:#fff;}
 /* SUBTITLES */
 .sub-row{display:grid;grid-template-columns:40px 160px 1fr 1fr;border-bottom:1px solid #f0ede8;align-items:start;}
 .sub-row:last-child{border-bottom:none}
@@ -900,21 +1015,21 @@ body.dark .tlb-bar{background:#2a2a2a}
   <div id="proj-list-view">
     <!-- Metrics (admin only) -->
     <div id="proj-metrics" class="hide-viewer" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
-      <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;">
-        <div style="font-size:11px;color:#888;margin-bottom:4px;">Aktywne projekty</div>
-        <div style="font-size:20px;font-weight:600;" id="dash-active">—</div>
+      <div class="dash-metric-card">
+        <div class="dash-metric-label">Aktywne projekty</div>
+        <div class="dash-metric-value" id="dash-active">—</div>
       </div>
-      <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;">
-        <div style="font-size:11px;color:#888;margin-bottom:4px;">Tokeny</div>
-        <div style="font-size:20px;font-weight:600;color:#1a7a3f;" id="dash-tokens">—</div>
+      <div class="dash-metric-card">
+        <div class="dash-metric-label">Tokeny</div>
+        <div class="dash-metric-value" style="color:#1a7a3f;" id="dash-tokens">—</div>
       </div>
-      <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;">
-        <div style="font-size:11px;color:#888;margin-bottom:4px;">Ukończone projekty</div>
-        <div style="font-size:20px;font-weight:600;" id="dash-done">—</div>
+      <div class="dash-metric-card">
+        <div class="dash-metric-label">Ukończone projekty</div>
+        <div class="dash-metric-value" id="dash-done">—</div>
       </div>
-      <div style="background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:12px 14px;">
-        <div style="font-size:11px;color:#888;margin-bottom:4px;">Koszt miesięczny</div>
-        <div style="font-size:20px;font-weight:600;" id="dash-cost">— PLN</div>
+      <div class="dash-metric-card">
+        <div class="dash-metric-label">Koszt miesięczny</div>
+        <div class="dash-metric-value" id="dash-cost">— PLN</div>
       </div>
     </div>
 
@@ -2398,7 +2513,7 @@ function renderProjectList(){
   const container=document.getElementById('proj-list-container');
   if(!data.length){
     const msg=projFilterMode==='active'?'Brak aktywnych projektów':projFilterMode==='completed'?'Brak ukończonych projektów':'Brak projektów';
-    container.innerHTML=`<div style="padding:40px;text-align:center;color:#ccc;font-size:13px;background:#fff;border:1px solid #eee;border-radius:10px;">${msg}</div>`;
+    container.innerHTML=`<div class="dash-proj-card" style="padding:40px;text-align:center;color:#888;font-size:13px;cursor:default;">${msg}</div>`;
     return;
   }
   const isDone=projFilterMode==='completed';
@@ -3812,6 +3927,8 @@ function initDarkMode(){
 
 function applyDarkMode(on){
   document.body.classList.toggle('dark', on);
+  document.documentElement.classList.toggle('dark', on);
+  document.documentElement.style.background = on ? '#0f0f0f' : '';
   const track = document.getElementById('dark-toggle-track');
   if(track) track.classList.toggle('on', on);
 }
