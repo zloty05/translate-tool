@@ -4293,32 +4293,16 @@ async function runVerification(mode, segments, lang, apiKey){
     const charsIn=seg.source.length+seg.translation.length+termsList.length+300;
 
     const prompt=
-      'Sprawdź czy tłumaczenie używa właściwych terminów ze słownika.
-
-'+
-      'TEKST ŹRÓDŁOWY:
-'+seg.source+'
-
-'+
-      'TŁUMACZENIE DO SPRAWDZENIA:
-'+seg.translation+'
-
-'+
-      'WYMAGANE TERMINY (użyj dokładnie tych słów, uwzględniając odmianę):
-'+termsList+'
-
-'+
-      'INSTRUKCJA:
-'+
-      '- Jeśli tłumaczenie używa właściwych terminów — odpowiedz: null
-'+
-      '- Jeśli używa błędnych terminów — odpowiedz TYLKO poprawionym tłumaczeniem (samo zdanie, bez komentarza)
-'+
-      '- Poprawiaj TYLKO termin, resztę zdania zostaw bez zmian
-'+
-      '- Uwzględnij odmianę: "złączka listwowa" = "złączki listwowe" = "terminal block" = "terminal blocks"';
-
-    try{
+      'Sprawdź czy tłumaczenie używa właściwych terminów ze słownika.\n\n'+
+      'TEKST ŹRÓDŁOWY:\n'+seg.source+'\n\n'+
+      'TŁUMACZENIE DO SPRAWDZENIA:\n'+seg.translation+'\n\n'+
+      'WYMAGANE TERMINY (użyj dokładnie tych słów, uwzględniając odmianę):\n'+termsList+'\n\n'+
+      'INSTRUKCJA:\n'+
+      '- Jeśli tłumaczenie używa właściwych terminów — odpowiedz: null\n'+
+      '- Jeśli używa błędnych terminów — odpowiedz TYLKO poprawionym tłumaczeniem\n'+
+      '- Poprawiaj TYLKO termin, resztę zdania zostaw bez zmian\n'+
+      '- Uwzględnij odmianę: np. złączka listwowa = złączki listwowe';
+        try{
       const raw=(await apiCall(apiKey,prompt,500)).trim();
       const charsOut=raw.length;
       totalCostUsd+=((charsIn/4)/1e6)*PRICE_IN+((charsOut/4)/1e6)*PRICE_OUT;
