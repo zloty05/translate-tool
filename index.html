@@ -4221,47 +4221,28 @@ function getRelevantDictTerms(lang, segments){
   });
 }
 
-function normalizeText(t){ return t.toLowerCase().replace(/[^a-z0-9\u00C0-\u024F\s]/g,'').replace(/\s+/g,' ').trim(); }
-
-function termVariants(term){
-  // Generate simple variants for matching: singular, plural, without last char
-  const t=term.toLowerCase();
-  const variants=[t];
-  if(t.endsWith('s')) variants.push(t.slice(0,-1)); // plural → singular
-  else variants.push(t+'s'); // singular → plural
-  if(t.length>4) variants.push(t.slice(0,-1)); // trimmed ending
-  return variants;
-}
-
-function sourceContainsTerm(srcLower, termSrc){
-  // Check if source text contains any form of the source term
-  const variants=termVariants(termSrc.toLowerCase());
-  return variants.some(v=>srcLower.includes(v));
-}
-
-function translationContainsTerm(tgtLower, termTgt){
-  // Check if translation contains ALL words of the target term (in any order)
-  const words=termTgt.toLowerCase().split(/\s+/).filter(w=>w.length>2);
-  if(!words.length) return true;
-  // All significant words must be present
-  return words.every(w=>{
-    const variants=termVariants(w);
-    return variants.some(v=>tgtLower.includes(v));
-  });
-}
-
 function scanForViolations(segments, terms, lang){
+  // Local scan is just a HINT — Claude does the real verification
+  // Only flag cases where target term is completely absent from translation
+  // and source clearly contains the source term (exact match only)
   const violations=[];
   segments.forEach(seg=>{
-    const srcLower=normalizeText(seg.source);
-    const tgtLower=normalizeText(seg.translation);
+    const srcLower=seg.source.toLowerCase();
+    const tgtLower=seg.translation.toLowerCase();
     terms.forEach(term=>{
       const tgtExpected=term.translations[lang];
       if(!tgtExpected) return;
-      // Source must contain term (in any form)
-      if(!sourceContainsTerm(srcLower, term.src)) return;
-      // Translation must contain expected term (all words)
-      if(!translationContainsTerm(tgtLower, tgtExpected)){
+      const srcTerm=term.src.toLowerCase();
+      const tgtTerm=tgtExpected.toLowerCase();
+      // Only flag if source EXACTLY contains the term (not partial matches)
+      if(!srcLower.includes(srcTerm)) return;
+      // And translation clearly does NOT contain the expected term at all
+      // Use significant words only (skip words < 3 chars)
+      const sigWords=tgtTerm.split(/\s+/).filter(w=>w.length>=3&&!/^\d+$/.test(w));
+      if(!sigWords.length) return;
+      // If NONE of the significant words appear in translation - flag it
+      const noneFound=sigWords.every(w=>!tgtLower.includes(w));
+      if(noneFound){
         violations.push({seg, term, expected:tgtExpected});
       }
     });
