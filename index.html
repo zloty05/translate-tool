@@ -4221,27 +4221,55 @@ function getRelevantDictTerms(lang, segments){
   });
 }
 
+function normalizeText(t){ return t.toLowerCase().replace(/[^a-z0-9\u00C0-\u024F\s]/g,'').replace(/\s+/g,' ').trim(); }
+
+function termVariants(term){
+  // Generate simple variants for matching: singular, plural, without last char
+  const t=term.toLowerCase();
+  const variants=[t];
+  if(t.endsWith('s')) variants.push(t.slice(0,-1)); // plural → singular
+  else variants.push(t+'s'); // singular → plural
+  if(t.length>4) variants.push(t.slice(0,-1)); // trimmed ending
+  return variants;
+}
+
+function sourceContainsTerm(srcLower, termSrc){
+  // Check if source text contains any form of the source term
+  const variants=termVariants(termSrc.toLowerCase());
+  return variants.some(v=>srcLower.includes(v));
+}
+
+function translationContainsTerm(tgtLower, termTgt){
+  // Check if translation contains ALL words of the target term (in any order)
+  const words=termTgt.toLowerCase().split(/\s+/).filter(w=>w.length>2);
+  if(!words.length) return true;
+  // All significant words must be present
+  return words.every(w=>{
+    const variants=termVariants(w);
+    return variants.some(v=>tgtLower.includes(v));
+  });
+}
+
 function scanForViolations(segments, terms, lang){
-  // Quick local scan - find segments where target term is missing
-  // This is a heuristic, Claude does the real verification
   const violations=[];
   segments.forEach(seg=>{
-    const srcLower=seg.source.toLowerCase();
-    const tgtLower=seg.translation.toLowerCase();
+    const srcLower=normalizeText(seg.source);
+    const tgtLower=normalizeText(seg.translation);
     terms.forEach(term=>{
-      const srcRoot=term.src.toLowerCase().split(' ')[0];
-      const tgtExpected=term.translations[lang].toLowerCase();
-      const tgtRoot=tgtExpected.split(' ')[0];
-      // Check if source contains term root but translation doesn't contain expected root
-      if(srcLower.includes(srcRoot) && !tgtLower.includes(tgtRoot)){
-        violations.push({seg, term, expected:term.translations[lang]});
+      const tgtExpected=term.translations[lang];
+      if(!tgtExpected) return;
+      // Source must contain term (in any form)
+      if(!sourceContainsTerm(srcLower, term.src)) return;
+      // Translation must contain expected term (all words)
+      if(!translationContainsTerm(tgtLower, tgtExpected)){
+        violations.push({seg, term, expected:tgtExpected});
       }
     });
   });
-  // Deduplicate by seg id
+  // Deduplicate
   const seen=new Set();
   return violations.filter(v=>{
-    const key=String(v.seg.id)+v.term.src;
+    const key=String(v.seg.id)+'__'+v.term.src;
     if(seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -4264,33 +4292,54 @@ async function showVerifySummary(mode){
     return;
   }
 
-  // Quick local scan for likely violations
+  // Local scan for violations
   const violations=scanForViolations(segments, terms, lang);
-  const toVerify=violations.length>0
-    ? [...new Set(violations.map(v=>v.seg.id))].map(id=>segments.find(s=>String(s.id)===String(id))).filter(Boolean)
-    : segments.slice(0,Math.min(segments.length, 50)); // verify all if no obvious violations
+  const violatingIds=new Set(violations.map(v=>String(v.seg.id)));
+
+  // Always verify: segments with detected violations + all segments containing term roots
+  const termRoots=terms.map(t=>t.src.toLowerCase().split(' ')[0]);
+  const toVerify=segments.filter(s=>{
+    if(violatingIds.has(String(s.id))) return true;
+    // Also include segments that contain any term in source (Claude checks properly)
+    const srcLower=s.source.toLowerCase();
+    return termRoots.some(root=>srcLower.includes(root));
+  });
+
+  if(!toVerify.length){
+    alert('Żaden segment nie zawiera terminów ze słownika — weryfikacja nie jest potrzebna.');
+    return;
+  }
 
   // Estimate tokens
-  const avgCharsPerSeg=toVerify.reduce((a,s)=>a+s.source.length+s.translation.length,0)/toVerify.length;
-  const termsChars=terms.map(t=>`${t.src} → ${t.translations[lang]}`).join(', ').length;
-  const tokensPerSeg=Math.ceil((avgCharsPerSeg + termsChars + 200)/4);
+  const avgCharsPerSeg=toVerify.reduce((a,s)=>a+s.source.length+s.translation.length,0)/Math.max(1,toVerify.length);
+  const termsChars=terms.map(t=>`${t.src} → ${t.translations[lang]}`).join('\n').length;
+  const tokensPerSeg=Math.ceil((avgCharsPerSeg + termsChars + 300)/4);
   const totalTokens=toVerify.length * tokensPerSeg;
   const estCostPLN=((totalTokens/1e6)*PRICE_IN + (totalTokens*0.3/1e6)*PRICE_OUT)*PLN_USD;
 
-  // Build summary message
-  const termsList=terms.slice(0,8).map(t=>`  • "${t.src}" → "${t.translations[lang]}"`).join('\n');
-  const moreterms=terms.length>8?`\n  ... i ${terms.length-8} więcej`:'';
+  // Group violations by term for display
+  const violByTerm={};
+  violations.forEach(v=>{
+    const key=v.term.src;
+    if(!violByTerm[key]) violByTerm[key]={term:v.term,count:0};
+    violByTerm[key].count++;
+  });
+  const violList=Object.values(violByTerm)
+    .map(v=>`  ⚠ "${v.term.src}" → "${v.term.translations[lang]}": ${v.count} niezgodności`)
+    .join('\n');
+  const termsList=terms.slice(0,6).map(t=>`  • "${t.src}" → "${t.translations[lang]}"`).join('\n');
+  const moreterms=terms.length>6?`\n  ... i ${terms.length-6} więcej`:'';
 
   const msg=`📖 Weryfikacja słownika\n\n` +
     `Język: ${lang}\n` +
-    `Segmentów do weryfikacji: ${toVerify.length} z ${segments.length}\n` +
-    `Terminów do sprawdzenia: ${terms.length}\n\n` +
-    `Terminy:\n${termsList}${moreterms}\n\n` +
-    `Szacowany koszt: ~${totalTokens.toLocaleString('pl-PL')} tokenów = ~${fmtPLN(estCostPLN)} PLN\n\n` +
+    `Segmentów do sprawdzenia: ${toVerify.length} z ${segments.length}\n` +
+    `Terminów w słowniku: ${terms.length}\n\n` +
     (violations.length>0
-      ? `⚠ Wykryto ${violations.length} potencjalnych niezgodności lokalnie.\n`
-      : `✓ Brak oczywistych niezgodności — Claude sprawdzi wszystkie segmenty.\n`) +
-    `\nUruchomić weryfikację?`;
+      ? `⚠ Wykryte potencjalne niezgodności:\n${violList}\n\n`
+      : `✓ Lokalne skanowanie OK — Claude sprawdzi dokładnie.\n\n`) +
+    `Terminy ze słownika:\n${termsList}${moreterms}\n\n` +
+    `Szacowany koszt: ~${totalTokens.toLocaleString('pl-PL')} tokenów = ~${fmtPLN(estCostPLN)} PLN\n\n` +
+    `Uruchomić weryfikację przez Claude?`;
 
   if(!confirm(msg)) return;
   if(!checkTokenBalance(totalTokens)) return;
@@ -4316,20 +4365,17 @@ async function runVerification(mode, segments, terms, lang, apiKey){
     const chunk=segments.slice(i,i+CHUNK);
     const charsIn=chunk.reduce((a,s)=>a+s.source.length+s.translation.length,0)+termsList.length;
 
-    const prompt=`Jesteś weryfikatorem tłumaczeń. Sprawdź czy tłumaczenia stosują wymagane terminy ze słownika.
-
-SŁOWNIK (stosuj bezwzględnie — uwzględniaj różne formy gramatyczne):
-${termsList}
-
-ZADANIE: Dla każdego segmentu sprawdź czy tłumaczenie używa właściwego terminu ze słownika.
-Jeśli termin źródłowy (lub jego forma gramatyczna) występuje w oryginale — tłumaczenie MUSI zawierać odpowiedni termin docelowy (lub jego formę gramatyczną).
-Jeśli tłumaczenie jest poprawne — zwróć je bez zmian.
-Jeśli wymaga korekty — popraw TYLKO termin, zachowaj resztę zdania bez zmian.
-
-Segmenty:
-${JSON.stringify(chunk.map(s=>({key:String(s.id),source:s.source,translation:s.translation})))}
-
-Odpowiedz TYLKO JSON: [{"key":"...","translation":"...","corrected":true/false}] — bez markdown.`;
+    const prompt='Jesteś weryfikatorem tłumaczeń technicznych. Sprawdź zgodność tłumaczeń ze słownikiem.\n\n'+
+      'OBOWIĄZKOWY SŁOWNIK TERMINÓW:\n'+termsList+'\n\n'+
+      'ZASADY:\n'+
+      '1. Jeśli termin źródłowy (lub jego forma gramatyczna) jest w SOURCE — tłumaczenie MUSI używać dokładnie podanego terminu docelowego\n'+
+      '2. NIE wolno używać synonimów — tylko termin ze słownika\n'+
+      '3. Jeśli termin nie występuje w SOURCE — nie zmieniaj tłumaczenia\n'+
+      '4. Poprawiaj TYLKO termin, resztę zdania zostaw bez zmian\n\n'+
+      'PRZYKŁAD: Słownik: "złączka listwowa" → "terminal block"\n'+
+      'Złe: "Terminal strip connectors..." → Poprawne: "Terminal block..."\n\n'+
+      'Segmenty:\n'+JSON.stringify(chunk.map(s=>({key:String(s.id),source:s.source,translation:s.translation})))+'\n\n'+
+      'Odpowiedz TYLKO JSON: [{"key":"...","translation":"...","corrected":true/false}] — bez markdown.';
 
     try{
       const raw=await apiCall(apiKey,prompt,2000);
