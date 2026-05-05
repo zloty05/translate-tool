@@ -761,6 +761,7 @@ body.dark .dash-metric-value{color:#fff;}
       <div class="row">
         <span class="badge b-yellow" id="xliff-prog-badge">0/0</span>
         <button class="btn btn-sm hide-viewer" onclick="xliffRetranslateEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-sm hide-viewer" onclick="showVerifySummary('xliff')" title="Weryfikuj zgodność ze słownikiem">📖 Weryfikuj</button>
         <button class="btn btn-sm" onclick="xliffExportExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('xliff-xl-imp').click()">↑ Excel</button>
         <input type="file" id="xliff-xl-imp" accept=".xlsx" style="display:none;" onchange="xliffImportExcel(event)" />
@@ -827,6 +828,7 @@ body.dark .dash-metric-value{color:#fff;}
       <div class="row">
         <span class="badge b-yellow" id="pptx-prog-badge">0/0</span>
         <button class="btn btn-sm hide-viewer" onclick="pptxRetranslateEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-sm hide-viewer" onclick="showVerifySummary('pptx')" title="Weryfikuj zgodność ze słownikiem">📖 Weryfikuj</button>
         <button class="btn btn-sm" onclick="pptxExportExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('pptx-xl-imp').click()">↑ Excel</button>
         <input type="file" id="pptx-xl-imp" accept=".xlsx" style="display:none;" onchange="pptxImportExcel(event)" />
@@ -1135,6 +1137,7 @@ body.dark .dash-metric-value{color:#fff;}
         <button class="btn btn-sm hide-viewer" onclick="applyTMToProject()">🧠 Z TM</button>
         <button class="btn btn-sm hide-viewer" onclick="translateEmptyAI()">✦ Przetłumacz puste</button>
         <button class="btn btn-sm hide-viewer" id="editor-ai-btn" onclick="showAISummary()">✦ Tłumacz wszystko</button>
+        <button class="btn btn-sm hide-viewer" onclick="showVerifySummary('project')" title="Weryfikuj zgodność ze słownikiem">📖 Weryfikuj</button>
         <button class="btn btn-sm" onclick="exportProjectExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
         <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
@@ -4173,6 +4176,211 @@ async function loadDashMetrics(){
     const metrics = document.getElementById('proj-metrics');
     if(metrics) metrics.style.display='none';
   }
+}
+
+
+// ══════════════════════════════════════════════════════════
+// DICTIONARY VERIFICATION
+// ══════════════════════════════════════════════════════════
+
+function getVerifySegments(mode){
+  // Returns array of {id, source, translation, lang}
+  if(mode==='project'){
+    const lang=currentProjectLang;
+    if(!lang) return [];
+    return currentProjectSegs
+      .filter(s=>s.translations?.[lang]?.text)
+      .map(s=>({id:s.id,source:s.source_text,translation:s.translations[lang].text,lang,mode}));
+  }
+  if(mode==='xliff'){
+    const lang=document.getElementById('target-lang')?.value||'';
+    return xliffSegs
+      .filter(s=>s.status==='done')
+      .map((s,i)=>({id:i,source:s.type==='plain'?s.source:s.textNodes.map(n=>n.text).join(' '),
+        translation:s.type==='plain'?s.target:s.targets.map(t=>t.text).join(' '),lang,mode}));
+  }
+  if(mode==='pptx'){
+    const lang=document.getElementById('pptx-target-lang')?.value||'';
+    return pptxSegs
+      .filter(s=>s.status==='done')
+      .map(s=>({id:s.key,source:s.source,translation:s.target,lang,mode}));
+  }
+  return [];
+}
+
+function getRelevantDictTerms(lang, segments){
+  // Get dict terms for this language
+  const terms=dictCache.filter(e=>e.translations?.[lang]);
+  if(!terms.length) return [];
+  // Find terms whose source appears in any segment source text
+  const allSources=segments.map(s=>s.source.toLowerCase()).join(' ');
+  // Use word stem matching - check if root of term appears in sources
+  return terms.filter(e=>{
+    const root=e.src.toLowerCase().split(' ')[0]; // first word as root
+    return allSources.includes(root);
+  });
+}
+
+function scanForViolations(segments, terms, lang){
+  // Quick local scan - find segments where target term is missing
+  // This is a heuristic, Claude does the real verification
+  const violations=[];
+  segments.forEach(seg=>{
+    const srcLower=seg.source.toLowerCase();
+    const tgtLower=seg.translation.toLowerCase();
+    terms.forEach(term=>{
+      const srcRoot=term.src.toLowerCase().split(' ')[0];
+      const tgtExpected=term.translations[lang].toLowerCase();
+      const tgtRoot=tgtExpected.split(' ')[0];
+      // Check if source contains term root but translation doesn't contain expected root
+      if(srcLower.includes(srcRoot) && !tgtLower.includes(tgtRoot)){
+        violations.push({seg, term, expected:term.translations[lang]});
+      }
+    });
+  });
+  // Deduplicate by seg id
+  const seen=new Set();
+  return violations.filter(v=>{
+    const key=String(v.seg.id)+v.term.src;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function showVerifySummary(mode){
+  const apiKey=getApiKey();
+  if(!apiKey){ alert('Wpisz klucz API.'); return; }
+
+  const segments=getVerifySegments(mode);
+  if(!segments.length){ alert('Brak przetłumaczonych segmentów do weryfikacji.'); return; }
+
+  const lang=segments[0]?.lang;
+  if(!lang){ alert('Nie można określić języka docelowego.'); return; }
+
+  const terms=getRelevantDictTerms(lang, segments);
+  if(!terms.length){
+    alert(`Brak terminów słownikowych dla języka ${lang}.\nDodaj terminy do słownika żeby weryfikacja działała.`);
+    return;
+  }
+
+  // Quick local scan for likely violations
+  const violations=scanForViolations(segments, terms, lang);
+  const toVerify=violations.length>0
+    ? [...new Set(violations.map(v=>v.seg.id))].map(id=>segments.find(s=>String(s.id)===String(id))).filter(Boolean)
+    : segments.slice(0,Math.min(segments.length, 50)); // verify all if no obvious violations
+
+  // Estimate tokens
+  const avgCharsPerSeg=toVerify.reduce((a,s)=>a+s.source.length+s.translation.length,0)/toVerify.length;
+  const termsChars=terms.map(t=>`${t.src} → ${t.translations[lang]}`).join(', ').length;
+  const tokensPerSeg=Math.ceil((avgCharsPerSeg + termsChars + 200)/4);
+  const totalTokens=toVerify.length * tokensPerSeg;
+  const estCostPLN=((totalTokens/1e6)*PRICE_IN + (totalTokens*0.3/1e6)*PRICE_OUT)*PLN_USD;
+
+  // Build summary message
+  const termsList=terms.slice(0,8).map(t=>`  • "${t.src}" → "${t.translations[lang]}"`).join('\n');
+  const moreterms=terms.length>8?`\n  ... i ${terms.length-8} więcej`:'';
+
+  const msg=`📖 Weryfikacja słownika\n\n` +
+    `Język: ${lang}\n` +
+    `Segmentów do weryfikacji: ${toVerify.length} z ${segments.length}\n` +
+    `Terminów do sprawdzenia: ${terms.length}\n\n` +
+    `Terminy:\n${termsList}${moreterms}\n\n` +
+    `Szacowany koszt: ~${totalTokens.toLocaleString('pl-PL')} tokenów = ~${fmtPLN(estCostPLN)} PLN\n\n` +
+    (violations.length>0
+      ? `⚠ Wykryto ${violations.length} potencjalnych niezgodności lokalnie.\n`
+      : `✓ Brak oczywistych niezgodności — Claude sprawdzi wszystkie segmenty.\n`) +
+    `\nUruchomić weryfikację?`;
+
+  if(!confirm(msg)) return;
+  if(!checkTokenBalance(totalTokens)) return;
+
+  await runVerification(mode, toVerify, terms, lang, apiKey);
+}
+
+async function runVerification(mode, segments, terms, lang, apiKey){
+  const CHUNK=10;
+  let fixed=0, checked=0;
+  const termsList=terms.map(t=>`"${t.src}" → "${t.translations[lang]}"`).join('\n');
+
+  const setStatus=(msg)=>{
+    if(mode==='project') setAutosaveIndicator(msg);
+    else if(mode==='xliff') setXS(msg);
+    else setPPS(msg);
+  };
+
+  setStatus(`📖 Weryfikacja słownika: 0/${segments.length}...`);
+  let totalCostUsd=0;
+
+  for(let i=0;i<segments.length;i+=CHUNK){
+    const chunk=segments.slice(i,i+CHUNK);
+    const charsIn=chunk.reduce((a,s)=>a+s.source.length+s.translation.length,0)+termsList.length;
+
+    const prompt=`Jesteś weryfikatorem tłumaczeń. Sprawdź czy tłumaczenia stosują wymagane terminy ze słownika.
+
+SŁOWNIK (stosuj bezwzględnie — uwzględniaj różne formy gramatyczne):
+${termsList}
+
+ZADANIE: Dla każdego segmentu sprawdź czy tłumaczenie używa właściwego terminu ze słownika.
+Jeśli termin źródłowy (lub jego forma gramatyczna) występuje w oryginale — tłumaczenie MUSI zawierać odpowiedni termin docelowy (lub jego formę gramatyczną).
+Jeśli tłumaczenie jest poprawne — zwróć je bez zmian.
+Jeśli wymaga korekty — popraw TYLKO termin, zachowaj resztę zdania bez zmian.
+
+Segmenty:
+${JSON.stringify(chunk.map(s=>({key:String(s.id),source:s.source,translation:s.translation})))}
+
+Odpowiedz TYLKO JSON: [{"key":"...","translation":"...","corrected":true/false}] — bez markdown.`;
+
+    try{
+      const raw=await apiCall(apiKey,prompt,2000);
+      const res=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
+      totalCostUsd+=((charsIn/4)/1e6)*PRICE_IN+((charsOut/4)/1e6)*PRICE_OUT;
+
+      for(const r of res){
+        if(!r.translation||!r.corrected) continue;
+        const seg=chunk.find(s=>String(s.id)===String(r.key));
+        if(!seg) continue;
+
+        // Apply correction based on mode
+        if(mode==='project'){
+          await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:r.translation});
+          const projSeg=currentProjectSegs.find(s=>s.id===seg.id);
+          if(projSeg&&projSeg.translations) projSeg.translations[lang].text=r.translation;
+          const ta=document.getElementById('seg-'+seg.id);
+          if(ta){ta.value=r.translation;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
+        } else if(mode==='xliff'){
+          const idx=Number(seg.id);
+          const xseg=xliffSegs[idx];
+          if(xseg){
+            if(xseg.type==='plain') xseg.target=r.translation;
+            xseg.fromTM=false;
+          }
+          const ta=document.getElementById('xta-'+idx);
+          if(ta){ta.value=r.translation;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
+        } else if(mode==='pptx'){
+          const pseg=pptxSegs.find(s=>s.key===seg.id);
+          if(pseg) pseg.target=r.translation;
+          const idx=pptxSegs.findIndex(s=>s.key===seg.id);
+          const ta=document.getElementById('pta-'+idx);
+          if(ta){ta.value=r.translation;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
+        }
+        fixed++;
+      }
+    }catch(err){ console.error('Verify chunk error:',err); }
+
+    checked+=chunk.length;
+    setStatus(`📖 Weryfikacja: ${checked}/${segments.length} sprawdzono, ${fixed} poprawiono...`);
+    await sleep(150);
+  }
+
+  // Deduct tokens
+  await deductTokens(
+    segments.reduce((a,s)=>a+s.source.length+s.translation.length,0),
+    'Weryfikacja słownika → '+lang, lang
+  );
+
+  setStatus(`✓ Weryfikacja zakończona. Sprawdzono ${checked}, poprawiono ${fixed} segmentów. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
 }
 
 // ══════════════════════════════════════════════════════════
