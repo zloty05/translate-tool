@@ -4255,10 +4255,8 @@ async function showVerifySummary(mode){
     });
   });
   const termsList=[...allTerms.entries()].slice(0,8)
-    .map(([src,tgt])=>`  • "${src}" → "${tgt}"`).join('
-');
-  const moreTerms=allTerms.size>8?`
-  ... i ${allTerms.size-8} więcej`:'';
+    .map(([src,tgt])=>`  • "${src}" → "${tgt}"`).join('\n');
+  const moreTerms=allTerms.size>8?`\n  ... i ${allTerms.size-8} więcej`:'';
 
   const msg=`📖 Weryfikacja słownika (Pass 2)
 
@@ -4306,8 +4304,7 @@ async function runVerification(mode, segments, lang, apiKey){
     const terms=getMatchingTerms(seg.source, lang);
     if(!terms.length){ checked++; continue; }
 
-    const termsList=terms.map(t=>`"${t.src}" → "${t.translations[lang]}"`).join('
-');
+    const termsList=terms.map(t=>`"${t.src}" → "${t.translations[lang]}"`).join('\n');
     const charsIn=seg.source.length+seg.translation.length+termsList.length+300;
 
     const prompt=
