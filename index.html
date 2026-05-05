@@ -4210,16 +4210,34 @@ function getVerifySegments(mode){
   return [];
 }
 
+function getWordStem(word){
+  // Get stem of Polish word - remove common suffixes
+  const w=word.toLowerCase();
+  if(w.length<=4) return w;
+  // Remove common Polish endings
+  const suffixes=['owych','owego','owym','owej','owe','owym','owi','ową','ami','ach','om','ie','ię','ek','ce','cie','ka','ki','ku','ką'];
+  for(const s of suffixes){
+    if(w.endsWith(s) && w.length-s.length>=3) return w.slice(0,w.length-s.length);
+  }
+  // Fallback: use first 60% of word as stem (min 4 chars)
+  return w.slice(0, Math.max(4, Math.floor(w.length*0.7)));
+}
+
 function getMatchingTerms(source, lang){
-  // Find dict terms whose source appears in this segment (case-insensitive, exact word match)
   const srcLower = source.toLowerCase();
   return dictCache.filter(e=>{
     if(!e.translations?.[lang]) return false;
     const termLower = e.src.toLowerCase();
-    // Check if source contains term as a substring (handles all grammatical forms)
-    return srcLower.includes(termLower) ||
-      // Also check individual words of multi-word terms
-      termLower.split(' ').every(w=>w.length>2 && srcLower.includes(w));
+    // 1. Exact match first
+    if(srcLower.includes(termLower)) return true;
+    // 2. Stem matching for each word in multi-word terms
+    const words = termLower.split(' ').filter(w=>w.length>3);
+    if(!words.length) return false;
+    // All significant words must have their stem present in source
+    return words.every(w=>{
+      const stem = getWordStem(w);
+      return srcLower.includes(stem);
+    });
   });
 }
 
