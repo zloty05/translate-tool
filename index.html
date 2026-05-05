@@ -2036,6 +2036,7 @@ async function addDictEntry(){
 async function deleteDict(id){await dbDelete('dictionary',`?id=eq.${id}`);dictCache=dictCache.filter(e=>e.id!==id);document.getElementById('dict-count').textContent=dictCache.length;renderDict();}
 async function updateDictCell(id,lang,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.translations={...e.translations,[lang]:val};await dbPatch('dictionary',{translations:e.translations},`?id=eq.${id}`);}
 async function updateDictNote(id,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.note=val;await dbPatch('dictionary',{note:val},`?id=eq.${id}`);}
+async function updateDictSrc(id,val){const e=dictCache.find(e=>e.id===id);if(!e||!val.trim())return;e.src=val.trim();await dbPatch('dictionary',{src:val.trim()},`?id=eq.${id}`);}
 
 function renderDict(){
   document.getElementById('dict-count').textContent=dictCache.length;
@@ -2053,7 +2054,7 @@ function renderDict(){
   if(!filtered.length){tbody.innerHTML=`<tr><td colspan="${PRIMARY.length+3}" style="padding:18px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</td></tr>`;return;}
   tbody.innerHTML=filtered.map(e=>{
     const cells=PRIMARY.map(l=>{const v=e.translations?.[l.code]||'';return`<td><input class="dict-inp${v?'':' missing'}" value="${esc(v)}" placeholder="—" ${canEdit?`onchange="updateDictCell('${e.id}','${l.code}',this.value)" onblur="this.className='dict-inp'+(this.value.trim()?'':' missing')"`:' readonly'} /></td>`;}).join('');
-    return`<tr><td><strong style="font-size:12px;">${esc(e.src)}</strong></td>${cells}<td><input class="dict-inp" value="${esc(e.note||'')}" placeholder="—" ${canEdit?`onchange="updateDictNote('${e.id}',this.value)"`:' readonly'} /></td><td>${canEdit?`<button class="del-btn" onclick="deleteDict('${e.id}')">×</button>`:''}</td></tr>`;
+    return`<tr><td><input class="dict-inp" style="font-weight:600;" value="${esc(e.src)}" placeholder="Termin PL..." ${canEdit?`onchange="updateDictSrc('${e.id}',this.value)"`:' readonly'} /></td>${cells}<td><input class="dict-inp" value="${esc(e.note||'')}" placeholder="—" ${canEdit?`onchange="updateDictNote('${e.id}',this.value)"`:' readonly'} /></td><td>${canEdit?`<button class="del-btn" onclick="deleteDict('${e.id}')">×</button>`:''}</td></tr>`;
   }).join('');
 }
 
@@ -3029,19 +3030,46 @@ async function runAITranslation(toTranslate, lang, apiKey){
     const chunk=toTranslate.slice(i,i+CHUNK);
     const charsIn=chunk.reduce((a,s)=>a+s.source_text.length,0);
 
+    // Context: 3 segments before and after chunk
+    const CONTEXT=3;
+    const firstIdx=toTranslate.indexOf(chunk[0]);
+    const lastIdx=toTranslate.indexOf(chunk[chunk.length-1]);
+    const ctxBefore=toTranslate.slice(Math.max(0,firstIdx-CONTEXT),firstIdx).map(s=>s.source_text);
+    const ctxAfter=toTranslate.slice(lastIdx+1,lastIdx+1+CONTEXT).map(s=>s.source_text);
+
+    // Content type based on file type + project description
+    const fileType=currentProject?.file_type||'xliff';
+    const projDesc=currentProject?.description||'';
+    const contentType=fileType==='pptx'
+      ? 'prezentację PowerPoint'
+      : 'interaktywne szkolenie e-learningowe SCORM (Articulate Storyline)';
+    const contextLine=projDesc
+      ? 'Kontekst projektu: "'+projDesc+'"'
+      : '';
+
     const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source_text));
+    const ctxBeforeStr=ctxBefore.length
+      ? '\nKontekst poprzedzający (nie tłumacz — użyj jako kontekst):\n'+ctxBefore.map((t,i)=>'['+(firstIdx-ctxBefore.length+i+1)+'] '+t).join('\n')
+      : '';
+    const ctxAfterStr=ctxAfter.length
+      ? '\nKontekst następujący (nie tłumacz — użyj jako kontekst):\n'+ctxAfter.map((t,i)=>'['+(lastIdx+i+2)+'] '+t).join('\n')
+      : '';
+
     const prompt=`Jesteś tłumaczem materiałów e-learningowych. Przetłumacz KAŻDY segment na: ${lang}.
+Tłumaczysz: ${contentType}.${contextLine?'\n'+contextLine:''}
 WAŻNE:
 - Odpowiedź musi zawierać tłumaczenie dla KAŻDEGO podanego klucza
 - Zachowaj wszystkie znaki nowej linii (\r, \n) dokładnie w tych samych miejscach co w oryginale
 - Znak \r to miękki enter (Shift+Enter) — musi pozostać w tłumaczeniu
-- Zachowaj styl, zmienne %...% przepisuj bez zmian${dict}
-Odpowiedz TYLKO JSON: [{"key":"...","translation":"..."}] — bez markdown, bez preambuły.
+- Zachowaj styl, zmienne %...% przepisuj bez zmian
+- Styl: techniczny, zdania zwięzłe${dict}${ctxBeforeStr}
 
-Segmenty (${chunk.length} szt.):
-${JSON.stringify(chunk.map(s=>({key:s.id,text:s.source_text})))}`;
+Do tłumaczenia (${chunk.length} szt.):
+${JSON.stringify(chunk.map(s=>({key:s.id,text:s.source_text})))}${ctxAfterStr}
 
-    try{
+Odpowiedz TYLKO JSON: [{"key":"...","translation":"..."}] — bez markdown, bez preambuły.`;
+
+        try{
       const raw=await apiCall(apiKey,prompt);
       const res=JSON.parse(raw.replace(/```json|```/g,'').trim());
       const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
@@ -4187,55 +4215,75 @@ async function loadDashMetrics(){
 function getVerifySegments(mode){
   if(mode==='project'){
     const lang=currentProjectLang;
+    const sourceLang=currentProject?.source_lang||'Polish';
     if(!lang) return [];
     return currentProjectSegs
       .filter(s=>s.translations?.[lang]?.text)
-      .map(s=>({id:s.id, source:s.source_text, translation:s.translations[lang].text, lang, mode}));
+      .map(s=>({id:s.id, source:s.source_text, translation:s.translations[lang].text, lang, sourceLang, mode}));
   }
   if(mode==='xliff'){
     const lang=document.getElementById('target-lang')?.value||'';
+    const sourceLang=document.getElementById('source-lang')?.value||'Polish';
     return xliffSegs.filter(s=>s.status==='done').map((s,i)=>({
       id:i,
       source:s.type==='plain'?s.source:s.textNodes.map(n=>n.text).join(' '),
       translation:s.type==='plain'?s.target:s.targets.map(t=>t.text).join(' '),
-      lang, mode
+      lang, sourceLang, mode
     }));
   }
   if(mode==='pptx'){
     const lang=document.getElementById('pptx-target-lang')?.value||'';
+    const sourceLang=document.getElementById('pptx-source-lang')?.value||'Polish';
     return pptxSegs.filter(s=>s.status==='done').map(s=>({
-      id:s.key, source:s.source, translation:s.target, lang, mode
+      id:s.key, source:s.source, translation:s.target, lang, sourceLang, mode
     }));
   }
   return [];
 }
 
-function getWordStem(word){
-  // Get stem of Polish word - remove common suffixes
+function getWordStem(word, lang){
   const w=word.toLowerCase();
   if(w.length<=4) return w;
-  // Remove common Polish endings
-  const suffixes=['owych','owego','owym','owej','owe','owym','owi','ową','ami','ach','om','ie','ię','ek','ce','cie','ka','ki','ku','ką'];
-  for(const s of suffixes){
-    if(w.endsWith(s) && w.length-s.length>=3) return w.slice(0,w.length-s.length);
+  const isEn=lang&&(lang.toLowerCase().includes('eng')||lang.toLowerCase().includes('en'));
+  if(isEn){
+    // English suffixes
+    const enSuffixes=['nesses','ments','ings','tion','tions','ers','ies','ed','es','er','ly','s'];
+    for(const s of enSuffixes){
+      if(w.endsWith(s)&&w.length-s.length>=3) return w.slice(0,w.length-s.length);
+    }
+  } else {
+    // Polish suffixes
+    const plSuffixes=['owych','owego','owym','owej','owe','owi','ową','ami','ach','om','ie','ię','ek','ce','cie','ka','ki','ku','ką','ek','ach'];
+    for(const s of plSuffixes){
+      if(w.endsWith(s)&&w.length-s.length>=3) return w.slice(0,w.length-s.length);
+    }
   }
-  // Fallback: use first 60% of word as stem (min 4 chars)
-  return w.slice(0, Math.max(4, Math.floor(w.length*0.7)));
+  return w.slice(0,Math.max(4,Math.floor(w.length*0.7)));
 }
 
-function getMatchingTerms(source, lang){
+function getMatchingTerms(source, targetLang, sourceLang){
   const srcLower = source.toLowerCase();
+  // Determine which dict field to use as source term
+  // If sourceLang is PL (or undefined) → use e.src
+  // If sourceLang is another language → use e.translations[sourceLang]
+  const isPLSource = !sourceLang ||
+    sourceLang.toLowerCase().includes('pol') ||
+    sourceLang.toLowerCase()==='pl';
+
   return dictCache.filter(e=>{
-    if(!e.translations?.[lang]) return false;
-    const termLower = e.src.toLowerCase();
-    // 1. Exact match first
+    if(!e.translations?.[targetLang]) return false;
+    // Get the term in source language
+    const termSrc = isPLSource ? e.src : (e.translations[sourceLang]||'');
+    if(!termSrc) return false;
+    const termLower = termSrc.toLowerCase();
+    const slang = isPLSource ? 'pl' : 'en';
+    // 1. Exact match
     if(srcLower.includes(termLower)) return true;
-    // 2. Stem matching for each word in multi-word terms
+    // 2. Stem matching
     const words = termLower.split(' ').filter(w=>w.length>3);
     if(!words.length) return false;
-    // All significant words must have their stem present in source
     return words.every(w=>{
-      const stem = getWordStem(w);
+      const stem = getWordStem(w, slang);
       return srcLower.includes(stem);
     });
   });
@@ -4252,7 +4300,8 @@ async function showVerifySummary(mode){
   if(!lang){ alert('Nie można określić języka.'); return; }
 
   // Find segments that have matching dict terms
-  const toVerify=allSegs.filter(s=>getMatchingTerms(s.source,lang).length>0);
+  const sourceLang=allSegs[0]?.sourceLang||'Polish';
+  const toVerify=allSegs.filter(s=>getMatchingTerms(s.source,lang,sourceLang).length>0);
 
   if(!toVerify.length){
     alert(`Żaden segment nie zawiera terminów ze słownika dla języka ${lang}.`);
@@ -4268,8 +4317,10 @@ async function showVerifySummary(mode){
   // Show which terms will be checked
   const allTerms=new Map();
   toVerify.forEach(s=>{
-    getMatchingTerms(s.source,lang).forEach(t=>{
-      allTerms.set(t.src, t.translations[lang]);
+    getMatchingTerms(s.source,lang,sourceLang).forEach(t=>{
+      const termSrc=sourceLang&&!sourceLang.toLowerCase().includes('pol')
+        ?(t.translations[sourceLang]||t.src):t.src;
+      allTerms.set(termSrc, t.translations[lang]);
     });
   });
   const termsList=[...allTerms.entries()].slice(0,8)
@@ -4304,22 +4355,23 @@ async function runVerification(mode, segments, lang, apiKey){
   setStatus(`📖 Weryfikacja: 0/${segments.length}...`);
 
   for(const seg of segments){
-    const terms=getMatchingTerms(seg.source, lang);
+    const terms=getMatchingTerms(seg.source, lang, seg.sourceLang);
     if(!terms.length){ checked++; continue; }
 
     const termsList=terms.map(t=>`"${t.src}" → "${t.translations[lang]}"`).join('\n');
     const charsIn=seg.source.length+seg.translation.length+termsList.length+300;
 
+    const srcLangLabel=seg.sourceLang||'język źródłowy';
     const prompt=
       'Sprawdź czy tłumaczenie używa właściwych terminów ze słownika.\n\n'+
-      'TEKST ŹRÓDŁOWY:\n'+seg.source+'\n\n'+
+      'TEKST ŹRÓDŁOWY ('+srcLangLabel+'):\n'+seg.source+'\n\n'+
       'TŁUMACZENIE DO SPRAWDZENIA:\n'+seg.translation+'\n\n'+
-      'WYMAGANE TERMINY (użyj dokładnie tych słów, uwzględniając odmianę):\n'+termsList+'\n\n'+
+      'WYMAGANE TERMINY (źródło → wymagane tłumaczenie):\n'+termsList+'\n\n'+
       'INSTRUKCJA:\n'+
       '- Jeśli tłumaczenie używa właściwych terminów — odpowiedz: null\n'+
       '- Jeśli używa błędnych terminów — odpowiedz TYLKO poprawionym tłumaczeniem\n'+
       '- Poprawiaj TYLKO termin, resztę zdania zostaw bez zmian\n'+
-      '- Uwzględnij odmianę: np. złączka listwowa = złączki listwowe';
+      '- Uwzględnij odmianę gramatyczną terminu';
         try{
       const raw=(await apiCall(apiKey,prompt,500)).trim();
       const charsOut=raw.length;
