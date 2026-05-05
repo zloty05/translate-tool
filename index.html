@@ -4179,81 +4179,47 @@ async function loadDashMetrics(){
 }
 
 
+
 // ══════════════════════════════════════════════════════════
-// DICTIONARY VERIFICATION
+// DICTIONARY VERIFICATION (Pass 2)
 // ══════════════════════════════════════════════════════════
 
 function getVerifySegments(mode){
-  // Returns array of {id, source, translation, lang}
   if(mode==='project'){
     const lang=currentProjectLang;
     if(!lang) return [];
     return currentProjectSegs
       .filter(s=>s.translations?.[lang]?.text)
-      .map(s=>({id:s.id,source:s.source_text,translation:s.translations[lang].text,lang,mode}));
+      .map(s=>({id:s.id, source:s.source_text, translation:s.translations[lang].text, lang, mode}));
   }
   if(mode==='xliff'){
     const lang=document.getElementById('target-lang')?.value||'';
-    return xliffSegs
-      .filter(s=>s.status==='done')
-      .map((s,i)=>({id:i,source:s.type==='plain'?s.source:s.textNodes.map(n=>n.text).join(' '),
-        translation:s.type==='plain'?s.target:s.targets.map(t=>t.text).join(' '),lang,mode}));
+    return xliffSegs.filter(s=>s.status==='done').map((s,i)=>({
+      id:i,
+      source:s.type==='plain'?s.source:s.textNodes.map(n=>n.text).join(' '),
+      translation:s.type==='plain'?s.target:s.targets.map(t=>t.text).join(' '),
+      lang, mode
+    }));
   }
   if(mode==='pptx'){
     const lang=document.getElementById('pptx-target-lang')?.value||'';
-    return pptxSegs
-      .filter(s=>s.status==='done')
-      .map(s=>({id:s.key,source:s.source,translation:s.target,lang,mode}));
+    return pptxSegs.filter(s=>s.status==='done').map(s=>({
+      id:s.key, source:s.source, translation:s.target, lang, mode
+    }));
   }
   return [];
 }
 
-function getRelevantDictTerms(lang, segments){
-  // Get dict terms for this language
-  const terms=dictCache.filter(e=>e.translations?.[lang]);
-  if(!terms.length) return [];
-  // Find terms whose source appears in any segment source text
-  const allSources=segments.map(s=>s.source.toLowerCase()).join(' ');
-  // Use word stem matching - check if root of term appears in sources
-  return terms.filter(e=>{
-    const root=e.src.toLowerCase().split(' ')[0]; // first word as root
-    return allSources.includes(root);
-  });
-}
-
-function scanForViolations(segments, terms, lang){
-  // Local scan is just a HINT — Claude does the real verification
-  // Only flag cases where target term is completely absent from translation
-  // and source clearly contains the source term (exact match only)
-  const violations=[];
-  segments.forEach(seg=>{
-    const srcLower=seg.source.toLowerCase();
-    const tgtLower=seg.translation.toLowerCase();
-    terms.forEach(term=>{
-      const tgtExpected=term.translations[lang];
-      if(!tgtExpected) return;
-      const srcTerm=term.src.toLowerCase();
-      const tgtTerm=tgtExpected.toLowerCase();
-      // Only flag if source EXACTLY contains the term (not partial matches)
-      if(!srcLower.includes(srcTerm)) return;
-      // And translation clearly does NOT contain the expected term at all
-      // Use significant words only (skip words < 3 chars)
-      const sigWords=tgtTerm.split(/\s+/).filter(w=>w.length>=3&&!/^\d+$/.test(w));
-      if(!sigWords.length) return;
-      // If NONE of the significant words appear in translation - flag it
-      const noneFound=sigWords.every(w=>!tgtLower.includes(w));
-      if(noneFound){
-        violations.push({seg, term, expected:tgtExpected});
-      }
-    });
-  });
-  // Deduplicate
-  const seen=new Set();
-  return violations.filter(v=>{
-    const key=String(v.seg.id)+'__'+v.term.src;
-    if(seen.has(key)) return false;
-    seen.add(key);
-    return true;
+function getMatchingTerms(source, lang){
+  // Find dict terms whose source appears in this segment (case-insensitive, exact word match)
+  const srcLower = source.toLowerCase();
+  return dictCache.filter(e=>{
+    if(!e.translations?.[lang]) return false;
+    const termLower = e.src.toLowerCase();
+    // Check if source contains term as a substring (handles all grammatical forms)
+    return srcLower.includes(termLower) ||
+      // Also check individual words of multi-word terms
+      termLower.split(' ').every(w=>w.length>2 && srcLower.includes(w));
   });
 }
 
@@ -4261,77 +4227,72 @@ async function showVerifySummary(mode){
   const apiKey=getApiKey();
   if(!apiKey){ alert('Wpisz klucz API.'); return; }
 
-  const segments=getVerifySegments(mode);
-  if(!segments.length){ alert('Brak przetłumaczonych segmentów do weryfikacji.'); return; }
+  const allSegs=getVerifySegments(mode);
+  if(!allSegs.length){ alert('Brak przetłumaczonych segmentów.'); return; }
 
-  const lang=segments[0]?.lang;
-  if(!lang){ alert('Nie można określić języka docelowego.'); return; }
+  const lang=allSegs[0]?.lang;
+  if(!lang){ alert('Nie można określić języka.'); return; }
 
-  const terms=getRelevantDictTerms(lang, segments);
-  if(!terms.length){
-    alert(`Brak terminów słownikowych dla języka ${lang}.\nDodaj terminy do słownika żeby weryfikacja działała.`);
-    return;
-  }
-
-  // Local scan for violations
-  const violations=scanForViolations(segments, terms, lang);
-  const violatingIds=new Set(violations.map(v=>String(v.seg.id)));
-
-  // Always verify: segments with detected violations + all segments containing term roots
-  const termRoots=terms.map(t=>t.src.toLowerCase().split(' ')[0]);
-  const toVerify=segments.filter(s=>{
-    if(violatingIds.has(String(s.id))) return true;
-    // Also include segments that contain any term in source (Claude checks properly)
-    const srcLower=s.source.toLowerCase();
-    return termRoots.some(root=>srcLower.includes(root));
-  });
+  // Find segments that have matching dict terms
+  const toVerify=allSegs.filter(s=>getMatchingTerms(s.source,lang).length>0);
 
   if(!toVerify.length){
-    alert('Żaden segment nie zawiera terminów ze słownika — weryfikacja nie jest potrzebna.');
+    alert(`Żaden segment nie zawiera terminów ze słownika dla języka ${lang}.`);
     return;
   }
 
-  // Estimate tokens
-  const avgCharsPerSeg=toVerify.reduce((a,s)=>a+s.source.length+s.translation.length,0)/Math.max(1,toVerify.length);
-  const termsChars=terms.map(t=>`${t.src} → ${t.translations[lang]}`).join('\n').length;
-  const tokensPerSeg=Math.ceil((avgCharsPerSeg + termsChars + 300)/4);
-  const totalTokens=toVerify.length * tokensPerSeg;
-  const estCostPLN=((totalTokens/1e6)*PRICE_IN + (totalTokens*0.3/1e6)*PRICE_OUT)*PLN_USD;
+  // Estimate cost — each segment = 1 API call
+  // ~200 tokens input (segment + matching terms + prompt) + ~50 output
+  const AVG_TOKENS_PER_SEG=250;
+  const totalTokens=toVerify.length*AVG_TOKENS_PER_SEG;
+  const estCostPLN=((totalTokens/1e6)*PRICE_IN+(toVerify.length*50/1e6)*PRICE_OUT)*PLN_USD;
 
-  // Group violations by term for display
-  const violByTerm={};
-  violations.forEach(v=>{
-    const key=v.term.src;
-    if(!violByTerm[key]) violByTerm[key]={term:v.term,count:0};
-    violByTerm[key].count++;
+  // Show which terms will be checked
+  const allTerms=new Map();
+  toVerify.forEach(s=>{
+    getMatchingTerms(s.source,lang).forEach(t=>{
+      allTerms.set(t.src, t.translations[lang]);
+    });
   });
-  const violList=Object.values(violByTerm)
-    .map(v=>`  ⚠ "${v.term.src}" → "${v.term.translations[lang]}": ${v.count} niezgodności`)
-    .join('\n');
-  const termsList=terms.slice(0,6).map(t=>`  • "${t.src}" → "${t.translations[lang]}"`).join('\n');
-  const moreterms=terms.length>6?`\n  ... i ${terms.length-6} więcej`:'';
+  const termsList=[...allTerms.entries()].slice(0,8)
+    .map(([src,tgt])=>`  • "${src}" → "${tgt}"`).join('
+');
+  const moreTerms=allTerms.size>8?`
+  ... i ${allTerms.size-8} więcej`:'';
 
-  const msg=`📖 Weryfikacja słownika\n\n` +
-    `Język: ${lang}\n` +
-    `Segmentów do sprawdzenia: ${toVerify.length} z ${segments.length}\n` +
-    `Terminów w słowniku: ${terms.length}\n\n` +
-    (violations.length>0
-      ? `⚠ Wykryte potencjalne niezgodności:\n${violList}\n\n`
-      : `✓ Lokalne skanowanie OK — Claude sprawdzi dokładnie.\n\n`) +
-    `Terminy ze słownika:\n${termsList}${moreterms}\n\n` +
-    `Szacowany koszt: ~${totalTokens.toLocaleString('pl-PL')} tokenów = ~${fmtPLN(estCostPLN)} PLN\n\n` +
-    `Uruchomić weryfikację przez Claude?`;
+  const msg=`📖 Weryfikacja słownika (Pass 2)
+
+` +
+    `Język: ${lang}
+` +
+    `Segmentów do sprawdzenia: ${toVerify.length} z ${allSegs.length}
+` +
+    `(tylko segmenty zawierające terminy ze słownika)
+
+` +
+    `Terminy do zweryfikowania:
+${termsList}${moreTerms}
+
+` +
+    `Szacowany koszt: ~${totalTokens.toLocaleString('pl-PL')} tokenów = ~${fmtPLN(estCostPLN)} PLN
+
+` +
+    `Jak działa: Claude sprawdza każdy segment osobno i poprawia
+` +
+    `tylko jeśli użyto złego terminu.
+
+` +
+    `Uruchomić weryfikację?`;
 
   if(!confirm(msg)) return;
   if(!checkTokenBalance(totalTokens)) return;
 
-  await runVerification(mode, toVerify, terms, lang, apiKey);
+  await runVerification(mode, toVerify, lang, apiKey);
 }
 
-async function runVerification(mode, segments, terms, lang, apiKey){
-  const CHUNK=10;
+async function runVerification(mode, segments, lang, apiKey){
   let fixed=0, checked=0;
-  const termsList=terms.map(t=>`"${t.src}" → "${t.translations[lang]}"`).join('\n');
+  let totalCostUsd=0;
 
   const setStatus=(msg)=>{
     if(mode==='project') setAutosaveIndicator(msg);
@@ -4339,75 +4300,95 @@ async function runVerification(mode, segments, terms, lang, apiKey){
     else setPPS(msg);
   };
 
-  setStatus(`📖 Weryfikacja słownika: 0/${segments.length}...`);
-  let totalCostUsd=0;
+  setStatus(`📖 Weryfikacja: 0/${segments.length}...`);
 
-  for(let i=0;i<segments.length;i+=CHUNK){
-    const chunk=segments.slice(i,i+CHUNK);
-    const charsIn=chunk.reduce((a,s)=>a+s.source.length+s.translation.length,0)+termsList.length;
+  for(const seg of segments){
+    const terms=getMatchingTerms(seg.source, lang);
+    if(!terms.length){ checked++; continue; }
 
-    const prompt='Jesteś weryfikatorem tłumaczeń technicznych. Sprawdź zgodność tłumaczeń ze słownikiem.\n\n'+
-      'OBOWIĄZKOWY SŁOWNIK TERMINÓW:\n'+termsList+'\n\n'+
-      'ZASADY:\n'+
-      '1. Jeśli termin źródłowy (lub jego forma gramatyczna) jest w SOURCE — tłumaczenie MUSI używać dokładnie podanego terminu docelowego\n'+
-      '2. NIE wolno używać synonimów — tylko termin ze słownika\n'+
-      '3. Jeśli termin nie występuje w SOURCE — nie zmieniaj tłumaczenia\n'+
-      '4. Poprawiaj TYLKO termin, resztę zdania zostaw bez zmian\n\n'+
-      'PRZYKŁAD: Słownik: "złączka listwowa" → "terminal block"\n'+
-      'Złe: "Terminal strip connectors..." → Poprawne: "Terminal block..."\n\n'+
-      'Segmenty:\n'+JSON.stringify(chunk.map(s=>({key:String(s.id),source:s.source,translation:s.translation})))+'\n\n'+
-      'Odpowiedz TYLKO JSON: [{"key":"...","translation":"...","corrected":true/false}] — bez markdown.';
+    const termsList=terms.map(t=>`"${t.src}" → "${t.translations[lang]}"`).join('
+');
+    const charsIn=seg.source.length+seg.translation.length+termsList.length+300;
+
+    const prompt=
+      'Sprawdź czy tłumaczenie używa właściwych terminów ze słownika.
+
+'+
+      'TEKST ŹRÓDŁOWY:
+'+seg.source+'
+
+'+
+      'TŁUMACZENIE DO SPRAWDZENIA:
+'+seg.translation+'
+
+'+
+      'WYMAGANE TERMINY (użyj dokładnie tych słów, uwzględniając odmianę):
+'+termsList+'
+
+'+
+      'INSTRUKCJA:
+'+
+      '- Jeśli tłumaczenie używa właściwych terminów — odpowiedz: null
+'+
+      '- Jeśli używa błędnych terminów — odpowiedz TYLKO poprawionym tłumaczeniem (samo zdanie, bez komentarza)
+'+
+      '- Poprawiaj TYLKO termin, resztę zdania zostaw bez zmian
+'+
+      '- Uwzględnij odmianę: "złączka listwowa" = "złączki listwowe" = "terminal block" = "terminal blocks"';
 
     try{
-      const raw=await apiCall(apiKey,prompt,2000);
-      const res=JSON.parse(raw.replace(/```json|```/g,'').trim());
-      const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
+      const raw=(await apiCall(apiKey,prompt,500)).trim();
+      const charsOut=raw.length;
       totalCostUsd+=((charsIn/4)/1e6)*PRICE_IN+((charsOut/4)/1e6)*PRICE_OUT;
 
-      for(const r of res){
-        if(!r.translation||!r.corrected) continue;
-        const seg=chunk.find(s=>String(s.id)===String(r.key));
-        if(!seg) continue;
+      // null or "null" = no correction needed
+      if(!raw||raw==='null'||raw.toLowerCase()==='null'){
+        checked++;
+        setStatus(`📖 Weryfikacja: ${checked}/${segments.length} | Poprawiono: ${fixed}`);
+        await sleep(100);
+        continue;
+      }
 
-        // Apply correction based on mode
-        if(mode==='project'){
-          await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:r.translation});
-          const projSeg=currentProjectSegs.find(s=>s.id===seg.id);
-          if(projSeg&&projSeg.translations) projSeg.translations[lang].text=r.translation;
-          const ta=document.getElementById('seg-'+seg.id);
-          if(ta){ta.value=r.translation;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
-        } else if(mode==='xliff'){
-          const idx=Number(seg.id);
-          const xseg=xliffSegs[idx];
-          if(xseg){
-            if(xseg.type==='plain') xseg.target=r.translation;
-            xseg.fromTM=false;
-          }
-          const ta=document.getElementById('xta-'+idx);
-          if(ta){ta.value=r.translation;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
-        } else if(mode==='pptx'){
-          const pseg=pptxSegs.find(s=>s.key===seg.id);
-          if(pseg) pseg.target=r.translation;
-          const idx=pptxSegs.findIndex(s=>s.key===seg.id);
-          const ta=document.getElementById('pta-'+idx);
-          if(ta){ta.value=r.translation;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
-        }
+      // Apply correction
+      const corrected=raw.replace(/^["']|["']$/g,'').trim();
+      if(corrected && corrected!==seg.translation){
+        await applyVerifyCorrection(mode, seg, lang, corrected);
         fixed++;
       }
-    }catch(err){ console.error('Verify chunk error:',err); }
+    }catch(err){ console.error('Verify error:',err); }
 
-    checked+=chunk.length;
-    setStatus(`📖 Weryfikacja: ${checked}/${segments.length} sprawdzono, ${fixed} poprawiono...`);
-    await sleep(150);
+    checked++;
+    setStatus(`📖 Weryfikacja: ${checked}/${segments.length} | Poprawiono: ${fixed}`);
+    await sleep(120);
   }
 
   // Deduct tokens
-  await deductTokens(
-    segments.reduce((a,s)=>a+s.source.length+s.translation.length,0),
-    'Weryfikacja słownika → '+lang, lang
-  );
+  const totalChars=segments.reduce((a,s)=>a+s.source.length+s.translation.length,0);
+  await deductTokens(totalChars, 'Weryfikacja słownika → '+lang, lang);
 
-  setStatus(`✓ Weryfikacja zakończona. Sprawdzono ${checked}, poprawiono ${fixed} segmentów. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
+  setStatus(`✓ Weryfikacja zakończona. Sprawdzono: ${checked}, poprawiono: ${fixed} segmentów. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
+}
+
+async function applyVerifyCorrection(mode, seg, lang, corrected){
+  if(mode==='project'){
+    await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:corrected});
+    const projSeg=currentProjectSegs.find(s=>s.id===seg.id);
+    if(projSeg&&projSeg.translations) projSeg.translations[lang].text=corrected;
+    const ta=document.getElementById('seg-'+seg.id);
+    if(ta){ta.value=corrected;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
+  } else if(mode==='xliff'){
+    const idx=Number(seg.id);
+    const xseg=xliffSegs[idx];
+    if(xseg){ if(xseg.type==='plain') xseg.target=corrected; else xseg.targets[0].text=corrected; }
+    const ta=document.getElementById('xta-'+idx);
+    if(ta){ta.value=corrected;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
+  } else if(mode==='pptx'){
+    const pseg=pptxSegs.find(s=>s.key===seg.id);
+    if(pseg) pseg.target=corrected;
+    const idx=pptxSegs.findIndex(s=>s.key===seg.id);
+    const ta=document.getElementById('pta-'+idx);
+    if(ta){ta.value=corrected;ta.className='seg-textarea saved';setTimeout(()=>ta.className='seg-textarea',2000);}
+  }
 }
 
 // ══════════════════════════════════════════════════════════
