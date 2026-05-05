@@ -4258,31 +4258,16 @@ async function showVerifySummary(mode){
     .map(([src,tgt])=>`  • "${src}" → "${tgt}"`).join('\n');
   const moreTerms=allTerms.size>8?`\n  ... i ${allTerms.size-8} więcej`:'';
 
-  const msg=`📖 Weryfikacja słownika (Pass 2)
-
-` +
-    `Język: ${lang}
-` +
-    `Segmentów do sprawdzenia: ${toVerify.length} z ${allSegs.length}
-` +
-    `(tylko segmenty zawierające terminy ze słownika)
-
-` +
-    `Terminy do zweryfikowania:
-${termsList}${moreTerms}
-
-` +
-    `Szacowany koszt: ~${totalTokens.toLocaleString('pl-PL')} tokenów = ~${fmtPLN(estCostPLN)} PLN
-
-` +
-    `Jak działa: Claude sprawdza każdy segment osobno i poprawia
-` +
-    `tylko jeśli użyto złego terminu.
-
-` +
-    `Uruchomić weryfikację?`;
-
-  if(!confirm(msg)) return;
+  const msg='📖 Weryfikacja słownika (Pass 2)\n\n'+
+    'Język: '+lang+'\n'+
+    'Segmentów do sprawdzenia: '+toVerify.length+' z '+allSegs.length+'\n'+
+    '(tylko segmenty zawierające terminy ze słownika)\n\n'+
+    'Terminy do zweryfikowania:\n'+termsList+moreTerms+'\n\n'+
+    'Szacowany koszt: ~'+totalTokens.toLocaleString('pl-PL')+' tokenów = ~'+fmtPLN(estCostPLN)+' PLN\n\n'+
+    'Jak działa: Claude sprawdza każdy segment osobno i poprawia\n'+
+    'tylko jeśli użyto złego terminu.\n\n'+
+    'Uruchomić weryfikację?';
+    if(!confirm(msg)) return;
   if(!checkTokenBalance(totalTokens)) return;
 
   await runVerification(mode, toVerify, lang, apiKey);
