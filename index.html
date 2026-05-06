@@ -2099,8 +2099,22 @@ async function clearDict(){if(!confirm('Wyczyścić słownik?'))return;await dbD
 async function fillDictWithAI(){
   const apiKey=getApiKey();if(!apiKey){alert('Wpisz klucz API.');return;}
   const toFill=[];
+  const enKey='English'; // Use EN as source for non-PL languages
   dictCache.forEach(entry=>PRIMARY.forEach(l=>{
-    if(!entry.translations?.[l.code]) toFill.push({id:entry.id,src:entry.src,lang:l.code,note:entry.note||''});
+    if(l.code===enKey) {
+      // EN: translate from PL source
+      if(!entry.translations?.[l.code]) toFill.push({id:entry.id,src:entry.src,lang:l.code,note:entry.note||'',srcLang:'Polish'});
+    } else {
+      // Other languages: translate from EN if available, fallback to PL
+      const enTerm=entry.translations?.[enKey];
+      if(!entry.translations?.[l.code]) toFill.push({
+        id:entry.id,
+        src:enTerm||entry.src,
+        lang:l.code,
+        note:entry.note||'',
+        srcLang:enTerm?'English':'Polish'
+      });
+    }
   }));
   if(!toFill.length){alert('Brak brakujących tłumaczeń.');return;}
   if(!confirm(`Uzupełnić ${toFill.length} brakujących tłumaczeń AI?\n\nTo może chwilę potrwać.`)) return;
@@ -2130,12 +2144,7 @@ async function fillDictWithAI(){
     const chunk=toFill.slice(i,i+CHUNK);
     setStatus(`⏳ Uzupełnianie: ${done}/${toFill.length} terminów...`, Math.round(done/toFill.length*100));
 
-    const prompt=`Przetłumacz terminy słownikowe na podane języki.
-WAŻNE: Odpowiedz dla KAŻDEGO podanego elementu.
-TYLKO JSON: [{"id":"...","lang":"...","translation":"..."}]. Bez markdown, bez preambuły.
-
-Terminy:
-${JSON.stringify(chunk.map(t=>({id:t.id,src:t.src,lang:t.lang,note:t.note})))}`;
+    const prompt=`Przetłumacz terminy słownikowe na podane języki. Termin źródłowy jest w języku wskazanym przez srcLang.\nWAŻNE: Odpowiedz dla KAŻDEGO podanego elementu.\nTYLKO JSON: [{"id":"...","lang":"...","translation":"..."}]. Bez markdown, bez preambuły.\n\nTerminy:\n${JSON.stringify(chunk.map(t=>({id:t.id,src:t.src,srcLang:t.srcLang||'Polish',lang:t.lang,note:t.note})))}`);
 
     try{
       const raw=(await apiCall(apiKey,prompt)).replace(/\`\`\`json|\`\`\`/g,'').trim();
@@ -3158,9 +3167,7 @@ async function translateCurrentLangAI(){
   setAutosaveIndicator('⏳ Tłumaczenie AI w toku...');
   const totalCostUsd=await runAITranslation(toTranslate,lang,apiKey)||0;
   await deductTokens(totalChars,currentProject.name+' → '+lang,lang);
-  // Save to TM
-  const pairsAI=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
-  await pushTMBatch(pairsAI,lang,'xliff');
+  // TM saved on manual edit or when marked as ready
   updateEditorProgress(lang);
   hideEditorProgress();
   setAutosaveIndicator(`✓ Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
@@ -3179,9 +3186,7 @@ async function translateEmptyAI(){
   setAutosaveIndicator(`⏳ Tłumaczenie ${toTranslate.length} pustych segmentów...`);
   const totalCostUsd=await runAITranslation(toTranslate,lang,apiKey)||0;
   await deductTokens(totalChars,currentProject.name+' → '+lang+' (puste)',lang);
-  // Save to TM
-  const pairsEmpty=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
-  await pushTMBatch(pairsEmpty,lang,'xliff');
+  // TM saved on manual edit or when marked as ready
   updateEditorProgress(lang);
   hideEditorProgress();
   setAutosaveIndicator(`✓ Gotowe! Przetłumaczono ${toTranslate.length} segmentów. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
