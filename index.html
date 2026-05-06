@@ -2144,7 +2144,7 @@ async function fillDictWithAI(){
     const chunk=toFill.slice(i,i+CHUNK);
     setStatus(`⏳ Uzupełnianie: ${done}/${toFill.length} terminów...`, Math.round(done/toFill.length*100));
 
-    const prompt=`Przetłumacz terminy słownikowe na podane języki. Termin źródłowy jest w języku wskazanym przez srcLang.\nWAŻNE: Odpowiedz dla KAŻDEGO podanego elementu.\nTYLKO JSON: [{"id":"...","lang":"...","translation":"..."}]. Bez markdown, bez preambuły.\n\nTerminy:\n${JSON.stringify(chunk.map(t=>({id:t.id,src:t.src,srcLang:t.srcLang||'Polish',lang:t.lang,note:t.note}))})`;
+    const prompt=`Przetłumacz terminy słownikowe na podane języki. Termin źródłowy jest w języku wskazanym przez srcLang.\nWAŻNE: Odpowiedz dla KAŻDEGO podanego elementu.\nTYLKO JSON: [{"id":"...","lang":"...","translation":"..."}]. Bez markdown, bez preambuły.\n\nTerminy:\n${JSON.stringify(chunk.map(t=>({id:t.id,src:t.src,srcLang:t.srcLang||'Polish',lang:t.lang,note:t.note})))}`;
 
     try{
       const raw=(await apiCall(apiKey,prompt)).replace(/\`\`\`json|\`\`\`/g,'').trim();
