@@ -4385,8 +4385,19 @@ async function runVerification(mode, segments, lang, apiKey){
         continue;
       }
 
-      // Apply correction
-      const corrected=raw.replace(/^["']|["']$/g,'').trim();
+      // Extract only the corrected sentence - Claude sometimes adds comments
+      // Strategy: find the last non-empty line that looks like a sentence (not a comment)
+      let corrected=raw.replace(/^["']|["']$/g,'').trim();
+      const rawLines=corrected.split('
+').map(l=>l.trim()).filter(l=>l.length>0);
+      if(rawLines.length>1){
+        // Filter out lines that are comments/explanations
+        const commentPatterns=[/^(poprawka|poprawione|korekta|uwaga|note|correction|fixed|explanation):/i,/^\(.*\)$/,/^[-–—]/];
+        const sentenceLines=rawLines.filter(l=>!commentPatterns.some(p=>p.test(l)));
+        // Take the last sentence line (most likely the corrected translation)
+        if(sentenceLines.length>0) corrected=sentenceLines[sentenceLines.length-1];
+      }
+      corrected=corrected.replace(/^["']|["']$/g,'').trim();
       if(corrected && corrected!==seg.translation){
         await applyVerifyCorrection(mode, seg, lang, corrected);
         fixed++;
