@@ -2062,7 +2062,16 @@ function buildDictPromptForChunk(lang,chunkTexts){
   const d=dictCache.filter(e=>e.translations?.[lang]);
   if(!d.length)return'';
   const combined=chunkTexts.length?chunkTexts.join(' ').toLowerCase():'';
-  const relevant=combined?d.filter(e=>combined.includes(e.src.toLowerCase())):d;
+  const relevant=combined?d.filter(e=>{
+    const termLower=e.src.toLowerCase();
+    if(combined.includes(termLower))return true;
+    const words=termLower.split(' ').filter(w=>w.length>3);
+    if(!words.length)return false;
+    return words.every(w=>{
+      const stem=getWordStem(w,'pl');
+      return combined.includes(stem);
+    });
+  }):d;
   if(!relevant.length)return'';
   return'\n\nSłownik terminologii — stosuj obowiązkowo:\n'+relevant.map(e=>`  "${e.src}" → "${e.translations[lang]}"${e.note?' ('+e.note+')':''}`).join('\n');
 }
@@ -4246,14 +4255,20 @@ function getWordStem(word, lang){
   if(w.length<=4) return w;
   const isEn=lang&&(lang.toLowerCase().includes('eng')||lang.toLowerCase().includes('en'));
   if(isEn){
-    // English suffixes
-    const enSuffixes=['nesses','ments','ings','tion','tions','ers','ies','ed','es','er','ly','s'];
+    const enSuffixes=['nesses','ments','ings','tions','tion','ers','ies','ed','es','er','ly','s'];
     for(const s of enSuffixes){
       if(w.endsWith(s)&&w.length-s.length>=3) return w.slice(0,w.length-s.length);
     }
   } else {
-    // Polish suffixes
-    const plSuffixes=['owych','owego','owym','owej','owe','owi','ową','ami','ach','om','ie','ię','ek','ce','cie','ka','ki','ku','ką','ek','ach'];
+    const plSuffixes=[
+      'owych','owego','owym','owej','owe','owi','ową',
+      'ami','ach','om','ie','ię',
+      'ce','cie','ka','ki','ku','ką',
+      'enia','enie','eniu','eń',
+      'owania','owaniu',
+      'ując','ująca','ujące',
+      'iem','ek'
+    ];
     for(const s of plSuffixes){
       if(w.endsWith(s)&&w.length-s.length>=3) return w.slice(0,w.length-s.length);
     }
@@ -4354,26 +4369,40 @@ async function runVerification(mode, segments, lang, apiKey){
 
   setStatus(`📖 Weryfikacja: 0/${segments.length}...`);
 
-  for(const seg of segments){
+  for(let si=0;si<segments.length;si++){
+    const seg=segments[si];
     const terms=getMatchingTerms(seg.source, lang, seg.sourceLang);
     if(!terms.length){ checked++; continue; }
 
-    const termsList=terms.map(t=>`"${t.src}" → "${t.translations[lang]}"`).join('\n');
-    const charsIn=seg.source.length+seg.translation.length+termsList.length+300;
+    // Context: 2 segments before and after
+    const ctxBefore=segments.slice(Math.max(0,si-2),si);
+    const ctxAfter=segments.slice(si+1,Math.min(segments.length,si+3));
+    const ctxBeforeStr=ctxBefore.length
+      ? 'KONTEKST POPRZEDZAJĄCY (tylko do wglądu):\n'+ctxBefore.map(s=>'  SRC: '+s.source+'\n  TGT: '+s.translation).join('\n')+'\n\n'
+      : '';
+    const ctxAfterStr=ctxAfter.length
+      ? '\nKONTEKST NASTĘPUJĄCY (tylko do wglądu):\n'+ctxAfter.map(s=>'  SRC: '+s.source+'\n  TGT: '+s.translation).join('\n')
+      : '';
+
+    const termsList=terms.map(t=>'"'+t.src+'" → "'+t.translations[lang]+'"').join('\n');
+    const charsIn=seg.source.length+seg.translation.length+termsList.length+ctxBeforeStr.length+ctxAfterStr.length+400;
 
     const srcLangLabel=seg.sourceLang||'język źródłowy';
     const prompt=
       'Sprawdź czy tłumaczenie używa właściwych terminów ze słownika.\n\n'+
+      ctxBeforeStr+
       'TEKST ŹRÓDŁOWY ('+srcLangLabel+'):\n'+seg.source+'\n\n'+
       'TŁUMACZENIE DO SPRAWDZENIA:\n'+seg.translation+'\n\n'+
       'WYMAGANE TERMINY (źródło → wymagane tłumaczenie):\n'+termsList+'\n\n'+
       'INSTRUKCJA:\n'+
+      '- Uwzględnij kontekst sąsiednich segmentów przy ocenie poprawności\n'+
       '- Jeśli tłumaczenie używa właściwych terminów — odpowiedz dokładnie: null\n'+
       '- Jeśli używa błędnych terminów — odpowiedz WYŁĄCZNIE poprawionym zdaniem, zero komentarzy\n'+
       '- ZAKAZ dodawania jakichkolwiek wyjaśnień, nawiasów, przypisów, nagłówków\n'+
       '- Poprawiaj TYLKO termin, resztę zdania zostaw bez zmian\n'+
       '- Uwzględnij odmianę gramatyczną terminu\n'+
-      '- Format odpowiedzi: albo słowo null, albo samo poprawione zdanie — nic więcej';
+      '- Format odpowiedzi: albo słowo null, albo samo poprawione zdanie — nic więcej'+
+      ctxAfterStr;
         try{
       const raw=(await apiCall(apiKey,prompt,500)).trim();
       const charsOut=raw.length;
@@ -4390,13 +4419,13 @@ async function runVerification(mode, segments, lang, apiKey){
       // Extract only the corrected sentence - Claude sometimes adds comments
       // Strategy: find the last non-empty line that looks like a sentence (not a comment)
       let corrected=raw.replace(/^["']|["']$/g,'').trim();
-      const rawLines=corrected.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+      const rawLines=corrected.split('\n').filter(l=>l.trim().length>0);
       if(rawLines.length>1){
         // Filter out lines that are comments/explanations
         const commentPatterns=[/^(poprawka|poprawione|korekta|uwaga|note|correction|fixed|explanation):/i,/^\(.*\)$/,/^-/];
         const sentenceLines=rawLines.filter(l=>!commentPatterns.some(p=>p.test(l)));
         // Take the last sentence line (most likely the corrected translation)
-        if(sentenceLines.length>0) corrected=sentenceLines[sentenceLines.length-1];
+        if(sentenceLines.length>0) corrected=sentenceLines[sentenceLines.length-1].trimStart();
       }
       corrected=corrected.replace(/^["']|["']$/g,'').trim();
       if(corrected && corrected!==seg.translation){
