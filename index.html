@@ -4368,10 +4368,12 @@ async function runVerification(mode, segments, lang, apiKey){
       'TŁUMACZENIE DO SPRAWDZENIA:\n'+seg.translation+'\n\n'+
       'WYMAGANE TERMINY (źródło → wymagane tłumaczenie):\n'+termsList+'\n\n'+
       'INSTRUKCJA:\n'+
-      '- Jeśli tłumaczenie używa właściwych terminów — odpowiedz: null\n'+
-      '- Jeśli używa błędnych terminów — odpowiedz TYLKO poprawionym tłumaczeniem\n'+
+      '- Jeśli tłumaczenie używa właściwych terminów — odpowiedz dokładnie: null\n'+
+      '- Jeśli używa błędnych terminów — odpowiedz WYŁĄCZNIE poprawionym zdaniem, zero komentarzy\n'+
+      '- ZAKAZ dodawania jakichkolwiek wyjaśnień, nawiasów, przypisów, nagłówków\n'+
       '- Poprawiaj TYLKO termin, resztę zdania zostaw bez zmian\n'+
-      '- Uwzględnij odmianę gramatyczną terminu';
+      '- Uwzględnij odmianę gramatyczną terminu\n'+
+      '- Format odpowiedzi: albo słowo null, albo samo poprawione zdanie — nic więcej';
         try{
       const raw=(await apiCall(apiKey,prompt,500)).trim();
       const charsOut=raw.length;
@@ -4388,11 +4390,10 @@ async function runVerification(mode, segments, lang, apiKey){
       // Extract only the corrected sentence - Claude sometimes adds comments
       // Strategy: find the last non-empty line that looks like a sentence (not a comment)
       let corrected=raw.replace(/^["']|["']$/g,'').trim();
-      const rawLines=corrected.split('
-').map(l=>l.trim()).filter(l=>l.length>0);
+      const rawLines=corrected.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
       if(rawLines.length>1){
         // Filter out lines that are comments/explanations
-        const commentPatterns=[/^(poprawka|poprawione|korekta|uwaga|note|correction|fixed|explanation):/i,/^\(.*\)$/,/^[-–—]/];
+        const commentPatterns=[/^(poprawka|poprawione|korekta|uwaga|note|correction|fixed|explanation):/i,/^\(.*\)$/,/^-/];
         const sentenceLines=rawLines.filter(l=>!commentPatterns.some(p=>p.test(l)));
         // Take the last sentence line (most likely the corrected translation)
         if(sentenceLines.length>0) corrected=sentenceLines[sentenceLines.length-1];
