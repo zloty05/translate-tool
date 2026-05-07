@@ -565,14 +565,184 @@ body.dark .dash-metric-value{color:#fff;}
 .tx-col{padding:8px 12px;font-size:12px}
 .tx-plus{color:#1a7a3f;font-weight:600}
 .tx-minus{color:#b32424;font-weight:600}
+
+/* ── LANDING PAGE ── */
+#screen-landing{display:none;background:#f5f4f0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body.dark #screen-landing{background:#0f0f0f}
+
+/* Nav */
+.lp-nav{background:#1a1a1a;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:50}
+.lp-nav-logo{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.lp-nav-btn{padding:7px 16px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #444;background:transparent;color:#ccc;transition:background .15s,color .15s}
+.lp-nav-btn:hover{background:#2a2a2a;color:#fff}
+
+/* Hero */
+.lp-hero{background:#1a1a1a;color:#fff;padding:48px 24px 52px;text-align:center}
+body.dark .lp-hero{background:#161616}
+.lp-hero-stats{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:32px;border-top:1px solid #2a2a2a;padding-top:28px;gap:0}
+.lp-hs{text-align:center;padding:8px 24px;font-size:12px;color:#888;line-height:1.4}
+.lp-hs strong{display:block;font-size:22px;font-weight:800;color:#4ade80;margin-bottom:3px;letter-spacing:-.02em}
+.lp-hs-sep{width:1px;height:40px;background:#2a2a2a;flex-shrink:0}
+@media(max-width:640px){.lp-hs-sep{display:none}.lp-hs{padding:10px 16px}}
+.lp-hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#4ade80;margin-bottom:18px}
+.lp-hero h1{font-size:clamp(28px,5vw,52px);font-weight:700;line-height:1.15;letter-spacing:-.03em;margin-bottom:20px;max-width:720px;margin-left:auto;margin-right:auto}
+.lp-hero h1 span{color:#4ade80}
+.lp-hero-sub{font-size:clamp(15px,2vw,18px);color:#aaa;max-width:540px;margin:0 auto 36px;line-height:1.6}
+.lp-hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+.lp-btn-primary{padding:13px 28px;background:#4ade80;color:#000;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s,transform .1s}
+.lp-btn-primary:hover{background:#22c55e;transform:translateY(-1px)}
+.lp-btn-secondary{padding:13px 28px;background:transparent;color:#fff;border:1px solid #444;border-radius:8px;font-size:15px;font-weight:500;cursor:pointer;transition:background .15s}
+.lp-btn-secondary:hover{background:#2a2a2a}
+
+/* Hero mock — wizualizacja tabeli segmentów */
+.lp-mock{max-width:680px;margin:0 auto;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.lp-mock-bar{background:#111;padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #2a2a2a}
+.lp-mock-dot{width:10px;height:10px;border-radius:50%}
+.lp-mock-title{font-size:11px;color:#555;margin-left:4px}
+.lp-mock-table{background:#111}
+.lp-mock-thead{display:grid;grid-template-columns:1fr 1fr 220px;background:#0a0a0a;padding:7px 14px;border-bottom:1px solid #222}
+.lp-mock-th{font-size:10px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.06em}
+.lp-mock-row{display:grid;grid-template-columns:1fr 1fr 220px;padding:10px 14px;border-bottom:1px solid #1a1a1a;align-items:center;gap:8px}
+.lp-mock-src{font-size:12px;color:#888}
+.lp-mock-tgt{font-size:12px;color:#ccc}
+.lp-mock-langs{display:flex;gap:4px;flex-wrap:wrap}
+.lp-mock-lang{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px}
+.lml-done{background:#0a2a1a;color:#4ade80}
+.lml-go{background:#0a1a2e;color:#5a9eff}
+.lml-wait{background:#1a1a1a;color:#555;border:1px solid #2a2a2a}
+
+/* Benefits */
+.lp-benefits{padding:64px 24px;background:#fff}
+body.dark .lp-benefits{background:#1a1a1a}
+.lp-section-label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#2a8a4a;text-align:center;margin-bottom:10px}
+.lp-section-title{font-size:clamp(22px,3vw,32px);font-weight:700;text-align:center;color:#1a1a1a;margin-bottom:8px;letter-spacing:-.02em}
+body.dark .lp-section-title{color:#fff}
+.lp-section-sub{font-size:14px;color:#888;text-align:center;margin-bottom:40px;max-width:480px;margin-left:auto;margin-right:auto}
+body.dark .lp-section-sub{color:#666}
+.lp-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:1100px;margin:0 auto}
+.lp-card{background:#fafaf8;border:1px solid #e8e6e0;border-radius:14px;padding:24px;transition:box-shadow .2s,border-color .2s}
+.lp-card:hover{border-color:#1a1a1a;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+body.dark .lp-card{background:#252525;border-color:#333}
+body.dark .lp-card:hover{border-color:#666}
+.lp-card-icon{font-size:28px;margin-bottom:14px;display:block}
+.lp-card-title{font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:8px;letter-spacing:-.02em}
+body.dark .lp-card-title{color:#fff}
+.lp-card-body{font-size:13px;color:#666;line-height:1.65}
+body.dark .lp-card-body{color:#999}
+
+/* Stats */
+.lp-stats{background:#1a1a1a;padding:56px 24px}
+.lp-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;max-width:900px;margin:0 auto}
+.lp-stat{text-align:center;padding:24px 16px;border-right:1px solid #2a2a2a}
+.lp-stat:last-child{border-right:none}
+.lp-stat-num{font-size:clamp(32px,4vw,48px);font-weight:800;color:#4ade80;letter-spacing:-.03em;line-height:1}
+.lp-stat-label{font-size:12px;color:#666;margin-top:8px;line-height:1.4}
+
+/* Bottom CTA */
+.lp-cta{background:#0a2a1a;border-top:1px solid #1a3a1a;padding:72px 24px;text-align:center}
+.lp-cta h2{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;margin-bottom:12px;letter-spacing:-.02em}
+.lp-cta p{font-size:15px;color:#6b9a7a;margin-bottom:32px;max-width:440px;margin-left:auto;margin-right:auto}
+
+/* Footer */
+.lp-footer{background:#1a1a1a;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid #2a2a2a}
+body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
+.lp-footer-copy{font-size:12px;color:#666}
+.lp-footer-link{font-size:12px;color:#666;cursor:pointer;transition:color .15s}
+.lp-footer-link:hover{color:#ccc}
+
+/* Responsive */
+@media(max-width:900px){
+  .lp-cards{grid-template-columns:repeat(2,1fr)}
+  .lp-stats-grid{grid-template-columns:repeat(2,1fr)}
+  .lp-stat:nth-child(2){border-right:none}
+  .lp-stat:nth-child(3){border-right:1px solid #2a2a2a}
+  .lp-stat:nth-child(4){border-right:none}
+  .lp-stat:nth-child(3),.lp-stat:nth-child(4){border-top:1px solid #2a2a2a}
+  .lp-mock-row,.lp-mock-thead{grid-template-columns:1fr 1fr}
+  .lp-mock-langs{display:none}
+}
+@media(max-width:580px){
+  .lp-cards{grid-template-columns:1fr}
+  .lp-nav{padding:0 16px}
+  .lp-hero{padding:52px 16px 48px}
+  .lp-benefits{padding:48px 16px}
+}
 </style>
 </head>
 <body>
 
 <!-- ══════════════════════════════════════════════════════
+     LANDING PAGE
+══════════════════════════════════════════════════════ -->
+<div id="screen-landing">
+
+  <!-- Nav -->
+  <nav class="lp-nav">
+    <div class="lp-nav-logo">🌐 TranslateTool</div>
+    <button class="lp-nav-btn" onclick="hideLanding();showScreen('screen-login')">Zaloguj się</button>
+  </nav>
+
+  <!-- Hero -->
+  <section class="lp-hero">
+    <div class="lp-hero-eyebrow">Lokalizacja materiałów e-learningowych</div>
+    <h1>Tłumacz szkolenia SCORM<br>na <span>wiele języków</span> naraz</h1>
+    <p class="lp-hero-sub">Jeden projekt — dowolna liczba języków. AI wykonuje tłumaczenie, Twój zespół tylko weryfikuje. Oszczędność czasu nawet do 80%.</p>
+    <div class="lp-hero-cta">
+      <button class="lp-btn-primary" onclick="hideLanding();showScreen('screen-register')">Zacznij za darmo →</button>
+      <button class="lp-btn-secondary" onclick="hideLanding();showScreen('screen-login')">Mam już konto</button>
+    </div>
+    <div class="lp-hero-stats">
+      <div class="lp-hs"><strong>80%</strong>mniej kosztów lokalizacji</div>
+      <div class="lp-hs-sep"></div>
+      <div class="lp-hs"><strong>80+</strong>obsługiwanych języków</div>
+      <div class="lp-hs-sep"></div>
+      <div class="lp-hs"><strong>3</strong>formaty: XLIFF · PPTX · SRT</div>
+      <div class="lp-hs-sep"></div>
+      <div class="lp-hs"><strong>AI</strong>dopasowany do Twoich aplikacji</div>
+    </div>
+  </section>
+
+  <!-- Benefits -->
+  <section class="lp-benefits">
+    <div class="lp-section-label">Dlaczego TranslateTool</div>
+    <h2 class="lp-section-title">Wszystko czego potrzebuje zespół L&D</h2>
+    <p class="lp-section-sub">Od uploadu pliku po gotowy XLIFF z tłumaczeniem — w kilka minut, nie dni.</p>
+    <div class="lp-cards">
+      <div class="lp-card">
+        <span class="lp-card-icon">📁</span>
+        <div class="lp-card-title">Jeden projekt, wiele języków</div>
+        <div class="lp-card-body">Utwórz projekt raz, przypisz tłumaczy do każdego języka i tłumacz równolegle. Pełna historia i status w jednym miejscu.</div>
+      </div>
+      <div class="lp-card">
+        <span class="lp-card-icon">⚡</span>
+        <div class="lp-card-title">60–80% taniej i szybciej</div>
+        <div class="lp-card-body">Pamięć tłumaczeń (TM) eliminuje powtarzające się segmenty. Słownik terminologii gwarantuje spójność. AI tłumaczy, Ty zatwierdzasz.</div>
+      </div>
+      <div class="lp-card">
+        <span class="lp-card-icon">🎓</span>
+        <div class="lp-card-title">SCORM bez komplikacji</div>
+        <div class="lp-card-body">Natywna obsługa XLIFF z Articulate Storyline — znaczniki i formatowanie zachowane w 100%. Gotowy plik do reimportu jednym kliknięciem.</div>
+      </div>
+      <div class="lp-card">
+        <span class="lp-card-icon">👥</span>
+        <div class="lp-card-title">Dla całego zespołu</div>
+        <div class="lp-card-body">Role Admin / Tłumacz / Viewer, zaproszenia przez link, przypisania językowe na członka, limity tokenów — pełne zarządzanie zespołem.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="lp-footer">
+    <span class="lp-footer-copy">© 2026 TranslateTool</span>
+    <span class="lp-footer-link" onclick="hideLanding();showScreen('screen-login')">Zaloguj się</span>
+  </footer>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
      AUTH: LOGIN
 ══════════════════════════════════════════════════════ -->
-<div class="auth-screen active" id="screen-login">
+<div class="auth-screen" id="screen-login">
   <div class="auth-box">
     <div class="auth-logo">🌐 TranslateTool</div>
     <div class="auth-sub">Zaloguj się do swojego konta</div>
@@ -1424,7 +1594,18 @@ function langOptionsHTML(){
 // ══════════════════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════════════════
+function showLanding(){
+  document.getElementById('screen-landing').style.display='block';
+  document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('app-shell').style.display='none';
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+}
+function hideLanding(){
+  document.getElementById('screen-landing').style.display='none';
+}
+
 function showScreen(id){
+  hideLanding();
   document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('app-shell').style.display='none';
   const el=document.getElementById(id);
@@ -1434,6 +1615,7 @@ function showScreen(id){
 function showApp(){
   document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('app-shell').style.display='block';
+  document.getElementById('tab-projects').classList.add('active');
 }
 
 function authErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
@@ -4584,7 +4766,7 @@ async function applyVerifyCorrection(mode, seg, lang, corrected){
     currentSession=session;currentUser=session.user;
     await afterLogin();
   } else {
-    showScreen('screen-login');
+    showLanding();
   }
 
   // Listen for auth changes
@@ -4596,7 +4778,7 @@ async function applyVerifyCorrection(mode, seg, lang, corrected){
     }
     if(event==='SIGNED_OUT'){
       currentOrg=null;currentRole=null;currentUser=null;
-      showScreen('screen-login');
+      showLanding();
     }
   });
 })();
