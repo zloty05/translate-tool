@@ -566,6 +566,12 @@ body.dark .dash-metric-value{color:#fff;}
 .tx-plus{color:#1a7a3f;font-weight:600}
 .tx-minus{color:#b32424;font-weight:600}
 
+/* ── LOGO IMAGE ── */
+.logo-img{display:inline-block;object-fit:contain;border-radius:8px;vertical-align:middle;flex-shrink:0}
+.logo-nav{height:28px;border-radius:6px;margin-right:6px}
+.logo-hdr{height:26px;border-radius:6px;margin-right:6px}
+.logo-auth{height:56px;border-radius:12px;display:block;margin:0 auto 6px}
+
 /* ── LANDING PAGE ── */
 #screen-landing{display:none;background:#f5f4f0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 body.dark #screen-landing{background:#0f0f0f}
@@ -678,7 +684,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 
   <!-- Nav -->
   <nav class="lp-nav">
-    <div class="lp-nav-logo">🌐 TranslateTool</div>
+    <div class="lp-nav-logo"><img src="logo.png" alt="" class="logo-img logo-nav"> TranslateTool</div>
     <button class="lp-nav-btn" onclick="hideLanding();showScreen('screen-login')">Zaloguj się</button>
   </nav>
 
@@ -744,7 +750,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 ══════════════════════════════════════════════════════ -->
 <div class="auth-screen" id="screen-login">
   <div class="auth-box">
-    <div class="auth-logo">🌐 TranslateTool</div>
+    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateTool</div>
     <div class="auth-sub">Zaloguj się do swojego konta</div>
     <div class="auth-error" id="login-error"></div>
     <div class="auth-success" id="login-success"></div>
@@ -759,7 +765,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 <!-- ══════ AUTH: REGISTER ══════ -->
 <div class="auth-screen" id="screen-register">
   <div class="auth-box">
-    <div class="auth-logo">🌐 TranslateTool</div>
+    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateTool</div>
     <div class="auth-sub">Utwórz nowe konto</div>
     <div class="auth-error" id="reg-error"></div>
     <div class="auth-field"><label>Imię i nazwisko</label><input type="text" id="reg-name" placeholder="Jan Kowalski" /></div>
@@ -774,7 +780,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 <!-- ══════ AUTH: RESET ══════ -->
 <div class="auth-screen" id="screen-reset">
   <div class="auth-box">
-    <div class="auth-logo">🌐 TranslateTool</div>
+    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateTool</div>
     <div class="auth-sub">Resetuj hasło</div>
     <div class="auth-error" id="reset-error"></div>
     <div class="auth-success" id="reset-success"></div>
@@ -787,7 +793,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 <!-- ══════ ONBOARDING ══════ -->
 <div class="auth-screen" id="screen-onboard">
   <div class="auth-box" style="max-width:480px;">
-    <div class="auth-logo">🌐 TranslateTool</div>
+    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateTool</div>
     <div class="auth-sub" id="onboard-subtitle">Skonfiguruj swoją organizację</div>
     <div class="onboard-progress">
       <div class="onboard-dot done" id="od1"></div>
@@ -834,7 +840,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 ══════════════════════════════════════════════════════ -->
 <div id="app-shell">
 <header>
-  <h1>🌐 TranslateTool</h1>
+  <h1><img src="logo.png" alt="" class="logo-img logo-hdr"> TranslateTool</h1>
   <div class="hdr-right">
     <span class="hdr-org" id="hdr-org-name">—</span>
     <div class="token-badge" onclick="switchTab('shop')" title="Kliknij aby kupić tokeny">
