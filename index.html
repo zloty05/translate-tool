@@ -2114,23 +2114,39 @@ function renderDict(){
   }).join('');
 }
 
-function buildDictPromptForChunk(lang,chunkTexts){
+function buildDictPromptForChunk(lang, chunkTexts, sourceLang){
   const d=dictCache.filter(e=>e.translations?.[lang]);
   if(!d.length)return'';
   const combined=chunkTexts.length?chunkTexts.join(' ').toLowerCase():'';
+
+  // Determine source term field based on sourceLang
+  // If sourceLang is PL (or undefined) → use e.src
+  // Otherwise → use e.translations[sourceLang]
+  const isPL=!sourceLang||sourceLang.toLowerCase().includes('pol')||sourceLang.toLowerCase()==='pl';
+  const slang=isPL?'pl':'en';
+
+  const getTermSrc=e=>isPL?e.src:(e.translations?.[sourceLang]||e.src);
+
   const relevant=combined?d.filter(e=>{
-    const termLower=e.src.toLowerCase();
+    const termSrc=getTermSrc(e);
+    if(!termSrc)return false;
+    const termLower=termSrc.toLowerCase();
     if(combined.includes(termLower))return true;
     const words=termLower.split(' ').filter(w=>w.length>3);
     if(!words.length)return false;
     return words.every(w=>{
-      const stem=getWordStem(w,'pl');
+      const stem=getWordStem(w,slang);
       return combined.includes(stem);
     });
   }):d;
   if(!relevant.length)return'';
-  return'\n\nSłownik terminologii — stosuj obowiązkowo:\n'+relevant.map(e=>`  "${e.src}" → "${e.translations[lang]}"${e.note?' ('+e.note+')':''}`).join('\n');
+  // Show source term in source language for Claude
+  return'\n\nSłownik terminologii — stosuj obowiązkowo:\n'+
+    relevant.map(e=>`  "${getTermSrc(e)}" → "${e.translations[lang]}"${e.note?' ('+e.note+')':''}`).join('\n');
 }
+
+// Wrapper for backward compatibility (no sourceLang = assume PL)
+function buildDictPrompt(lang){return buildDictPromptForChunk(lang,[],'Polish');}
 function buildDictPrompt(lang){return buildDictPromptForChunk(lang,[]);}
 
 function exportDictExcel(){
@@ -2440,7 +2456,7 @@ async function runXliffBatch(toT,apiKey){
   let done=0,totalCostUsd=0;
   for(let i=0;i<items.length;i+=CHUNK){
     const chunk=items.slice(i,i+CHUNK);
-    const dict=buildDictPromptForChunk(lang,chunk.map(it=>it.text));
+    const dict=buildDictPromptForChunk(lang,chunk.map(it=>it.text),document.getElementById('source-lang')?.value);
     const charsIn=chunk.reduce((a,it)=>a+it.text.length,0);
     const prompt=`Tłumacz materiały e-learningowe na: ${lang}.\nZachowaj zmienne %...% bez zmian.${dict}\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nFragmenty:\n${JSON.stringify(chunk.map(it=>({key:it.key,text:it.text})))}`;
     try{
@@ -2560,7 +2576,7 @@ async function runPptxBatch(toT,apiKey){
   let done=0,totalCostUsd=0;const C=25;
   for(let i=0;i<toT.length;i+=C){
     const chunk=toT.slice(i,i+C);const charsIn=chunk.reduce((a,s)=>a+s.source.length,0);
-    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.text));
+    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.text),document.getElementById('pptx-source-lang')?.value);
     const prompt=`Jesteś profesjonalnym tłumaczem prezentacji biznesowych i szkoleniowych. Przetłumacz na język: ${lang}.\n\nZasady:\n- Zachowaj styl oryginału (formalny/zwięzły)\n- Nie dodawaj ani nie skracaj tekstu\n- Zachowaj interpunkcję i wielkość liter\n- Zmienne %...% przepisuj bez zmian\n- Tytuły slajdów: zwięźle i rzeczowo\n- Punkty listy: zachowaj równoległy styl${dict}\n\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nBloki:\n${JSON.stringify(chunk.map(s=>({key:s.key,text:s.source})))}`;
     try{
       const res=JSON.parse((await apiCall(apiKey,prompt)).replace(/```json|```/g,'').trim());
@@ -3121,7 +3137,7 @@ async function runAITranslation(toTranslate, lang, apiKey){
       ? 'Kontekst projektu: "'+projDesc+'"'
       : '';
 
-    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source_text));
+    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source_text),currentProject?.source_lang);
     const ctxBeforeStr=ctxBefore.length
       ? '\nKontekst poprzedzający (nie tłumacz — użyj jako kontekst):\n'+ctxBefore.map((t,i)=>'['+(firstIdx-ctxBefore.length+i+1)+'] '+t).join('\n')
       : '';
@@ -3853,7 +3869,7 @@ async function runSubtitleBatch(toT,apiKey){
     const ctxBefore=subtitleSegs.slice(Math.max(0,firstIdx-CONTEXT),firstIdx).map(s=>s.source);
     const ctxAfter=subtitleSegs.slice(lastIdx+1,lastIdx+1+CONTEXT).map(s=>s.source);
 
-    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source));
+    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source),null);
     const charsIn=chunk.reduce((a,s)=>a+s.source.length,0);
 
     const ctxBeforeStr=ctxBefore.length?'Kontekst poprzedzający (tylko do odczytu):\n'+ctxBefore.map(t=>'"'+t+'"').join('\n')+'\n\n':'';
