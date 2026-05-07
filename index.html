@@ -732,7 +732,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
       <div class="lp-card">
         <span class="lp-card-icon">👥</span>
         <div class="lp-card-title">Dla całego zespołu</div>
-        <div class="lp-card-body">Role Admin / Tłumacz / Viewer, zaproszenia przez link, przypisania językowe na członka, limity tokenów — pełne zarządzanie zespołem.</div>
+        <div class="lp-card-body">Role Admin / Tłumacz / Viewer, zaproszenia przez link, przypisania językowe na członka, limity kredytów — pełne zarządzanie zespołem.</div>
       </div>
     </div>
   </section>
@@ -843,11 +843,11 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
   <h1><img src="logo.png" alt="" class="logo-img logo-hdr"> TranslateTool</h1>
   <div class="hdr-right">
     <span class="hdr-org" id="hdr-org-name">—</span>
-    <div class="token-badge" onclick="switchTab('shop')" title="Kliknij aby kupić tokeny">
+    <div class="token-badge" onclick="switchTab('shop')" title="Kliknij aby kupić kredyty">
       <span class="token-icon">🪙</span>
       <div>
         <div class="token-amount" id="hdr-token-amount">—</div>
-        <div class="token-label">tokenów</div>
+        <div class="token-label">kredytów</div>
       </div>
     </div>
     <span><span class="db-dot" id="db-dot"></span></span>
@@ -894,7 +894,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
   <div class="tab" onclick="switchTab('dict')">📖 Słownik <span class="tab-badge" id="dict-count">0</span></div>
   <div class="tab" onclick="switchTab('tm')">🧠 Pamięć TM <span class="tab-badge" id="tm-count">0</span></div>
   <div class="tab" onclick="switchTab('team')">👥 Zespół</div>
-  <div class="tab" onclick="switchTab('shop')">🪙 Kup tokeny</div>
+  <div class="tab" onclick="switchTab('shop')">🪙 Kredyty</div>
 </div></div>
 
 <!-- XLIFF -->
@@ -1039,7 +1039,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
       <div class="stat-box"><div class="stat-num" id="hist-total">0</div><div class="stat-lbl">Tłumaczeń</div></div>
       <div class="stat-box"><div class="stat-num" id="hist-xliff-c">0</div><div class="stat-lbl">Plików XLIFF</div></div>
       <div class="stat-box"><div class="stat-num" id="hist-pptx-c">0</div><div class="stat-lbl">Plików PPTX</div></div>
-      <div class="stat-box"><div class="stat-num" id="hist-cost-total">0,00</div><div class="stat-lbl">Łączny koszt (PLN)</div></div>
+      <div class="stat-box"><div class="stat-num" id="hist-cost-total">0</div><div class="stat-lbl">Wydane kredyty</div></div>
       <div class="stat-box"><div class="stat-num" id="hist-tm-total">0</div><div class="stat-lbl">Segmentów z TM</div></div>
     </div>
     <div class="filter-row">
@@ -1146,17 +1146,17 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 
     <!-- Admin: manual token top-up for testing -->
     <div class="hide-viewer admin-token-panel" style="margin-top:16px;border-radius:8px;padding:14px;">
-      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">🛠 Panel admina — ręczne doładowanie tokenów (tryb testowy)</p>
+      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">🛠 Panel admina — ręczne doładowanie kredytów (tryb testowy)</p>
       <div class="row">
         <select id="admin-token-amount" style="width:220px;">
-          <option value="50000">50 000 tokenów</option>
-          <option value="100000">100 000 tokenów</option>
-          <option value="500000">500 000 tokenów</option>
-          <option value="2000000">2 000 000 tokenów</option>
+          <option value="10">10 kredytów</option>
+          <option value="50">50 kredytów</option>
+          <option value="100">100 kredytów</option>
+          <option value="500">500 kredytów</option>
         </select>
-        <button class="btn btn-dark btn-sm" onclick="adminAddTokens(parseInt(document.getElementById('admin-token-amount').value),'Ręczne doładowanie testowe')">+ Dodaj tokeny</button>
+        <button class="btn btn-dark btn-sm" onclick="adminAddTokens(parseInt(document.getElementById('admin-token-amount').value),'Ręczne doładowanie testowe')">+ Dodaj kredyty</button>
       </div>
-      <p style="font-size:11px;color:#999;margin-top:6px;">Tylko do testowania — zastąpione przez Stripe przed launchem.</p>
+      <p style="font-size:11px;color:#999;margin-top:6px;">Tylko do testowania — zastąpione przez Stripe przed launchem. 1 kredyt = 1 000 znaków = 1 PLN.</p>
     </div>
 
     <!-- Legendy ról -->
@@ -1258,7 +1258,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
         <div class="dash-metric-value" id="dash-active">—</div>
       </div>
       <div class="dash-metric-card">
-        <div class="dash-metric-label">Tokeny</div>
+        <div class="dash-metric-label">Kredyty</div>
         <div class="dash-metric-value" style="color:#1a7a3f;" id="dash-tokens">—</div>
       </div>
       <div class="dash-metric-card">
@@ -1267,13 +1267,13 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
       </div>
       <div class="dash-metric-card">
         <div class="dash-metric-label">Koszt miesięczny</div>
-        <div class="dash-metric-value" id="dash-cost">— PLN</div>
+        <div class="dash-metric-value" id="dash-cost">— kr.</div>
       </div>
     </div>
 
     <!-- Translator token limit bar -->
     <div id="proj-token-bar" style="display:none;" class="token-limit-bar">
-      <div class="tlb-label">Tokeny miesięczne:</div>
+      <div class="tlb-label">Kredyty miesięczne:</div>
       <div class="tlb-bar"><div id="tlb-fill" style="height:100%;border-radius:2px;background:#2451b3;transition:width .3s;"></div></div>
       <div class="tlb-val" id="tlb-val">—</div>
     </div>
@@ -1452,8 +1452,8 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 <!-- SHOP -->
 <div class="tab-content" id="tab-shop"><div class="container">
   <div class="card">
-    <p class="card-title">🪙 Kup tokeny</p>
-    <p class="card-sub">Tokeny są wspólne dla całej organizacji. 1 token ≈ 4 znaki tekstu. Zakup jest jednorazowy — tokeny nie wygasają.</p>
+    <p class="card-title">🪙 Kup kredyty</p>
+    <p class="card-sub">Kredyty są wspólne dla całej organizacji. 1 kredyt = 1 000 znaków = 1 PLN. Zakup jest jednorazowy — kredyty nie wygasają.</p>
 
     <!-- Aktualne saldo -->
     <div style="background:#fafaf8;border:1px solid #eee;border-radius:10px;padding:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -1462,7 +1462,7 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
       <div>
         <div style="font-size:12px;color:#888;margin-bottom:2px;">Aktualne saldo organizacji</div>
         <div style="font-size:28px;font-weight:700;" id="shop-balance">—</div>
-        <div style="font-size:12px;color:#aaa;">tokenów</div>
+        <div style="font-size:12px;color:#aaa;">kredytów</div>
       </div>
       <div style="font-size:12px;color:#888;text-align:right;">
         <div id="shop-balance-equiv">—</div>
@@ -1477,26 +1477,26 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 
       <div class="pkg-card" onclick="startCheckout('price_1TRpL9FAZbQYcNSrcZCePhAO','starter')">
         <div class="pkg-name">Starter</div>
-        <div class="pkg-tokens">100 000<span> tokenów</span></div>
-        <div class="pkg-equiv">~10 plików XLIFF</div>
-        <div class="pkg-price">9 PLN<span> netto</span></div>
+        <div class="pkg-tokens">50<span> kredytów</span></div>
+        <div class="pkg-equiv">~50 000 znaków · ok. 3 szkolenia</div>
+        <div class="pkg-price">50 PLN<span> netto</span></div>
         <button class="pkg-btn">Kup teraz →</button>
       </div>
 
       <div class="pkg-card popular" onclick="startCheckout('price_1TRpLWFAZbQYcNSraskM5Xoq','standard')">
         <div class="pkg-popular-badge">Najpopularniejszy</div>
         <div class="pkg-name">Standard</div>
-        <div class="pkg-tokens">500 000<span> tokenów</span></div>
-        <div class="pkg-equiv">~50 plików XLIFF</div>
-        <div class="pkg-price">39 PLN<span> netto</span></div>
+        <div class="pkg-tokens">250<span> kredytów</span></div>
+        <div class="pkg-equiv">~250 000 znaków · ok. 16 szkoleń</div>
+        <div class="pkg-price">230 PLN<span> netto</span></div>
         <button class="pkg-btn">Kup teraz →</button>
       </div>
 
       <div class="pkg-card" onclick="startCheckout('price_1TRpLnFAZbQYcNSrhHdwtHo5','pro')">
         <div class="pkg-name">Pro</div>
-        <div class="pkg-tokens">2 000 000<span> tokenów</span></div>
-        <div class="pkg-equiv">~200 plików XLIFF</div>
-        <div class="pkg-price">129 PLN<span> netto</span></div>
+        <div class="pkg-tokens">1 000<span> kredytów</span></div>
+        <div class="pkg-equiv">~1 000 000 znaków · ok. 66 szkoleń</div>
+        <div class="pkg-price">850 PLN<span> netto</span></div>
         <button class="pkg-btn">Kup teraz →</button>
       </div>
 
@@ -1769,7 +1769,7 @@ async function onboardStep2(){
     const{error:e2}=await supa.rpc('add_org_admin',{org_id:orgId});
     if(e2)throw new Error(e2.message);
     // Step 3: add welcome bonus tokens (10 000)
-    await supa.rpc('add_tokens',{org_id:orgId,amount:10000,desc_text:'Tokeny startowe — bonus powitalny'});
+    await supa.rpc('add_tokens',{org_id:orgId,amount:15,desc_text:'Kredyty startowe — bonus powitalny'});
     // Step 4: fetch full org record
     const orgs=await dbGet('organizations',`?id=eq.${orgId}`);
     currentOrg=orgs[0];
@@ -1825,6 +1825,7 @@ async function loadApp(){
   // Load data
   try{
     await Promise.all([loadDictCache(),loadOrgBalance()]);
+    await migrateTokensToCredits();
     updateTMUI();
     setDbStatus(true);
   }catch(e){setDbStatus(false);console.error(e);}
@@ -1978,11 +1979,11 @@ function renderTeamList(members){
         <div class="member-lang-tags">${langPills}</div>
       </div>
       ${m.role==='translator'?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div style="font-size:11px;color:#888;">Limit tokenów/mies.:</div>
+        <div style="font-size:11px;color:#888;">Limit kredytów/mies.:</div>
         ${isAdmin?`<input type="number" value="${tokenLimit||''}" placeholder="bez limitu"
           style="width:120px;padding:4px 8px;font-size:12px;border:1px solid #ddd;border-radius:5px;"
           onchange="saveMemberTokenLimit('${m.id}',this.value)" />`
-          :`<span style="font-size:12px;">${tokenLimit?tokenLimit.toLocaleString('pl-PL')+' tokenów':'bez limitu'}</span>`}
+          :`<span style="font-size:12px;">${tokenLimit?tokenLimit.toLocaleString('pl-PL')+' kredytów':'bez limitu'}</span>`}
         ${tokenLimit?`<div style="flex:1;min-width:100px;">
           <div style="font-size:11px;color:#888;">${tokenUsed.toLocaleString('pl-PL')} / ${tokenLimit.toLocaleString('pl-PL')} (${limitPct}%)</div>
           <div class="progress-bar-thin"><div class="progress-bar-fill" style="width:${limitPct}%;background:${limitPct>90?'#b32424':'#2a8a4a'};"></div></div>
@@ -2480,7 +2481,7 @@ function renderHistory(){
   document.getElementById('hist-total').textContent=histCache.length;
   document.getElementById('hist-xliff-c').textContent=histCache.filter(h=>h.filetype==='xliff').length;
   document.getElementById('hist-pptx-c').textContent=histCache.filter(h=>h.filetype==='pptx').length;
-  document.getElementById('hist-cost-total').textContent=fmtPLN(totalCost);
+  document.getElementById('hist-cost-total').textContent=Math.round(totalCost);
   document.getElementById('hist-tm-total').textContent=totalTM;
   const langs=[...new Set(histCache.map(h=>h.lang))];
   const lsel=document.getElementById('hist-flang');const lcur=lsel.value;
@@ -2493,7 +2494,7 @@ function renderHistory(){
       <div class="hist-col"><span class="ft-${h.filetype}">${h.filetype.toUpperCase()}</span></div>
       <div class="hist-col">${esc(h.lang)}</div>
       <div class="hist-col"><span style="color:#1a7a3f;">${h.segments_done||0}</span>/<span style="color:#888;">${h.segments_total||0}</span>${h.segments_from_tm>0?` <span style="color:#6b21a8;font-size:10px;">+${h.segments_from_tm}TM</span>`:''}</div>
-      <div class="hist-col"><strong>${fmtPLN(h.cost_pln||0)}</strong> PLN</div>
+      <div class="hist-col"><strong>${Math.round(h.cost_pln||0)}</strong> kr.</div>
       <div class="hist-col">${h.status==='completed'?'<span style="color:#1a7a3f;">✓ Ukończone</span>':'<span style="color:#888;">W toku</span>'}</div>
       <div class="hist-col" style="color:#aaa;font-size:11px;">${fmtDate(h.created_at)}</div>
     </div>`).join('');
@@ -2511,48 +2512,45 @@ async function updateHistoryEntry(id,done,fromTM,costUsd,costPln){
 }
 
 // ══════════════════════════════════════════════════════════
-// COST
+// COST  (1 kredyt = 1000 znaków = 1 PLN)
 // ══════════════════════════════════════════════════════════
-function estimateCost(chars,tmChars){const toTr=chars-tmChars;if(toTr<=0)return{usd:0,pln:0,free:true};const textT=Math.ceil(toTr/CPT);const inputT=textT+Math.max(1,Math.ceil(textT/(CHUNK*20)))*350,outputT=textT;const usd=(inputT/1e6)*PRICE_IN+(outputT/1e6)*PRICE_OUT;return{inputT,outputT,usd,pln:usd*PLN_USD,free:false};}
-
 function renderCostBox(boxId,gridId,noteId,tmId,totalChars,tmChars,segCount,doneCount){
   const box=document.getElementById(boxId),grid=document.getElementById(gridId),note=document.getElementById(noteId),tmEl=document.getElementById(tmId);
-  const est=estimateCost(totalChars,tmChars);const toTr=segCount-doneCount;
-  const charsToTranslate=totalChars-tmChars;
-  const tokensNeeded=estimateTokensForTranslation(charsToTranslate);
+  const charsToTranslate=Math.max(0,totalChars-tmChars);
+  const toTr=segCount-doneCount;
+  const creditsNeeded=charsToTranslate>0?estimateCredits(charsToTranslate):0;
   const currentBalance=currentOrg?.tokens_balance||0;
-  const hasEnough=currentBalance>=tokensNeeded;
-  box.style.display='block';box.className='cost-box'+(est.usd>1?' warn':'');
+  const hasEnough=currentBalance>=creditsNeeded;
+  box.style.display='block';
+  box.className='cost-box'+(creditsNeeded>currentBalance?' warn':'');
 
-  // TM savings line
   if(doneCount>0){
     tmEl.style.display='block';
-    tmEl.textContent=`✓ Pamięć TM: ${doneCount} segmentów uzupełnionych bezpłatnie — oszczędność ~${fmtPLN(estimateCost(tmChars,0).pln)} PLN`;
+    tmEl.textContent=`✓ Pamięć TM: ${doneCount} segmentów bezpłatnie — oszczędność ${estimateCredits(tmChars)} kredytów`;
   } else tmEl.style.display='none';
 
-  if(est.free||toTr===0){
-    grid.innerHTML=`<div class="cost-cell"><div class="cost-num green">0,00 PLN</div><div class="cost-lbl">Koszt API</div></div>
-      <div class="cost-cell"><div class="cost-num green">0</div><div class="cost-lbl">Tokenów z salda</div></div>`;
+  if(toTr===0||charsToTranslate===0){
+    grid.innerHTML=`<div class="cost-cell"><div class="cost-num green">0</div><div class="cost-lbl">Kredytów</div></div>
+      <div class="cost-cell"><div class="cost-num green">0 PLN</div><div class="cost-lbl">Koszt</div></div>`;
     note.innerHTML='Wszystkie segmenty uzupełnione z pamięci TM — brak kosztów.';
-  } else {
-    const cc=est.usd<0.5?'green':est.usd<2?'':'orange';
-    const balanceColor=hasEnough?'#1a7a3f':'#b32424';
-    const balanceInfo=hasEnough
-      ? `<span style="color:#1a7a3f;">✓ Wystarczy (masz ${formatTokens(currentBalance)})</span>`
-      : `<span style="color:#b32424;">✗ Brakuje ${formatTokens(tokensNeeded-currentBalance)} tokenów — <a href="#" onclick="switchTab('shop');return false;">kup tutaj</a></span>`;
-
-    grid.innerHTML=`
-      <div class="cost-cell"><div class="cost-num ${cc}">${fmtPLN(est.pln)} PLN</div><div class="cost-lbl">Koszt API (szacunek)</div></div>
-      <div class="cost-cell"><div class="cost-num" style="color:${balanceColor};">${formatTokens(tokensNeeded)}</div><div class="cost-lbl">Tokenów z salda</div></div>
-      <div class="cost-cell"><div class="cost-num">${toTr}</div><div class="cost-lbl">Segmentów do tłum.</div></div>
-      <div class="cost-cell"><div class="cost-num" style="color:${balanceColor};">${formatTokens(currentBalance)}</div><div class="cost-lbl">Twoje saldo</div></div>`;
-
-    note.innerHTML=`${balanceInfo}<br>
-      <span style="color:#999;font-size:11px;">
-        <strong>Co to token?</strong> 1 token ≈ 4 znaki tekstu. To tłumaczenie ma ~${charsToTranslate.toLocaleString('pl-PL')} znaków = ${formatTokens(tokensNeeded)} tokenów z Twojego salda.
-        Koszt API ($${est.usd.toFixed(4)}) jest po Twojej stronie — tokeny kupujesz od nas, my rozliczamy się z Anthropic.
-      </span>`;
+    return;
   }
+
+  const balColor=hasEnough?'#1a7a3f':'#b32424';
+  const balInfo=hasEnough
+    ? `<span style="color:#1a7a3f;">✓ Wystarczy (masz ${formatTokens(currentBalance)} kredytów)</span>`
+    : `<span style="color:#b32424;">✗ Brakuje ${creditsNeeded-currentBalance} kredytów — <a href="#" onclick="switchTab('shop');return false;">kup tutaj</a></span>`;
+
+  grid.innerHTML=`
+    <div class="cost-cell"><div class="cost-num ${hasEnough?'green':'orange'}">${creditsNeeded}</div><div class="cost-lbl">Kredytów (= PLN)</div></div>
+    <div class="cost-cell"><div class="cost-num">${toTr}</div><div class="cost-lbl">Segmentów do tłum.</div></div>
+    <div class="cost-cell"><div class="cost-num" style="color:${balColor};">${formatTokens(currentBalance)}</div><div class="cost-lbl">Twoje saldo</div></div>`;
+
+  note.innerHTML=`${balInfo}<br>
+    <span style="color:#999;font-size:11px;">
+      <strong>Co to kredyt?</strong> 1 kredyt = 1 000 znaków = 1 PLN.
+      To tłumaczenie ma ~${charsToTranslate.toLocaleString('pl-PL')} znaków = <strong>${creditsNeeded} kredytów</strong>.
+    </span>`;
 }
 
 function updateXliffCost(){if(!xliffSegs.length)return;let total=0,tm=0;xliffSegs.forEach(s=>{if(s.type==='plain'){total+=s.source.length;if(s.fromTM||s.status==='done')tm+=s.source.length;}else{s.textNodes.forEach((n,i)=>{total+=n.text.length;if(s.fromTM||s.targets[i]?.text?.trim())tm+=n.text.length;});}});renderCostBox('xliff-cost-box','xliff-cost-grid','xliff-cost-note','xliff-cost-tm',total,tm,xliffSegs.length,xliffSegs.filter(s=>s.status==='done').length);}
@@ -2657,12 +2655,12 @@ async function runXliffBatch(toT,apiKey){
   }
   const finalDone=xliffSegs.filter(s=>s.status==='done').length;
   await pushTMBatch(xliffSegs.filter(s=>s.status==='done').flatMap(s=>s.type==='plain'?[{src:s.source,tgt:s.target}]:s.textNodes.map((n,i)=>({src:n.text,tgt:s.targets[i]?.text||''}))),lang,'xliff');
-  await updateHistoryEntry(histId,finalDone,xliffSegs.filter(s=>s.fromTM).length,totalCostUsd,totalCostUsd*PLN_USD);
-  updateXliffCost();
-  // Deduct only for segments translated in THIS batch (not TM hits)
   const charsThisBatch=items.reduce((a,it)=>a+it.text.length,0);
-  await deductTokens(charsThisBatch, document.getElementById('xliff-fname').textContent, lang);
-  setXS(`Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} tokenów.`);
+  const creditsUsed=estimateCredits(charsThisBatch);
+  await updateHistoryEntry(histId,finalDone,xliffSegs.filter(s=>s.fromTM).length,creditsUsed,creditsUsed);
+  updateXliffCost();
+  await deductCredits(charsThisBatch, document.getElementById('xliff-fname').textContent, lang);
+  setXS(`Gotowe! Użyto ${creditsUsed} kredytów. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} kredytów.`);
 }
 function setXS(m){document.getElementById('xliff-status').textContent=m;}
 
@@ -2776,12 +2774,12 @@ async function runPptxBatch(toT,apiKey){
   }
   const finalDone=pptxSegs.filter(s=>s.status==='done').length;
   await pushTMBatch(pptxSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target})),lang,'pptx');
-  await updateHistoryEntry(histId,finalDone,pptxSegs.filter(s=>s.fromTM).length,totalCostUsd,totalCostUsd*PLN_USD);
-  updatePptxCost();
-  // Deduct only for segments translated in THIS batch (not TM hits)
   const charsThisBatch=toT.reduce((a,s)=>a+s.source.length,0);
-  await deductTokens(charsThisBatch, pptxFilename, lang);
-  setPPS(`Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} tokenów.`);
+  const creditsUsed=estimateCredits(charsThisBatch);
+  await updateHistoryEntry(histId,finalDone,pptxSegs.filter(s=>s.fromTM).length,creditsUsed,creditsUsed);
+  updatePptxCost();
+  await deductCredits(charsThisBatch, pptxFilename, lang);
+  setPPS(`Gotowe! Użyto ${creditsUsed} kredytów. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} kredytów.`);
 }
 function setPPS(m){document.getElementById('pptx-status').textContent=m;}
 
@@ -3425,12 +3423,11 @@ async function translateCurrentLangAI(){
   const asgn=currentAssignments.find(a=>a.lang===lang);
   if(asgn) asgn.status='in_progress';
   setAutosaveIndicator('⏳ Tłumaczenie AI w toku...');
-  const totalCostUsd=await runAITranslation(toTranslate,lang,apiKey)||0;
-  await deductTokens(totalChars,currentProject.name+' → '+lang,lang);
-  // TM saved on manual edit or when marked as ready
+  await runAITranslation(toTranslate,lang,apiKey);
+  await deductCredits(totalChars,currentProject.name+' → '+lang,lang);
   updateEditorProgress(lang);
   hideEditorProgress();
-  setAutosaveIndicator(`✓ Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
+  setAutosaveIndicator(`✓ Gotowe! Użyto ${estimateCredits(totalChars)} kredytów. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)}`);
 }
 
 async function translateEmptyAI(){
@@ -3444,12 +3441,11 @@ async function translateEmptyAI(){
   const needed=estimateTokensForTranslation(totalChars);
   if(!checkTokenBalance(needed)) return;
   setAutosaveIndicator(`⏳ Tłumaczenie ${toTranslate.length} pustych segmentów...`);
-  const totalCostUsd=await runAITranslation(toTranslate,lang,apiKey)||0;
-  await deductTokens(totalChars,currentProject.name+' → '+lang+' (puste)',lang);
-  // TM saved on manual edit or when marked as ready
+  await runAITranslation(toTranslate,lang,apiKey);
+  await deductCredits(totalChars,currentProject.name+' → '+lang+' (puste)',lang);
   updateEditorProgress(lang);
   hideEditorProgress();
-  setAutosaveIndicator(`✓ Gotowe! Przetłumaczono ${toTranslate.length} segmentów. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
+  setAutosaveIndicator(`✓ Gotowe! Przetłumaczono ${toTranslate.length} segmentów. Użyto ${estimateCredits(totalChars)} kredytów.`);
 }
 
 async function submitForReview(lang){
@@ -3556,17 +3552,17 @@ function showAISummary(){
   const toTranslate=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
   if(!toTranslate.length){ alert('Wszystkie segmenty już przetłumaczone!'); return; }
   const totalChars=toTranslate.reduce((a,s)=>a+s.source_text.length,0);
-  const tokensNeeded=estimateTokensForTranslation(totalChars);
+  const tokensNeeded=estimateCredits(totalChars);
   const balance=currentOrg?.tokens_balance||0;
   const hasEnough=balance>=tokensNeeded;
   const msg=`Podsumowanie tłumaczenia AI:\n\n` +
     `Język: ${lang}\n` +
     `Segmentów do tłumaczenia: ${toTranslate.length} z ${currentProjectSegs.length}\n` +
     `Znaków do przetłumaczenia: ${totalChars.toLocaleString('pl-PL')}\n` +
-    `Tokenów z salda: ${tokensNeeded.toLocaleString('pl-PL')}\n` +
-    `Twoje saldo: ${balance.toLocaleString('pl-PL')} tokenów\n` +
-    `${hasEnough ? '✓ Saldo wystarczy' : '✗ Brakuje ' + (tokensNeeded-balance).toLocaleString('pl-PL') + ' tokenów'}\n\n` +
-    `${hasEnough ? 'Uruchomić tłumaczenie AI?' : 'Przejdź do zakupu tokenów.'}`;
+    `Koszt: ${tokensNeeded} kredytów (${tokensNeeded} PLN)\n` +
+    `Twoje saldo: ${balance.toLocaleString('pl-PL')} kredytów\n` +
+    `${hasEnough ? '✓ Saldo wystarczy' : '✗ Brakuje ' + (tokensNeeded-balance) + ' kredytów'}\n\n` +
+    `${hasEnough ? 'Uruchomić tłumaczenie AI?' : 'Przejdź do zakupu kredytów.'}`;
   if(hasEnough){
     if(confirm(msg)) translateCurrentLangAI();
   } else {
@@ -3992,9 +3988,9 @@ function updateSubCostBox(){
   const totalChars=subtitleSegs.reduce((a,s)=>a+s.source.length,0);
   const tmChars=subtitleSegs.filter(s=>s.fromTM).reduce((a,s)=>a+s.source.length,0);
   const charsToT=toT.reduce((a,s)=>a+s.source.length,0);
-  const tokens=estimateTokensForTranslation(charsToT);
+  const credits=estimateCredits(charsToT);
   const balance=currentOrg?.tokens_balance||0;
-  const hasEnough=balance>=tokens;
+  const hasEnough=balance>=credits;
   const box=document.getElementById('sub-cost-box');
   const grid=document.getElementById('sub-cost-grid');
   const note=document.getElementById('sub-cost-note');
@@ -4004,15 +4000,13 @@ function updateSubCostBox(){
   const done=subtitleSegs.filter(s=>s.fromTM).length;
   if(done>0){tmEl.style.display='block';tmEl.textContent=`✓ TM: ${done} bloków bezpłatnie`;}
   else tmEl.style.display='none';
-  if(!toT.length){grid.innerHTML='<div class="cost-cell"><div class="cost-num green">0,00 PLN</div><div class="cost-lbl">Koszt</div></div>';note.innerHTML='Wszystkie z TM.';return;}
-  const est=estimateCost(charsToT,0);
+  if(!toT.length){grid.innerHTML='<div class="cost-cell"><div class="cost-num green">0</div><div class="cost-lbl">Kredytów</div></div>';note.innerHTML='Wszystkie z TM.';return;}
   const balColor=hasEnough?'#1a7a3f':'#b32424';
-  const balInfo=hasEnough?`<span style="color:#1a7a3f;">✓ Wystarczy (masz ${formatTokens(balance)})</span>`:`<span style="color:#b32424;">✗ Brakuje ${formatTokens(tokens-balance)} tokenów</span>`;
-  grid.innerHTML=`<div class="cost-cell"><div class="cost-num">${fmtPLN(est.pln)} PLN</div><div class="cost-lbl">Koszt API</div></div>
-    <div class="cost-cell"><div class="cost-num" style="color:${balColor};">${formatTokens(tokens)}</div><div class="cost-lbl">Tokenów z salda</div></div>
+  const balInfo=hasEnough?`<span style="color:#1a7a3f;">✓ Wystarczy (masz ${formatTokens(balance)} kredytów)</span>`:`<span style="color:#b32424;">✗ Brakuje ${credits-balance} kredytów</span>`;
+  grid.innerHTML=`<div class="cost-cell"><div class="cost-num ${hasEnough?'green':'orange'}">${credits}</div><div class="cost-lbl">Kredytów (= PLN)</div></div>
     <div class="cost-cell"><div class="cost-num">${toT.length}</div><div class="cost-lbl">Bloków do tłum.</div></div>
     <div class="cost-cell"><div class="cost-num" style="color:${balColor};">${formatTokens(balance)}</div><div class="cost-lbl">Twoje saldo</div></div>`;
-  note.innerHTML=`${balInfo}<br><span style="font-size:11px;color:#999;">1 token ≈ 4 znaki · ${charsToT.toLocaleString('pl-PL')} znaków do przetłumaczenia</span>`;
+  note.innerHTML=`${balInfo}<br><span style="font-size:11px;color:#999;">1 kredyt = 1 000 znaków · ${charsToT.toLocaleString('pl-PL')} znaków do przetłumaczenia</span>`;
 }
 
 // ── TRANSLATION ──
@@ -4111,16 +4105,13 @@ async function runSubtitleBatch(toT,apiKey){
     }
   }
 
-  // Save to TM
   const pairs=subtitleSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target}));
   await pushTMBatch(pairs,lang,'srt');
-
-  // Deduct tokens
   const totalChars=toT.reduce((a,s)=>a+s.source.length,0);
-  await deductTokens(totalChars,subtitleFilename+' → '+lang,lang);
-
+  const creditsUsed=estimateCredits(totalChars);
+  await deductCredits(totalChars,subtitleFilename+' → '+lang,lang);
   updateSubCostBox();
-  setSubStatus(`Gotowe! Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN.`);
+  setSubStatus(`Gotowe! Użyto ${creditsUsed} kredytów. Saldo: ${formatTokens(currentOrg?.tokens_balance||0)} kredytów.`);
 }
 
 function setSubStatus(m){document.getElementById('sub-status').textContent=m;}
@@ -4144,38 +4135,33 @@ function exportSubtitles(fmt){
 }
 
 // ══════════════════════════════════════════════════════════
-// TOKEN SYSTEM
+// CREDIT SYSTEM  (1 kredyt = 1000 znaków = 1 PLN)
 // ══════════════════════════════════════════════════════════
 const STRIPE_PK = 'pk_test_51TRpDpFAZbQYcNSruWmlgB1DCvQtEE1GN1rO2qHQNFHgLxPv80FfgAXqt30ImjdCxfY3ghDNKzEO4XwXi33XIXdi00owtPZrEO';
 
 const PACKAGES = {
-  'price_1TRpL9FAZbQYcNSrcZCePhAO': { name:'Starter', tokens:100000, price:9 },
-  'price_1TRpLWFAZbQYcNSraskM5Xoq': { name:'Standard', tokens:500000, price:39 },
-  'price_1TRpLnFAZbQYcNSrhHdwtHo5': { name:'Pro', tokens:2000000, price:129 },
+  'price_1TRpL9FAZbQYcNSrcZCePhAO': { name:'Starter', tokens:50, price:50 },
+  'price_1TRpLWFAZbQYcNSraskM5Xoq': { name:'Standard', tokens:250, price:230 },
+  'price_1TRpLnFAZbQYcNSrhHdwtHo5': { name:'Pro', tokens:1000, price:850 },
 };
 
-// Cost: ~$3/1M input + ~$15/1M output tokens
-// We charge ~4x markup = sell at ~$10/1M equivalent
-// 1 PLN = ~9,000 tokens (conservative estimate)
-const TOKENS_PER_PLN = 9000;
+function estimateCredits(chars){ return Math.max(1,Math.ceil(chars/1000)); }
+function estimateTokensForTranslation(chars){ return estimateCredits(chars); }
 
 function updateTokenBadge(){
   const balance = currentOrg?.tokens_balance || 0;
   const el = document.getElementById('hdr-token-amount');
   if(!el) return;
   el.textContent = formatTokens(balance);
-  el.className = 'token-amount' + (balance < 10000 ? ' low' : '') + (balance <= 0 ? ' empty' : '');
-  // Notify admins if low (only once per session)
-  if(balance < 10000 && balance > 0 && !sessionStorage.getItem('lowTokenNotifSent') && currentRole==='admin'){
+  el.className = 'token-amount' + (balance < 5 ? ' low' : '') + (balance <= 0 ? ' empty' : '');
+  if(balance < 5 && balance > 0 && !sessionStorage.getItem('lowTokenNotifSent') && currentRole==='admin'){
     sessionStorage.setItem('lowTokenNotifSent','1');
-    createNotification('tokens_low','Niskie saldo tokenów',
-      `Pozostało ${formatTokens(balance)} tokenów — rozważ doładowanie`);
+    createNotification('tokens_low','Niskie saldo kredytów',
+      `Pozostało ${formatTokens(balance)} kredytów — rozważ doładowanie`);
   }
 }
 
-function formatTokens(n){
-  return Number(n).toLocaleString('pl-PL');
-}
+function formatTokens(n){ return Number(n).toLocaleString('pl-PL'); }
 
 function updateShopBalance(){
   const balance = currentOrg?.tokens_balance || 0;
@@ -4183,8 +4169,7 @@ function updateShopBalance(){
   const equiv = document.getElementById('shop-balance-equiv');
   if(el) el.textContent = balance.toLocaleString('pl-PL');
   if(equiv){
-    const pln = (balance / TOKENS_PER_PLN).toFixed(2);
-    equiv.innerHTML = `Wartość: ~${pln} PLN<br><span style="color:#aaa;">wystarczy na ~${Math.floor(balance/5000)} stron tekstu</span>`;
+    equiv.innerHTML = `<span style="color:#aaa;">= ${balance} PLN · wystarczy na ~${(balance*1000).toLocaleString('pl-PL')} znaków</span>`;
   }
 }
 
@@ -4204,7 +4189,7 @@ function renderTokenHistory(txs){
   const typeLabel = { purchase:'🛒 Zakup', usage:'⚡ Użycie', bonus:'🎁 Bonus', refund:'↩ Zwrot' };
   list.innerHTML = `<div class="tx-row" style="background:#fafaf8;font-size:11px;font-weight:600;color:#999;">
     <div class="tx-col">Data</div><div class="tx-col">Opis</div>
-    <div class="tx-col">Tokeny</div><div class="tx-col">Saldo</div>
+    <div class="tx-col">Kredyty</div><div class="tx-col">Saldo</div>
   </div>` +
   txs.map(tx => `<div class="tx-row">
     <div class="tx-col" style="color:#aaa;font-size:11px;">${fmtDate(tx.created_at)}</div>
@@ -4219,13 +4204,13 @@ async function startCheckout(priceId, pkgKey){
   if(!currentOrg){ alert('Brak organizacji.'); return; }
   if(currentRole === 'viewer'){ alert('Brak uprawnień do zakupu.'); return; }
   const pkg = PACKAGES[priceId];
-  if(!confirm(`Kupić pakiet ${pkg.name} (${pkg.tokens.toLocaleString('pl-PL')} tokenów) za ${pkg.price} PLN?`)) return;
+  if(!confirm(`Kupić pakiet ${pkg.name} (${pkg.tokens.toLocaleString('pl-PL')} kredytów) za ${pkg.price} PLN?`)) return;
 
   // Stripe checkout - requires backend setup
-  alert('⚠️ Do obsługi płatności wymagana jest konfiguracja Stripe.\n\nW trybie testowym możesz dodać tokeny ręcznie przez panel admina w zakładce Zespół.');
+  alert('⚠️ Do obsługi płatności wymagana jest konfiguracja Stripe.\n\nW trybie testowym możesz dodać kredyty ręcznie przez panel admina w zakładce Zespół.');
 }
 
-// Admin: manually add tokens (for testing)
+// Admin: manually add credits (for testing)
 async function adminAddTokens(amount, description){
   if(!currentOrg || currentRole !== 'admin'){ alert('Tylko admin.'); return; }
   try{
@@ -4239,29 +4224,21 @@ async function adminAddTokens(amount, description){
     updateTokenBadge();
     updateShopBalance();
     loadTokenHistory();
-    alert(`Dodano ${amount.toLocaleString('pl-PL')} tokenów! Nowe saldo: ${currentOrg.tokens_balance.toLocaleString('pl-PL')}`);
+    alert(`Dodano ${amount.toLocaleString('pl-PL')} kredytów! Nowe saldo: ${currentOrg.tokens_balance.toLocaleString('pl-PL')}`);
   }catch(e){ alert('Błąd: '+e.message); }
 }
 
-// Estimate tokens for translation
-function estimateTokensForTranslation(chars){
-  // Input tokens: chars/4, Output tokens: chars/4 (similar length translation)
-  // Total API tokens used per character ≈ 0.5 tokens
-  // We charge 1 token per 4 chars (conservative, matches our pricing)
-  return Math.ceil(chars / 4);
-}
-
-// Check if org has enough tokens
-function checkTokenBalance(requiredTokens){
+// Check if org has enough credits
+function checkTokenBalance(requiredCredits){
   const balance = currentOrg?.tokens_balance || 0;
-  if(balance < requiredTokens){
-    const deficit = requiredTokens - balance;
+  if(balance < requiredCredits){
+    const deficit = requiredCredits - balance;
     const result = confirm(
-      `Niewystarczające saldo tokenów!\n\n` +
-      `Potrzebujesz: ${requiredTokens.toLocaleString('pl-PL')} tokenów\n` +
-      `Masz: ${balance.toLocaleString('pl-PL')} tokenów\n` +
-      `Brakuje: ${deficit.toLocaleString('pl-PL')} tokenów\n\n` +
-      `Przejść do zakupu tokenów?`
+      `Niewystarczające saldo kredytów!\n\n` +
+      `Potrzebujesz: ${requiredCredits.toLocaleString('pl-PL')} kredytów\n` +
+      `Masz: ${balance.toLocaleString('pl-PL')} kredytów\n` +
+      `Brakuje: ${deficit.toLocaleString('pl-PL')} kredytów\n\n` +
+      `Przejść do zakupu kredytów?`
     );
     if(result) switchTab('shop');
     return false;
@@ -4269,23 +4246,42 @@ function checkTokenBalance(requiredTokens){
   return true;
 }
 
-// Deduct tokens after translation
-async function deductTokens(charsTranslated, filename, lang){
+// Deduct credits after translation
+async function deductCredits(charsTranslated, filename, lang){
   if(!currentOrg) return;
-  const tokens = estimateTokensForTranslation(charsTranslated);
-  if(tokens <= 0) return;
+  const credits = estimateCredits(charsTranslated);
+  if(credits <= 0) return;
   try{
     const{data, error} = await supa.rpc('use_tokens', {
       org_id: currentOrg.id,
-      amount: tokens,
+      amount: credits,
       desc_text: `${filename} → ${lang}`,
       meta: {filename, lang}
     });
-    if(error){ console.error('Token deduction error:', error); return; }
-    // Update local balance
+    if(error){ console.error('Credit deduction error:', error); return; }
     currentOrg.tokens_balance = data.balance_after;
     updateTokenBadge();
-  }catch(e){ console.error('Token deduction error:', e); }
+  }catch(e){ console.error('Credit deduction error:', e); }
+}
+async function deductTokens(chars, filename, lang){ return deductCredits(chars, filename, lang); }
+
+// One-time migration: old token balances → credits (1 credit = 1000 chars = 1 PLN)
+async function migrateTokensToCredits(){
+  if(!currentOrg) return;
+  const flagKey = `creditsConverted_${currentOrg.id}`;
+  if(localStorage.getItem(flagKey)) return;
+  try{
+    // Re-fetch fresh balance to handle concurrent logins (idempotent: > 10000 check)
+    const orgs = await dbGet('organizations', `?id=eq.${currentOrg.id}`);
+    const fresh = orgs[0]?.tokens_balance || 0;
+    if(fresh > 10000){
+      const credits = Math.round(fresh / 1000);
+      await dbPatch('organizations', {tokens_balance: credits}, `?id=eq.${currentOrg.id}`);
+      currentOrg.tokens_balance = credits;
+      updateTokenBadge();
+    }
+  }catch(e){ console.error('Migration error:', e); }
+  localStorage.setItem(flagKey, '1');
 }
 
 
@@ -4456,7 +4452,7 @@ async function loadDashMetrics(){
     const hist = await dbGet('translation_history',
       `?${orgParam()}&created_at=gte.${monthStart}&select=cost_pln`);
     const total = hist.reduce((a,h)=>a+Number(h.cost_pln||0),0);
-    if(elC) elC.textContent = fmtPLN(total)+' PLN';
+    if(elC) elC.textContent = Math.round(total)+' kr.';
   }catch(e){}
 
   // Show translator token limit bar
@@ -4589,11 +4585,8 @@ async function showVerifySummary(mode){
     return;
   }
 
-  // Estimate cost — each segment = 1 API call
-  // ~200 tokens input (segment + matching terms + prompt) + ~50 output
-  const AVG_TOKENS_PER_SEG=250;
-  const totalTokens=toVerify.length*AVG_TOKENS_PER_SEG;
-  const estCostPLN=((totalTokens/1e6)*PRICE_IN+(toVerify.length*50/1e6)*PRICE_OUT)*PLN_USD;
+  const totalVerifyChars=toVerify.reduce((a,s)=>a+s.source.length+s.translation.length,0);
+  const estCredits=estimateCredits(totalVerifyChars);
 
   // Show which terms will be checked
   const allTerms=new Map();
@@ -4613,12 +4606,12 @@ async function showVerifySummary(mode){
     'Segmentów do sprawdzenia: '+toVerify.length+' z '+allSegs.length+'\n'+
     '(tylko segmenty zawierające terminy ze słownika)\n\n'+
     'Terminy do zweryfikowania:\n'+termsList+moreTerms+'\n\n'+
-    'Szacowany koszt: ~'+totalTokens.toLocaleString('pl-PL')+' tokenów = ~'+fmtPLN(estCostPLN)+' PLN\n\n'+
+    'Szacowany koszt: ~'+estCredits+' kredytów ('+estCredits+' PLN)\n\n'+
     'Jak działa: Claude sprawdza każdy segment osobno i poprawia\n'+
     'tylko jeśli użyto złego terminu.\n\n'+
     'Uruchomić weryfikację?';
     if(!confirm(msg)) return;
-  if(!checkTokenBalance(totalTokens)) return;
+  if(!checkTokenBalance(estCredits)) return;
 
   await runVerification(mode, toVerify, lang, apiKey);
 }
@@ -4705,11 +4698,9 @@ async function runVerification(mode, segments, lang, apiKey){
     await sleep(120);
   }
 
-  // Deduct tokens
   const totalChars=segments.reduce((a,s)=>a+s.source.length+s.translation.length,0);
-  await deductTokens(totalChars, 'Weryfikacja słownika → '+lang, lang);
-
-  setStatus(`✓ Weryfikacja zakończona. Sprawdzono: ${checked}, poprawiono: ${fixed} segmentów. Koszt: ~${fmtPLN(totalCostUsd*PLN_USD)} PLN`);
+  await deductCredits(totalChars, 'Weryfikacja słownika → '+lang, lang);
+  setStatus(`✓ Weryfikacja zakończona. Sprawdzono: ${checked}, poprawiono: ${fixed} segmentów. Użyto ${estimateCredits(totalChars)} kredytów.`);
 }
 
 async function applyVerifyCorrection(mode, seg, lang, corrected){
