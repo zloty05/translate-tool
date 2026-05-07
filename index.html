@@ -2524,15 +2524,15 @@ function renderCostBox(boxId,gridId,noteId,tmId,totalChars,tmChars,segCount,done
   box.style.display='block';
   box.className='cost-box'+(creditsNeeded>currentBalance?' warn':'');
 
-  if(doneCount>0){
+  if(tmChars>0){
     tmEl.style.display='block';
-    tmEl.textContent=`✓ Pamięć TM: ${doneCount} segmentów bezpłatnie — oszczędność ${estimateCredits(tmChars)} kredytów`;
+    tmEl.textContent=`✓ Pamięć TM: ${tmChars.toLocaleString('pl-PL')} znaków bezpłatnie — oszczędność ${estimateCredits(tmChars)} kredytów`;
   } else tmEl.style.display='none';
 
   if(toTr===0||charsToTranslate===0){
-    grid.innerHTML=`<div class="cost-cell"><div class="cost-num green">0</div><div class="cost-lbl">Kredytów</div></div>
-      <div class="cost-cell"><div class="cost-num green">0 PLN</div><div class="cost-lbl">Koszt</div></div>`;
-    note.innerHTML='Wszystkie segmenty uzupełnione z pamięci TM — brak kosztów.';
+    grid.innerHTML=`<div class="cost-cell"><div class="cost-num green">0</div><div class="cost-lbl">Znaków do tłum.</div></div>
+      <div class="cost-cell"><div class="cost-num green">0</div><div class="cost-lbl">Koszt (kredytów)</div></div>`;
+    note.innerHTML='Wszystkie znaki uzupełnione z pamięci TM — brak kosztów.';
     return;
   }
 
@@ -2542,15 +2542,12 @@ function renderCostBox(boxId,gridId,noteId,tmId,totalChars,tmChars,segCount,done
     : `<span style="color:#b32424;">✗ Brakuje ${creditsNeeded-currentBalance} kredytów — <a href="#" onclick="switchTab('shop');return false;">kup tutaj</a></span>`;
 
   grid.innerHTML=`
-    <div class="cost-cell"><div class="cost-num ${hasEnough?'green':'orange'}">${creditsNeeded}</div><div class="cost-lbl">Kredytów (= PLN)</div></div>
-    <div class="cost-cell"><div class="cost-num">${toTr}</div><div class="cost-lbl">Segmentów do tłum.</div></div>
+    <div class="cost-cell"><div class="cost-num">${charsToTranslate.toLocaleString('pl-PL')}</div><div class="cost-lbl">Znaków do tłum.</div></div>
+    <div class="cost-cell"><div class="cost-num ${hasEnough?'green':'orange'}">${creditsNeeded}</div><div class="cost-lbl">Koszt (kredytów)</div></div>
     <div class="cost-cell"><div class="cost-num" style="color:${balColor};">${formatTokens(currentBalance)}</div><div class="cost-lbl">Twoje saldo</div></div>`;
 
   note.innerHTML=`${balInfo}<br>
-    <span style="color:#999;font-size:11px;">
-      <strong>Co to kredyt?</strong> 1 kredyt = 1 000 znaków = 1 PLN.
-      To tłumaczenie ma ~${charsToTranslate.toLocaleString('pl-PL')} znaków = <strong>${creditsNeeded} kredytów</strong>.
-    </span>`;
+    <span style="color:#999;font-size:11px;">1 kredyt = 1 000 znaków = 1 PLN</span>`;
 }
 
 function updateXliffCost(){if(!xliffSegs.length)return;let total=0,tm=0;xliffSegs.forEach(s=>{if(s.type==='plain'){total+=s.source.length;if(s.fromTM||s.status==='done')tm+=s.source.length;}else{s.textNodes.forEach((n,i)=>{total+=n.text.length;if(s.fromTM||s.targets[i]?.text?.trim())tm+=n.text.length;});}});renderCostBox('xliff-cost-box','xliff-cost-grid','xliff-cost-note','xliff-cost-tm',total,tm,xliffSegs.length,xliffSegs.filter(s=>s.status==='done').length);}
@@ -3557,9 +3554,8 @@ function showAISummary(){
   const hasEnough=balance>=tokensNeeded;
   const msg=`Podsumowanie tłumaczenia AI:\n\n` +
     `Język: ${lang}\n` +
-    `Segmentów do tłumaczenia: ${toTranslate.length} z ${currentProjectSegs.length}\n` +
-    `Znaków do przetłumaczenia: ${totalChars.toLocaleString('pl-PL')}\n` +
-    `Koszt: ${tokensNeeded} kredytów (${tokensNeeded} PLN)\n` +
+    `Do przetłumaczenia: ${totalChars.toLocaleString('pl-PL')} znaków\n` +
+    `Koszt: ${tokensNeeded} kredytów (= ${tokensNeeded} PLN)\n` +
     `Twoje saldo: ${balance.toLocaleString('pl-PL')} kredytów\n` +
     `${hasEnough ? '✓ Saldo wystarczy' : '✗ Brakuje ' + (tokensNeeded-balance) + ' kredytów'}\n\n` +
     `${hasEnough ? 'Uruchomić tłumaczenie AI?' : 'Przejdź do zakupu kredytów.'}`;
