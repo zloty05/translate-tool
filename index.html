@@ -673,6 +673,122 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
   .lp-hero{padding:52px 16px 48px}
   .lp-benefits{padding:48px 16px}
 }
+
+/* ── SMOOTH SCROLL ── */
+html{scroll-behavior:smooth}
+
+/* ── NAV LINKS ── */
+.lp-nav-links{display:flex;align-items:center;gap:10px}
+.lp-nav-link{font-size:13px;font-weight:500;color:#999;text-decoration:none;padding:4px 2px;transition:color .15s;white-space:nowrap}
+.lp-nav-link:hover{color:#fff}
+.lp-btn-nav{padding:7px 16px;background:#4ade80;color:#000;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;white-space:nowrap}
+.lp-btn-nav:hover{background:#22c55e}
+@media(max-width:520px){.lp-nav-link,.lp-btn-nav{display:none}}
+
+/* ── SHARED PRICING ── */
+.lp-sub-section{padding:56px 24px}
+.lp-sub-section.light{background:#fff}
+body.dark .lp-sub-section.light{background:#1a1a1a}
+.lp-sub-section.tinted{background:#f5f4f0}
+body.dark .lp-sub-section.tinted{background:#111}
+
+/* ── HOW BILLING WORKS ── */
+.lp-billing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:860px;margin:28px auto 0}
+.lp-billing-item{background:#fff;border:1px solid #e8e6e0;border-radius:12px;padding:22px 20px;text-align:center}
+body.dark .lp-billing-item{background:#222;border-color:#333}
+.lp-billing-icon{font-size:26px;margin-bottom:10px}
+.lp-billing-title{font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:6px}
+body.dark .lp-billing-title{color:#fff}
+.lp-billing-desc{font-size:12px;color:#888;line-height:1.65}
+
+/* ── PACKAGES ── */
+.lp-free-card{max-width:860px;margin:0 auto 24px;background:#f0fdf4;border:1.5px dashed #4ade80;border-radius:14px;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+body.dark .lp-free-card{background:#0a1f14;border-color:#2a6a3a}
+.lp-free-badge{font-size:13px;font-weight:700;color:#1a7a3f;margin-bottom:2px}
+body.dark .lp-free-badge{color:#4ade80}
+.lp-free-detail{font-size:12px;color:#888}
+.lp-packages-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:860px;margin:0 auto}
+.lp-pkg-card{background:#fafaf8;border:1.5px solid #e8e6e0;border-radius:16px;padding:28px 22px;text-align:center;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;position:relative}
+.lp-pkg-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(0,0,0,.1);border-color:#1a1a1a}
+body.dark .lp-pkg-card{background:#222;border-color:#333}
+body.dark .lp-pkg-card:hover{border-color:#fff;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.lp-pkg-card.popular{border-color:#1a1a1a}
+body.dark .lp-pkg-card.popular{border-color:#4ade80}
+.lp-pkg-popular-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;white-space:nowrap}
+body.dark .lp-pkg-popular-badge{background:#4ade80;color:#000}
+.lp-pkg-name{font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px}
+body.dark .lp-pkg-name{color:#fff}
+.lp-pkg-credits{font-size:40px;font-weight:800;color:#1a1a1a;letter-spacing:-.03em;margin:12px 0 2px;line-height:1}
+body.dark .lp-pkg-credits{color:#fff}
+.lp-pkg-credits span{font-size:14px;font-weight:400;color:#888}
+.lp-pkg-price{font-size:20px;font-weight:700;color:#2a8a4a;margin:10px 0 4px}
+.lp-pkg-equiv{font-size:11px;color:#aaa;margin-bottom:14px}
+.lp-pkg-perks{font-size:12px;color:#666;margin-bottom:20px;line-height:1.8;text-align:left}
+body.dark .lp-pkg-perks{color:#999}
+.lp-pkg-btn{width:100%;padding:11px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+.lp-pkg-btn:hover{background:#333}
+body.dark .lp-pkg-btn{background:#fff;color:#000}
+body.dark .lp-pkg-btn:hover{background:#e0e0e0}
+.lp-pkg-notes{max-width:860px;margin:20px auto 0;display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.lp-pkg-note{font-size:12px;color:#888;display:flex;align-items:center;gap:5px}
+.lp-pkg-note-icon{color:#4ade80;font-weight:700}
+
+/* ── FEATURES ── */
+.lp-features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;max-width:860px;margin:20px auto 0}
+.lp-feature-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e8e6e0;border-radius:10px;padding:12px 16px}
+body.dark .lp-feature-item{background:#1a1a1a;border-color:#2a2a2a}
+.lp-feature-check{color:#4ade80;font-size:14px;font-weight:700;flex-shrink:0}
+.lp-feature-text{font-size:13px;color:#1a1a1a}
+body.dark .lp-feature-text{color:#ccc}
+
+/* ── FAQ ── */
+.lp-faq-list{max-width:700px;margin:24px auto 0;display:grid;gap:8px}
+details.lp-faq-item{background:#fafaf8;border:1px solid #e8e6e0;border-radius:10px;overflow:hidden;transition:border-color .15s}
+body.dark details.lp-faq-item{background:#222;border-color:#333}
+details.lp-faq-item[open]{border-color:#1a1a1a}
+body.dark details.lp-faq-item[open]{border-color:#4ade80}
+details.lp-faq-item summary{padding:16px 20px;font-size:14px;font-weight:600;color:#1a1a1a;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .1s}
+body.dark details.lp-faq-item summary{color:#fff}
+details.lp-faq-item summary::-webkit-details-marker{display:none}
+details.lp-faq-item summary::after{content:'+';font-size:18px;color:#aaa;font-weight:300;transition:transform .2s;flex-shrink:0;margin-left:12px}
+details.lp-faq-item[open] summary::after{transform:rotate(45deg)}
+details.lp-faq-item summary:hover{background:#f5f4f0}
+body.dark details.lp-faq-item summary:hover{background:#2a2a2a}
+.lp-faq-answer{padding:0 20px 16px;font-size:13px;color:#666;line-height:1.75}
+body.dark .lp-faq-answer{color:#999}
+
+/* ── CONTACT ── */
+.lp-contact-inner{max-width:560px;margin:0 auto}
+.lp-contact-form{background:#fff;border:1px solid #e8e6e0;border-radius:16px;padding:30px;margin-top:24px}
+body.dark .lp-contact-form{background:#1a1a1a;border-color:#2a2a2a}
+.lp-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.lp-form-group{margin-bottom:12px}
+.lp-form-label{font-size:12px;color:#666;display:block;margin-bottom:4px;font-weight:500}
+body.dark .lp-form-label{color:#888}
+.lp-form-input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fafaf8;color:#1a1a1a;outline:none;font-family:inherit;transition:border-color .15s;box-sizing:border-box}
+.lp-form-input:focus{border-color:#1a1a1a}
+body.dark .lp-form-input{background:#111;border-color:#333;color:#ccc}
+body.dark .lp-form-input:focus{border-color:#666}
+textarea.lp-form-input{min-height:110px;resize:vertical}
+.lp-form-submit{width:100%;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s;margin-top:4px}
+.lp-form-submit:hover{background:#333;transform:translateY(-1px)}
+body.dark .lp-form-submit{background:#fff;color:#000}
+body.dark .lp-form-submit:hover{background:#e0e0e0}
+.lp-contact-email{font-size:13px;color:#888;text-align:center;margin-top:14px}
+.lp-contact-email a{color:#2451b3;text-decoration:none}
+body.dark .lp-contact-email a{color:#5a9eff}
+
+/* ── RESPONSIVE PRICING ── */
+@media(max-width:720px){
+  .lp-billing-grid{grid-template-columns:1fr}
+  .lp-packages-grid{grid-template-columns:1fr}
+  .lp-form-row{grid-template-columns:1fr}
+  .lp-sub-section{padding:40px 16px}
+}
+@media(max-width:900px){
+  .lp-packages-grid{grid-template-columns:repeat(2,1fr)}
+  .lp-billing-grid{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
@@ -685,7 +801,11 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
   <!-- Nav -->
   <nav class="lp-nav">
     <div class="lp-nav-logo"><img src="logo.png" alt="" class="logo-img logo-nav"> TranslateTool</div>
-    <button class="lp-nav-btn" onclick="hideLanding();showScreen('screen-login')">Zaloguj się</button>
+    <div class="lp-nav-links">
+      <a class="lp-nav-link" href="#cennik">Cennik</a>
+      <button class="lp-btn-nav" onclick="hideLanding();showScreen('screen-register')">Zacznij za darmo</button>
+      <button class="lp-nav-btn" onclick="hideLanding();showScreen('screen-login')">Zaloguj się</button>
+    </div>
   </nav>
 
   <!-- Hero -->
@@ -738,9 +858,172 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
   </section>
 
   <!-- Footer -->
+  <!-- ══ CENNIK ══ -->
+  <section id="cennik">
+
+    <!-- Mini hero -->
+    <div class="lp-sub-section light" style="text-align:center;border-top:1px solid #e8e6e0;">
+      <div class="lp-section-label">Cennik</div>
+      <h2 class="lp-section-title">Proste rozliczenie bez niespodzianek</h2>
+      <p class="lp-section-sub">Płacisz tylko za znaki, które tłumaczysz. Bez abonamentu, bez limitów funkcji.</p>
+    </div>
+
+    <!-- Jak działa rozliczenie -->
+    <div class="lp-sub-section tinted">
+      <div class="lp-section-label" style="text-align:center;">Jak działa rozliczenie</div>
+      <div class="lp-billing-grid">
+        <div class="lp-billing-item">
+          <div class="lp-billing-icon">🔢</div>
+          <div class="lp-billing-title">1 kredyt = 1 000 znaków = 1 PLN</div>
+          <div class="lp-billing-desc">Prosta wymiana: płacisz za znaki tekstu źródłowego. Nie ma tokenów, segmentów ani innych ukrytych jednostek.</div>
+        </div>
+        <div class="lp-billing-item">
+          <div class="lp-billing-icon">🧠</div>
+          <div class="lp-billing-title">Pamięć TM — zero kosztu</div>
+          <div class="lp-billing-desc">Powtarzające się segmenty uzupełniane z pamięci tłumaczeń nie kosztują nic — kredyty odliczane tylko za nowy tekst.</div>
+        </div>
+        <div class="lp-billing-item">
+          <div class="lp-billing-icon">🌍</div>
+          <div class="lp-billing-title">Wiele języków = kredyty × języki</div>
+          <div class="lp-billing-desc">10 000 znaków na 4 języki = 40 kredytów. Każdy język tłumaczony jest osobno i rozliczany niezależnie.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pakiety -->
+    <div class="lp-sub-section light">
+      <div class="lp-section-label" style="text-align:center;">Pakiety kredytów</div>
+      <h2 class="lp-section-title">Wybierz pakiet odpowiedni dla siebie</h2>
+      <div class="lp-free-card">
+        <div>
+          <div class="lp-free-badge">🎁 Na start — 15 kredytów gratis</div>
+          <div class="lp-free-detail">~15 000 znaków · ok. 1 szkolenie · bez karty kredytowej</div>
+        </div>
+        <button class="lp-btn-nav" onclick="hideLanding();showScreen('screen-register')">Wypróbuj za darmo →</button>
+      </div>
+      <div class="lp-packages-grid">
+
+        <div class="lp-pkg-card">
+          <div class="lp-pkg-name">Starter</div>
+          <div class="lp-pkg-credits">50 <span>kredytów</span></div>
+          <div class="lp-pkg-price">50 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
+          <div class="lp-pkg-equiv">~50 000 znaków · ok. 3 szkolenia</div>
+          <div class="lp-pkg-perks">✓ Wszystkie formaty plików<br>✓ Pamięć tłumaczeń (TM)<br>✓ Słownik terminologii<br>✓ Kredyty nie wygasają</div>
+          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
+        </div>
+
+        <div class="lp-pkg-card popular">
+          <div class="lp-pkg-popular-badge">Najpopularniejszy</div>
+          <div class="lp-pkg-name">Standard</div>
+          <div class="lp-pkg-credits">250 <span>kredytów</span></div>
+          <div class="lp-pkg-price">230 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
+          <div class="lp-pkg-equiv">~250 000 znaków · ok. 16 szkoleń</div>
+          <div class="lp-pkg-perks">✓ Wszystkie formaty plików<br>✓ Pamięć tłumaczeń (TM)<br>✓ Słownik terminologii<br>✓ Kredyty nie wygasają</div>
+          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
+        </div>
+
+        <div class="lp-pkg-card">
+          <div class="lp-pkg-name">Pro</div>
+          <div class="lp-pkg-credits">1 000 <span>kredytów</span></div>
+          <div class="lp-pkg-price">850 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
+          <div class="lp-pkg-equiv">~1 000 000 znaków · ok. 66 szkoleń</div>
+          <div class="lp-pkg-perks">✓ Wszystkie formaty plików<br>✓ Pamięć tłumaczeń (TM)<br>✓ Słownik terminologii<br>✓ Kredyty nie wygasają</div>
+          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
+        </div>
+
+      </div>
+      <div class="lp-pkg-notes">
+        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Kredyty nie wygasają</span>
+        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Wspólne dla całej organizacji</span>
+        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Zakup jednorazowy</span>
+        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Płatność przez Stripe (Visa, Mastercard, BLIK)</span>
+      </div>
+    </div>
+
+    <!-- Co zawiera plan -->
+    <div class="lp-sub-section tinted">
+      <div class="lp-section-label" style="text-align:center;">Co zawiera plan</div>
+      <h2 class="lp-section-title">Wszystkie funkcje dostępne od pierwszego kredytu</h2>
+      <p class="lp-section-sub">Nie ma tierów ani ograniczeń funkcji — różnica między pakietami to wyłącznie wolumen kredytów.</p>
+      <div class="lp-features-grid">
+        <div class="lp-feature-item"><span class="lp-feature-check">✓</span><span class="lp-feature-text">Tłumaczenie XLIFF (Articulate Storyline)</span></div>
+        <div class="lp-feature-item"><span class="lp-feature-check">✓</span><span class="lp-feature-text">Tłumaczenie PowerPoint (.pptx)</span></div>
+        <div class="lp-feature-item"><span class="lp-feature-check">✓</span><span class="lp-feature-text">Tłumaczenie napisów SRT / VTT</span></div>
+        <div class="lp-feature-item"><span class="lp-feature-check">✓</span><span class="lp-feature-text">Pamięć tłumaczeń (TM)</span></div>
+        <div class="lp-feature-item"><span class="lp-feature-check">✓</span><span class="lp-feature-text">Słownik terminologii</span></div>
+        <div class="lp-feature-item"><span class="lp-feature-check">✓</span><span class="lp-feature-text">System projektów zespołowych</span></div>
+        <div class="lp-feature-item"><span class="lp-feature-check">✓</span><span class="lp-feature-text">Obsługa 80+ języków</span></div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="lp-sub-section light">
+      <div class="lp-section-label" style="text-align:center;">FAQ</div>
+      <h2 class="lp-section-title">Najczęstsze pytania</h2>
+      <div class="lp-faq-list">
+        <details class="lp-faq-item">
+          <summary>Czy kredyty wygasają?</summary>
+          <div class="lp-faq-answer">Nie. Kredyty nie mają daty ważności i możesz je wykorzystać kiedy chcesz. Zakup to jednorazowa transakcja — bez abonamentu, bez automatycznych odnowień.</div>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Jak liczone są kredyty przy tłumaczeniu na wiele języków jednocześnie?</summary>
+          <div class="lp-faq-answer">Każdy język tłumaczony jest osobno, więc koszt mnoży się przez liczbę języków. Przykład: szkolenie z 10 000 znaków tłumaczone na 4 języki = 40 kredytów. Segmenty uzupełniane z pamięci TM nie są liczone.</div>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Czy mogę dokupić kredyty w dowolnym momencie?</summary>
+          <div class="lp-faq-answer">Tak. Kredyty dokupujesz w zakładce "Kredyty" w aplikacji. Nowe kredyty są dodawane do salda organizacji natychmiast po potwierdzeniu płatności przez Stripe.</div>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Czy jest limit użytkowników lub języków?</summary>
+          <div class="lp-faq-answer">Nie. Możesz zaprosić nieograniczoną liczbę członków zespołu (Admin, Tłumacz, Viewer). Platforma obsługuje 80+ języków. Kredyty są wspólne dla całej organizacji.</div>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Jak działa okres próbny?</summary>
+          <div class="lp-faq-answer">Po rejestracji otrzymujesz 15 kredytów startowych (~15 000 znaków) bez karty kredytowej. Wystarczy to na przetłumaczenie jednego szkolenia i sprawdzenie wszystkich funkcji platformy.</div>
+        </details>
+        <details class="lp-faq-item">
+          <summary>Czy tłumaczenie na wiele języków jednocześnie kosztuje więcej niż osobne projekty?</summary>
+          <div class="lp-faq-answer">Koszt jest taki sam niezależnie od podejścia — liczymy znaki, nie projekty. Dzięki pamięci TM każdy kolejny projekt z podobnymi treściami jest tańszy, bo powtarzające się fragmenty są uzupełniane bezpłatnie.</div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Kontakt -->
+    <div class="lp-sub-section tinted">
+      <div class="lp-section-label" style="text-align:center;">Kontakt</div>
+      <h2 class="lp-section-title">Masz pytania? Napisz do nas</h2>
+      <div class="lp-contact-inner">
+        <form class="lp-contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+          <div class="lp-form-row">
+            <div>
+              <label class="lp-form-label">Imię</label>
+              <input class="lp-form-input" type="text" name="name" placeholder="Jan Kowalski" required />
+            </div>
+            <div>
+              <label class="lp-form-label">Email</label>
+              <input class="lp-form-input" type="email" name="email" placeholder="jan@firma.pl" required />
+            </div>
+          </div>
+          <div class="lp-form-group">
+            <label class="lp-form-label">Wiadomość</label>
+            <textarea class="lp-form-input" name="message" placeholder="W czym możemy pomóc?" required></textarea>
+          </div>
+          <button class="lp-form-submit" type="submit">Wyślij wiadomość →</button>
+        </form>
+        <p class="lp-contact-email">Możesz też napisać bezpośrednio: <a href="mailto:zloty05@gmail.com">zloty05@gmail.com</a></p>
+      </div>
+    </div>
+
+  </section>
+  <!-- ══ /CENNIK ══ -->
+
   <footer class="lp-footer">
     <span class="lp-footer-copy">© 2026 TranslateTool</span>
-    <span class="lp-footer-link" onclick="hideLanding();showScreen('screen-login')">Zaloguj się</span>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+      <a class="lp-footer-link" href="#cennik">Cennik</a>
+      <span class="lp-footer-link" onclick="hideLanding();showScreen('screen-register')">Zarejestruj się</span>
+      <span class="lp-footer-link" onclick="hideLanding();showScreen('screen-login')">Zaloguj się</span>
+    </div>
   </footer>
 
 </div>
