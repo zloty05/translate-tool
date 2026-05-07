@@ -583,12 +583,12 @@ body.dark #screen-landing{background:#0f0f0f}
 .lp-nav-btn:hover{background:#2a2a2a;color:#fff}
 
 /* Hero */
-.lp-hero{background:#1a1a1a;color:#fff;padding:48px 24px 52px;text-align:center}
+.lp-hero{background:#1a1a1a;color:#fff;padding:28px 24px 36px;text-align:center}
 body.dark .lp-hero{background:#161616}
-.lp-hero-stats{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:32px;border-top:1px solid #2a2a2a;padding-top:28px;gap:0}
-.lp-hs{text-align:center;padding:8px 24px;font-size:12px;color:#888;line-height:1.4}
-.lp-hs strong{display:block;font-size:22px;font-weight:800;color:#4ade80;margin-bottom:3px;letter-spacing:-.02em}
-.lp-hs-sep{width:1px;height:40px;background:#2a2a2a;flex-shrink:0}
+.lp-hero-stats{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:28px;border-top:1px solid #2a2a2a;padding-top:24px;gap:0}
+.lp-hs{text-align:center;padding:8px 24px;font-size:14px;color:#888;line-height:1.4}
+.lp-hs strong{display:block;font-size:33px;font-weight:800;color:#4ade80;margin-bottom:3px;letter-spacing:-.02em}
+.lp-hs-sep{width:1px;height:56px;background:#2a2a2a;flex-shrink:0}
 @media(max-width:640px){.lp-hs-sep{display:none}.lp-hs{padding:10px 16px}}
 .lp-hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#4ade80;margin-bottom:18px}
 .lp-hero h1{font-size:clamp(28px,5vw,52px);font-weight:700;line-height:1.15;letter-spacing:-.03em;margin-bottom:20px;max-width:720px;margin-left:auto;margin-right:auto}
@@ -678,12 +678,14 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
 html{scroll-behavior:smooth}
 
 /* ── NAV LINKS ── */
-.lp-nav-links{display:flex;align-items:center;gap:10px}
-.lp-nav-link{font-size:13px;font-weight:500;color:#999;text-decoration:none;padding:4px 2px;transition:color .15s;white-space:nowrap}
-.lp-nav-link:hover{color:#fff}
+.lp-nav-links{flex:1;display:flex;justify-content:center;align-items:center;gap:6px;margin:0 12px}
+.lp-nav-link{font-size:13px;font-weight:500;color:#aaa;text-decoration:none;padding:5px 10px;border-radius:6px;transition:color .15s,background .15s;white-space:nowrap}
+.lp-nav-link:hover{color:#fff;background:rgba(255,255,255,.07)}
+.lp-nav-actions{display:flex;align-items:center;gap:8px}
 .lp-btn-nav{padding:7px 16px;background:#4ade80;color:#000;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;white-space:nowrap}
 .lp-btn-nav:hover{background:#22c55e}
-@media(max-width:520px){.lp-nav-link,.lp-btn-nav{display:none}}
+@media(max-width:620px){.lp-nav-links{display:none}}
+@media(max-width:400px){.lp-btn-nav{display:none}}
 
 /* ── SHARED PRICING ── */
 .lp-sub-section{padding:56px 24px}
@@ -802,7 +804,11 @@ body.dark .lp-contact-email a{color:#5a9eff}
   <nav class="lp-nav">
     <div class="lp-nav-logo"><img src="logo.png" alt="" class="logo-img logo-nav"> TranslateTool</div>
     <div class="lp-nav-links">
+      <a class="lp-nav-link" href="#">Strona główna</a>
       <a class="lp-nav-link" href="#cennik">Cennik</a>
+      <a class="lp-nav-link" href="#kontakt">Kontakt</a>
+    </div>
+    <div class="lp-nav-actions">
       <button class="lp-btn-nav" onclick="hideLanding();showScreen('screen-register')">Zacznij za darmo</button>
       <button class="lp-nav-btn" onclick="hideLanding();showScreen('screen-login')">Zaloguj się</button>
     </div>
@@ -862,14 +868,61 @@ body.dark .lp-contact-email a{color:#5a9eff}
   <section id="cennik">
 
     <!-- Mini hero -->
-    <div class="lp-sub-section light" style="text-align:center;border-top:1px solid #e8e6e0;">
+    <div class="lp-sub-section light" style="text-align:center;border-top:1px solid #e8e6e0;padding:32px 24px 28px;">
       <div class="lp-section-label">Cennik</div>
       <h2 class="lp-section-title">Proste rozliczenie bez niespodzianek</h2>
       <p class="lp-section-sub">Płacisz tylko za znaki, które tłumaczysz. Bez abonamentu, bez limitów funkcji.</p>
     </div>
 
-    <!-- Jak działa rozliczenie -->
+    <!-- Pakiety -->
     <div class="lp-sub-section tinted">
+      <div class="lp-section-label" style="text-align:center;">Pakiety kredytów</div>
+      <h2 class="lp-section-title">Wybierz pakiet odpowiedni dla siebie</h2>
+      <div class="lp-free-card">
+        <div>
+          <div class="lp-free-badge">🎁 Na start — 15 kredytów gratis</div>
+          <div class="lp-free-detail">~15 000 znaków · ok. 1 szkolenie · bez karty kredytowej</div>
+        </div>
+        <button class="lp-btn-nav" onclick="hideLanding();showScreen('screen-register')">Wypróbuj za darmo →</button>
+      </div>
+      <div class="lp-packages-grid">
+
+        <div class="lp-pkg-card">
+          <div class="lp-pkg-name">Starter</div>
+          <div class="lp-pkg-credits">50 <span>kredytów</span></div>
+          <div class="lp-pkg-price">50 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
+          <div class="lp-pkg-equiv">~50 000 znaków · ok. 3 szkolenia (śr. 4 500 słów)</div>
+          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
+        </div>
+
+        <div class="lp-pkg-card popular">
+          <div class="lp-pkg-popular-badge">Najpopularniejszy</div>
+          <div class="lp-pkg-name">Standard</div>
+          <div class="lp-pkg-credits">250 <span>kredytów</span></div>
+          <div class="lp-pkg-price">230 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
+          <div class="lp-pkg-equiv">~250 000 znaków · ok. 16 szkoleń (śr. 4 500 słów)</div>
+          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
+        </div>
+
+        <div class="lp-pkg-card">
+          <div class="lp-pkg-name">Pro</div>
+          <div class="lp-pkg-credits">1 000 <span>kredytów</span></div>
+          <div class="lp-pkg-price">850 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
+          <div class="lp-pkg-equiv">~1 000 000 znaków · ok. 66 szkoleń (śr. 4 500 słów)</div>
+          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
+        </div>
+
+      </div>
+      <div class="lp-pkg-notes">
+        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Kredyty nie wygasają</span>
+        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Wspólne dla całej organizacji</span>
+        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Zakup jednorazowy</span>
+        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Płatność przez Stripe (Visa, Mastercard, BLIK)</span>
+      </div>
+    </div>
+
+    <!-- Jak działa rozliczenie -->
+    <div class="lp-sub-section light">
       <div class="lp-section-label" style="text-align:center;">Jak działa rozliczenie</div>
       <div class="lp-billing-grid">
         <div class="lp-billing-item">
@@ -887,56 +940,6 @@ body.dark .lp-contact-email a{color:#5a9eff}
           <div class="lp-billing-title">Wiele języków = kredyty × języki</div>
           <div class="lp-billing-desc">10 000 znaków na 4 języki = 40 kredytów. Każdy język tłumaczony jest osobno i rozliczany niezależnie.</div>
         </div>
-      </div>
-    </div>
-
-    <!-- Pakiety -->
-    <div class="lp-sub-section light">
-      <div class="lp-section-label" style="text-align:center;">Pakiety kredytów</div>
-      <h2 class="lp-section-title">Wybierz pakiet odpowiedni dla siebie</h2>
-      <div class="lp-free-card">
-        <div>
-          <div class="lp-free-badge">🎁 Na start — 15 kredytów gratis</div>
-          <div class="lp-free-detail">~15 000 znaków · ok. 1 szkolenie · bez karty kredytowej</div>
-        </div>
-        <button class="lp-btn-nav" onclick="hideLanding();showScreen('screen-register')">Wypróbuj za darmo →</button>
-      </div>
-      <div class="lp-packages-grid">
-
-        <div class="lp-pkg-card">
-          <div class="lp-pkg-name">Starter</div>
-          <div class="lp-pkg-credits">50 <span>kredytów</span></div>
-          <div class="lp-pkg-price">50 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
-          <div class="lp-pkg-equiv">~50 000 znaków · ok. 3 szkolenia</div>
-          <div class="lp-pkg-perks">✓ Wszystkie formaty plików<br>✓ Pamięć tłumaczeń (TM)<br>✓ Słownik terminologii<br>✓ Kredyty nie wygasają</div>
-          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
-        </div>
-
-        <div class="lp-pkg-card popular">
-          <div class="lp-pkg-popular-badge">Najpopularniejszy</div>
-          <div class="lp-pkg-name">Standard</div>
-          <div class="lp-pkg-credits">250 <span>kredytów</span></div>
-          <div class="lp-pkg-price">230 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
-          <div class="lp-pkg-equiv">~250 000 znaków · ok. 16 szkoleń</div>
-          <div class="lp-pkg-perks">✓ Wszystkie formaty plików<br>✓ Pamięć tłumaczeń (TM)<br>✓ Słownik terminologii<br>✓ Kredyty nie wygasają</div>
-          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
-        </div>
-
-        <div class="lp-pkg-card">
-          <div class="lp-pkg-name">Pro</div>
-          <div class="lp-pkg-credits">1 000 <span>kredytów</span></div>
-          <div class="lp-pkg-price">850 PLN <span style="font-size:12px;color:#888;font-weight:400">netto</span></div>
-          <div class="lp-pkg-equiv">~1 000 000 znaków · ok. 66 szkoleń</div>
-          <div class="lp-pkg-perks">✓ Wszystkie formaty plików<br>✓ Pamięć tłumaczeń (TM)<br>✓ Słownik terminologii<br>✓ Kredyty nie wygasają</div>
-          <button class="lp-pkg-btn" onclick="hideLanding();showScreen('screen-register')">Kup teraz →</button>
-        </div>
-
-      </div>
-      <div class="lp-pkg-notes">
-        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Kredyty nie wygasają</span>
-        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Wspólne dla całej organizacji</span>
-        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Zakup jednorazowy</span>
-        <span class="lp-pkg-note"><span class="lp-pkg-note-icon">✓</span> Płatność przez Stripe (Visa, Mastercard, BLIK)</span>
       </div>
     </div>
 
@@ -989,7 +992,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
     </div>
 
     <!-- Kontakt -->
-    <div class="lp-sub-section tinted">
+    <div id="kontakt" class="lp-sub-section tinted">
       <div class="lp-section-label" style="text-align:center;">Kontakt</div>
       <h2 class="lp-section-title">Masz pytania? Napisz do nas</h2>
       <div class="lp-contact-inner">
