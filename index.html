@@ -153,7 +153,7 @@ a{color:#2451b3}
 .stat-num{font-size:20px;font-weight:600}
 .stat-lbl{font-size:10px;color:#999;margin-top:2px}
 .tm-list{max-height:380px;overflow-y:auto;border:1px solid #eee;border-radius:8px}
-.tm-row{display:grid;grid-template-columns:1fr 1fr 90px 70px;border-bottom:1px solid #f0ede8}
+.tm-row{display:grid;grid-template-columns:1fr 1fr 90px 70px 70px;border-bottom:1px solid #f0ede8}
 .tm-row:last-child{border-bottom:none}
 .tm-col{padding:7px 10px;font-size:11px;border-right:1px solid #f0ede8}
 .tm-col:last-child{border-right:none;color:#aaa}
@@ -1947,7 +1947,6 @@ async function renderTMList(){
   const fs=document.getElementById('tm-filter-src')?.value||'all';
   const list=document.getElementById('tm-list');
   list.innerHTML='<div style="padding:16px;text-align:center;color:#aaa;font-size:12px;"><div class="spinner" style="margin:0 auto 8px;"></div>Ładowanie...</div>';
-
   try{
     let params=`?${orgParam()}&order=created_at.desc&limit=200`;
     if(fl!=='all') params+=`&lang=eq.${encodeURIComponent(fl)}`;
@@ -1955,11 +1954,68 @@ async function renderTMList(){
     let data=await dbGet('translation_memory',params);
     if(ft) data=data.filter(e=>e.source.toLowerCase().includes(ft)||e.target.toLowerCase().includes(ft));
     if(!data.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</div>';return;}
-    list.innerHTML=data.map(e=>`<div class="tm-row"><div class="tm-col">${esc(e.source)}</div><div class="tm-col">${esc(e.target)}</div><div class="tm-col"><span class="badge b-gray" style="font-size:10px;">${esc(e.lang.substring(0,8))}</span></div><div class="tm-col"><span class="badge ${e.src==='pptx'?'b-orange':'b-blue'}" style="font-size:10px;">${esc(e.src||'xliff')}</span></div></div>`).join('');
+    list.innerHTML=data.map(e=>`
+      <div class="tm-row" id="tmrow-${e.id}">
+        <div class="tm-col">${esc(e.source)}</div>
+        <div class="tm-col" id="tmtgt-${e.id}">
+          <span class="tm-tgt-text" onclick="editTMEntry('${e.id}')" title="Kliknij aby edytować" style="cursor:pointer;">${esc(e.target)}</span>
+        </div>
+        <div class="tm-col"><span class="badge b-gray" style="font-size:10px;">${esc(e.lang.substring(0,8))}</span></div>
+        <div class="tm-col"><span class="badge ${e.src==='pptx'?'b-orange':'b-blue'}" style="font-size:10px;">${esc(e.src||'xliff')}</span></div>
+        <div class="tm-col" style="text-align:right;">
+          <button class="btn btn-sm" onclick="editTMEntry('${e.id}')" style="padding:2px 7px;font-size:10px;" title="Edytuj">✏️</button>
+          <button class="btn btn-sm" onclick="deleteTMEntry('${e.id}','${esc(e.source).substring(0,30)}')" style="padding:2px 7px;font-size:10px;color:#b32424;" title="Usuń">×</button>
+        </div>
+      </div>`).join('');
   }catch(e){list.innerHTML='<div style="padding:16px;text-align:center;color:#b32424;font-size:12px;">Błąd ładowania</div>';}
 }
 
-function exportTM(){download(JSON.stringify(tmCache,null,2),'translation-memory.json','application/json');}
+async function editTMEntry(id){
+  // Find the row and replace target text with input
+  const tgtEl=document.getElementById('tmtgt-'+id);
+  if(!tgtEl) return;
+  const currentText=tgtEl.querySelector('.tm-tgt-text')?.textContent||'';
+  tgtEl.innerHTML=`
+    <div style="display:flex;gap:4px;align-items:center;">
+      <input id="tmedit-${id}" class="seg-textarea" value="${esc(currentText)}" style="flex:1;padding:3px 6px;font-size:12px;min-height:unset;" />
+      <button class="btn btn-dark btn-sm" onclick="saveTMEntry('${id}')" style="padding:3px 8px;font-size:11px;">✓</button>
+      <button class="btn btn-sm" onclick="cancelTMEdit('${id}','${esc(currentText)}')" style="padding:3px 8px;font-size:11px;">✕</button>
+    </div>`;
+  document.getElementById('tmedit-'+id)?.focus();
+}
+
+function cancelTMEdit(id, originalText){
+  const tgtEl=document.getElementById('tmtgt-'+id);
+  if(tgtEl) tgtEl.innerHTML=`<span class="tm-tgt-text" onclick="editTMEntry('${id}')" title="Kliknij aby edytować" style="cursor:pointer;">${esc(originalText)}</span>`;
+}
+
+async function saveTMEntry(id){
+  const input=document.getElementById('tmedit-'+id);
+  if(!input) return;
+  const newText=input.value.trim();
+  if(!newText){ alert('Tłumaczenie nie może być puste.'); return; }
+  try{
+    await dbPatch('translation_memory',{target:newText},`?id=eq.${id}`);
+    // Also update tmCache
+    const entry=tmCache.find(e=>e.id===id);
+    if(entry) entry.target=newText;
+    const tgtEl=document.getElementById('tmtgt-'+id);
+    if(tgtEl) tgtEl.innerHTML=`<span class="tm-tgt-text" onclick="editTMEntry('${id}')" title="Kliknij aby edytować" style="cursor:pointer;">${esc(newText)}</span>`;
+    setDbStatus(true);
+  }catch(e){ alert('Błąd zapisu: '+e.message); }
+}
+
+async function deleteTMEntry(id, preview){
+  if(!confirm(`Usunąć wpis TM:\n"${preview}..."?`)) return;
+  try{
+    await dbDelete('translation_memory',`?id=eq.${id}`);
+    tmCache=tmCache.filter(e=>e.id!==id);
+    document.getElementById('tmrow-'+id)?.remove();
+    await updateTMUI();
+  }catch(e){ alert('Błąd usuwania: '+e.message); }
+}
+
+
 async function importTM(e){
   const f=e.target.files[0];if(!f)return;
   const data=JSON.parse(await readFile(f));
