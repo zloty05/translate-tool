@@ -22,26 +22,45 @@ document.addEventListener('DOMContentLoaded',()=>{
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
 
 /* ── AUTH SCREENS ── */
-.auth-screen{display:none;position:fixed;inset:0;min-height:100vh;align-items:center;justify-content:center;background:#f5f4f0;z-index:999;overflow-y:auto}
-body.dark .auth-screen{background:#0f0f0f}
+.auth-screen{display:none;position:fixed;inset:0;z-index:999}
 .auth-screen.active{display:flex}
-.auth-box{background:#fff;border-radius:16px;border:1px solid #e8e6e0;padding:40px;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
-.auth-logo{font-size:20px;font-weight:700;text-align:center;margin-bottom:8px;letter-spacing:-.5px}
-.auth-sub{font-size:13px;color:#888;text-align:center;margin-bottom:28px}
-.auth-field{margin-bottom:14px}
+.auth-split-left{width:42%;background:#1a1a1a;color:#fff;display:flex;flex-direction:column;justify-content:center;padding:60px 50px;gap:32px;overflow-y:auto}
+.auth-split-right{width:58%;background:#f8f7f4;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px 50px;overflow-y:auto;position:relative}
+.auth-left-logo{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:700;letter-spacing:-.5px}
+.auth-left-logo .logo-img{height:40px;border-radius:8px;margin:0;display:inline}
+.auth-left-tag{font-size:15px;color:#4CDE80;font-weight:500}
+.auth-left-bullets{list-style:none;display:flex;flex-direction:column;gap:14px}
+.auth-left-bullet{font-size:14px;color:#ccc;display:flex;align-items:flex-start;gap:10px;line-height:1.4}
+.auth-left-bullet::before{content:'✓';color:#4CDE80;font-weight:700;flex-shrink:0}
+.auth-back-btn{position:absolute;top:24px;left:24px;font-size:13px;color:#888;cursor:pointer;display:flex;align-items:center;gap:6px;background:none;border:none;font-family:inherit}
+.auth-back-btn:hover{color:#1a1a1a}
+.auth-box{width:100%;max-width:400px;background:transparent;border:none;box-shadow:none;padding:0}
+.auth-title{font-size:24px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;color:#1a1a1a}
+.auth-sub{font-size:14px;color:#888;margin-bottom:28px}
+.auth-field{margin-bottom:16px}
 .auth-field label{font-size:12px;color:#666;display:block;margin-bottom:5px;font-weight:500}
-.auth-field input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border-color .15s}
-.auth-field input:focus{border-color:#1a1a1a}
-.auth-btn{width:100%;padding:11px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:4px}
+.auth-field input{width:100%;padding:11px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s;background:#fff}
+.auth-field input:focus{border-color:#4CDE80;box-shadow:0 0 0 3px rgba(76,222,128,.15)}
+.auth-field input.field-invalid{border-color:#e53e3e}
+.auth-field input.field-valid{border-color:#4CDE80}
+.auth-field-msg{font-size:11px;margin-top:4px;display:none}
+.auth-field-msg.show{display:block}
+.auth-field-msg.error{color:#e53e3e}
+.auth-field-msg.ok{color:#38a169}
+.auth-btn{width:100%;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
 .auth-btn:hover{background:#333}
 .auth-btn.secondary{background:#fff;color:#1a1a1a;border:1px solid #ddd;margin-top:10px}
 .auth-btn.secondary:hover{background:#f5f4f0}
+.auth-btn.loading{opacity:.7;pointer-events:none;cursor:not-allowed}
+.auth-btn.loading::after{content:'';width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:auth-spin .7s linear infinite;flex-shrink:0}
+@keyframes auth-spin{to{transform:rotate(360deg)}}
 .auth-link{font-size:13px;text-align:center;margin-top:18px;color:#888}
 .auth-link a{color:#1a1a1a;font-weight:500;cursor:pointer;text-decoration:underline}
 .auth-error{background:#fde8e8;color:#b32424;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
 .auth-success{background:#e6f5ec;color:#1a7a3f;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:#ccc;font-size:12px}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:#eee}
+@media(max-width:700px){.auth-split-left{display:none}.auth-split-right{width:100%;padding:40px 24px}}
 
 /* ── ONBOARDING ── */
 .onboard-step{display:none}
@@ -249,14 +268,23 @@ body.dark table tr:hover td{background:#1a1a1a}
 body.dark .src-cell{color:#aaa}
 body.dark .id-cell{color:#555}
 /* Auth */
-body.dark .auth-box{background:#1a1a1a;border-color:#2a2a2a}
-body.dark .auth-field input{background:#111;border-color:#333;color:#ccc}
-body.dark .auth-btn{background:#fff;color:#000}
+body.dark .auth-split-left{background:#111}
+body.dark .auth-split-right{background:#0f0f0f}
+body.dark .auth-box{background:transparent;border:none;box-shadow:none}
+body.dark .auth-title{color:#fff}
+body.dark .auth-back-btn{color:#555}
+body.dark .auth-back-btn:hover{color:#fff}
+body.dark .auth-field input{background:#1a1a1a;border-color:#333;color:#ccc}
+body.dark .auth-field input:focus{border-color:#4CDE80;box-shadow:0 0 0 3px rgba(76,222,128,.1)}
+body.dark .auth-btn{background:#4CDE80;color:#000}
+body.dark .auth-btn:hover{background:#3cc870}
+body.dark .auth-btn.loading::after{border-color:rgba(0,0,0,.3);border-top-color:#000}
 body.dark .auth-btn.secondary{background:#1a1a1a;border-color:#333;color:#ccc}
-body.dark .auth-logo{color:#fff}
+body.dark .auth-btn.secondary:hover{background:#222}
 body.dark .auth-sub{color:#666}
 body.dark .auth-link{color:#888}
 body.dark .auth-link a{color:#fff}
+body.dark .auth-left-bullet{color:#aaa}
 /* Stats */
 body.dark .stat-box{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
 body.dark .stat-num{color:#fff}
@@ -1035,88 +1063,158 @@ body.dark .lp-contact-email a{color:#5a9eff}
      AUTH: LOGIN
 ══════════════════════════════════════════════════════ -->
 <div class="auth-screen" id="screen-login">
-  <div class="auth-box">
-    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateScorm</div>
-    <div class="auth-sub">Zaloguj się do swojego konta</div>
-    <div class="auth-error" id="login-error"></div>
-    <div class="auth-success" id="login-success"></div>
-    <div class="auth-field"><label>Email</label><input type="email" id="login-email" placeholder="jan@firma.pl" /></div>
-    <div class="auth-field"><label>Hasło</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" /></div>
-    <button class="auth-btn" onclick="doLogin()">Zaloguj się</button>
-    <button class="auth-btn secondary" onclick="showScreen('screen-reset')">Nie pamiętam hasła</button>
-    <div class="auth-link">Nie masz konta? <a onclick="showScreen('screen-register')">Zarejestruj się</a></div>
+  <div class="auth-split-left">
+    <div class="auth-left-logo"><img src="logo.png" alt="" class="logo-img logo-auth"> TranslateScorm</div>
+    <div class="auth-left-tag">Tłumacz SCORM z AI</div>
+    <ul class="auth-left-bullets">
+      <li class="auth-left-bullet">Obsługa XLIFF, PPTX, SRT i VTT</li>
+      <li class="auth-left-bullet">Pamięć tłumaczeń i słownik terminologii</li>
+      <li class="auth-left-bullet">Praca zespołowa i zarządzanie projektami</li>
+    </ul>
+  </div>
+  <div class="auth-split-right">
+    <button class="auth-back-btn" onclick="showLanding()">← Strona główna</button>
+    <div class="auth-box">
+      <div class="auth-title">Zaloguj się</div>
+      <div class="auth-sub">Witaj ponownie — wróć do swoich projektów</div>
+      <div class="auth-error" id="login-error"></div>
+      <div class="auth-success" id="login-success"></div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="jan@firma.pl" onblur="validateEmail('login-email','login-email-msg')" />
+        <div class="auth-field-msg" id="login-email-msg"></div>
+      </div>
+      <div class="auth-field">
+        <label>Hasło</label>
+        <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">Zaloguj się</button>
+      <button class="auth-btn secondary" onclick="showScreen('screen-reset')">Nie pamiętam hasła</button>
+      <div class="auth-link">Nie masz konta? <a onclick="showScreen('screen-register')">Zarejestruj się</a></div>
+    </div>
   </div>
 </div>
 
 <!-- ══════ AUTH: REGISTER ══════ -->
 <div class="auth-screen" id="screen-register">
-  <div class="auth-box">
-    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateScorm</div>
-    <div class="auth-sub">Utwórz nowe konto</div>
-    <div class="auth-error" id="reg-error"></div>
-    <div class="auth-field"><label>Imię i nazwisko</label><input type="text" id="reg-name" placeholder="Jan Kowalski" /></div>
-    <div class="auth-field"><label>Email</label><input type="email" id="reg-email" placeholder="jan@firma.pl" /></div>
-    <div class="auth-field"><label>Hasło (min. 8 znaków)</label><input type="password" id="reg-pass" placeholder="••••••••" /></div>
-    <div class="auth-field"><label>Powtórz hasło</label><input type="password" id="reg-pass2" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()" /></div>
-    <button class="auth-btn" onclick="doRegister()">Utwórz konto</button>
-    <div class="auth-link">Masz już konto? <a onclick="showScreen('screen-login')">Zaloguj się</a></div>
+  <div class="auth-split-left">
+    <div class="auth-left-logo"><img src="logo.png" alt="" class="logo-img logo-auth"> TranslateScorm</div>
+    <div class="auth-left-tag">Tłumacz SCORM z AI</div>
+    <ul class="auth-left-bullets">
+      <li class="auth-left-bullet">Obsługa XLIFF, PPTX, SRT i VTT</li>
+      <li class="auth-left-bullet">Pamięć tłumaczeń i słownik terminologii</li>
+      <li class="auth-left-bullet">Praca zespołowa i zarządzanie projektami</li>
+    </ul>
+  </div>
+  <div class="auth-split-right">
+    <button class="auth-back-btn" onclick="showLanding()">← Strona główna</button>
+    <div class="auth-box">
+      <div class="auth-title">Utwórz konto</div>
+      <div class="auth-sub">15 kredytów startowych — bez karty kredytowej</div>
+      <div class="auth-error" id="reg-error"></div>
+      <div class="auth-field">
+        <label>Imię i nazwisko</label>
+        <input type="text" id="reg-name" placeholder="Jan Kowalski" />
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="jan@firma.pl" onblur="validateEmail('reg-email','reg-email-msg')" />
+        <div class="auth-field-msg" id="reg-email-msg"></div>
+      </div>
+      <div class="auth-field">
+        <label>Hasło (min. 8 znaków)</label>
+        <input type="password" id="reg-pass" placeholder="••••••••" onblur="validatePass('reg-pass','reg-pass-msg')" />
+        <div class="auth-field-msg" id="reg-pass-msg"></div>
+      </div>
+      <div class="auth-field">
+        <label>Powtórz hasło</label>
+        <input type="password" id="reg-pass2" placeholder="••••••••" onblur="validatePass2('reg-pass2','reg-pass2-msg')" onkeydown="if(event.key==='Enter')doRegister()" />
+        <div class="auth-field-msg" id="reg-pass2-msg"></div>
+      </div>
+      <button class="auth-btn" id="reg-btn" onclick="doRegister()">Utwórz konto</button>
+      <div class="auth-link">Masz już konto? <a onclick="showScreen('screen-login')">Zaloguj się</a></div>
+    </div>
   </div>
 </div>
 
 <!-- ══════ AUTH: RESET ══════ -->
 <div class="auth-screen" id="screen-reset">
-  <div class="auth-box">
-    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateScorm</div>
-    <div class="auth-sub">Resetuj hasło</div>
-    <div class="auth-error" id="reset-error"></div>
-    <div class="auth-success" id="reset-success"></div>
-    <div class="auth-field"><label>Email</label><input type="email" id="reset-email" placeholder="jan@firma.pl" onkeydown="if(event.key==='Enter')doReset()" /></div>
-    <button class="auth-btn" onclick="doReset()">Wyślij link resetujący</button>
-    <button class="auth-btn secondary" onclick="showScreen('screen-login')">Wróć do logowania</button>
+  <div class="auth-split-left">
+    <div class="auth-left-logo"><img src="logo.png" alt="" class="logo-img logo-auth"> TranslateScorm</div>
+    <div class="auth-left-tag">Tłumacz SCORM z AI</div>
+    <ul class="auth-left-bullets">
+      <li class="auth-left-bullet">Obsługa XLIFF, PPTX, SRT i VTT</li>
+      <li class="auth-left-bullet">Pamięć tłumaczeń i słownik terminologii</li>
+      <li class="auth-left-bullet">Praca zespołowa i zarządzanie projektami</li>
+    </ul>
+  </div>
+  <div class="auth-split-right">
+    <button class="auth-back-btn" onclick="showScreen('screen-login')">← Wróć do logowania</button>
+    <div class="auth-box">
+      <div class="auth-title">Resetuj hasło</div>
+      <div class="auth-sub">Wyślemy link resetujący na Twój email</div>
+      <div class="auth-error" id="reset-error"></div>
+      <div class="auth-success" id="reset-success"></div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="reset-email" placeholder="jan@firma.pl" onkeydown="if(event.key==='Enter')doReset()" />
+      </div>
+      <button class="auth-btn" onclick="doReset()">Wyślij link resetujący</button>
+    </div>
   </div>
 </div>
 
 <!-- ══════ ONBOARDING ══════ -->
 <div class="auth-screen" id="screen-onboard">
-  <div class="auth-box" style="max-width:480px;">
-    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateScorm</div>
-    <div class="auth-sub" id="onboard-subtitle">Skonfiguruj swoją organizację</div>
-    <div class="onboard-progress">
-      <div class="onboard-dot done" id="od1"></div>
-      <div class="onboard-dot" id="od2"></div>
-    </div>
-    <div class="auth-error" id="onboard-error"></div>
-
-    <!-- Krok 1: nazwa org -->
-    <div class="onboard-step active" id="onboard-step1">
-      <div class="auth-field">
-        <label>Nazwa organizacji / firmy</label>
-        <input type="text" id="org-name" placeholder="np. Acme Corp" oninput="updateSlug()" />
+  <div class="auth-split-left">
+    <div class="auth-left-logo"><img src="logo.png" alt="" class="logo-img logo-auth"> TranslateScorm</div>
+    <div class="auth-left-tag">Prawie gotowe!</div>
+    <ul class="auth-left-bullets">
+      <li class="auth-left-bullet">Krok 1: Skonfiguruj organizację</li>
+      <li class="auth-left-bullet">Krok 2: Zaproś zespół (opcjonalnie)</li>
+      <li class="auth-left-bullet">Gotowe — zacznij tłumaczyć z AI</li>
+    </ul>
+  </div>
+  <div class="auth-split-right">
+    <div class="auth-box" style="max-width:480px;">
+      <div class="auth-title" id="onboard-subtitle">Skonfiguruj organizację</div>
+      <div class="onboard-progress" style="margin-top:8px;margin-bottom:28px;">
+        <div class="onboard-dot done" id="od1"></div>
+        <div class="onboard-dot" id="od2"></div>
       </div>
-      <div class="auth-field">
-        <label>Identyfikator (auto-generowany)</label>
-        <input type="text" id="org-slug" placeholder="acme-corp" />
-        <div style="font-size:11px;color:#aaa;margin-top:4px;">Używany w URL. Tylko litery, cyfry i myślniki.</div>
-      </div>
-      <button class="auth-btn" onclick="onboardStep2()">Dalej →</button>
-    </div>
+      <div class="auth-error" id="onboard-error"></div>
 
-    <!-- Krok 2: zaproś zespół (opcjonalne) -->
-    <div class="onboard-step" id="onboard-step2">
-      <p style="font-size:13px;color:#555;margin-bottom:14px;">Zaproś członków zespołu (możesz to zrobić później w ustawieniach):</p>
-      <div id="invite-rows">
-        <div class="input-row" style="margin-bottom:8px;">
-          <input type="email" placeholder="email@firma.pl" class="invite-email" />
-          <select class="invite-role" style="width:130px;flex:none;">
-            <option value="translator">Translator</option>
-            <option value="admin">Admin</option>
-            <option value="viewer">Viewer</option>
-          </select>
+      <!-- Krok 1: nazwa org -->
+      <div class="onboard-step active" id="onboard-step1">
+        <div class="auth-field">
+          <label>Nazwa organizacji / firmy</label>
+          <input type="text" id="org-name" placeholder="np. Acme Corp" oninput="updateSlug()" />
         </div>
+        <div class="auth-field">
+          <label>Identyfikator (auto-generowany)</label>
+          <input type="text" id="org-slug" placeholder="acme-corp" />
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Używany w URL. Tylko litery, cyfry i myślniki.</div>
+        </div>
+        <button class="auth-btn" onclick="onboardStep2()">Dalej →</button>
       </div>
-      <button class="btn btn-sm" style="margin-bottom:16px;" onclick="addInviteRow()">+ Dodaj kolejny</button>
-      <button class="auth-btn" onclick="finishOnboarding()">Zakończ i przejdź do aplikacji</button>
-      <button class="auth-btn secondary" onclick="finishOnboarding(true)">Pomiń — zrobię to później</button>
+
+      <!-- Krok 2: zaproś zespół (opcjonalne) -->
+      <div class="onboard-step" id="onboard-step2">
+        <p style="font-size:13px;color:#555;margin-bottom:14px;">Zaproś członków zespołu (możesz to zrobić później w ustawieniach):</p>
+        <div id="invite-rows">
+          <div class="input-row" style="margin-bottom:8px;">
+            <input type="email" placeholder="email@firma.pl" class="invite-email" />
+            <select class="invite-role" style="width:130px;flex:none;">
+              <option value="translator">Translator</option>
+              <option value="admin">Admin</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-sm" style="margin-bottom:16px;" onclick="addInviteRow()">+ Dodaj kolejny</button>
+        <button class="auth-btn" onclick="finishOnboarding()">Zakończ i przejdź do aplikacji</button>
+        <button class="auth-btn secondary" onclick="finishOnboarding(true)">Pomiń — zrobię to później</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1886,40 +1984,82 @@ function langOptionsHTML(){
 // ══════════════════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════════════════
-function showLanding(){
+function _showLanding(){
   document.getElementById('screen-landing').style.display='block';
   document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('app-shell').style.display='none';
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
 }
-function hideLanding(){
+function _showScreen(id){
   document.getElementById('screen-landing').style.display='none';
-}
-
-function showScreen(id){
-  hideLanding();
   document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('app-shell').style.display='none';
   const el=document.getElementById(id);
   if(el)el.classList.add('active');
 }
-
+function showLanding(){
+  history.pushState({view:'landing'},'','/');
+  _showLanding();
+}
+function hideLanding(){
+  document.getElementById('screen-landing').style.display='none';
+}
+function showScreen(id){
+  history.pushState({view:id},'','/');
+  _showScreen(id);
+}
 function showApp(){
   document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('app-shell').style.display='block';
   document.getElementById('tab-projects').classList.add('active');
 }
+window.addEventListener('popstate',e=>{
+  const view=e.state&&e.state.view;
+  if(!view||view==='landing')_showLanding();
+  else if(view.startsWith('screen-'))_showScreen(view);
+});
 
 function authErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
 function authOk(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
 function clearAuthMsgs(){document.querySelectorAll('.auth-error,.auth-success').forEach(e=>{e.style.display='none';e.textContent='';})}
+function setFieldState(inputId,msgId,state,msg){
+  const inp=document.getElementById(inputId);
+  const msgEl=document.getElementById(msgId);
+  inp.classList.remove('field-invalid','field-valid');
+  if(state==='error')inp.classList.add('field-invalid');
+  if(state==='ok')inp.classList.add('field-valid');
+  if(msgEl){msgEl.textContent=msg||'';msgEl.className='auth-field-msg'+(msg?' show '+state:'');}
+}
+function validateEmail(inputId,msgId){
+  const val=document.getElementById(inputId).value.trim();
+  if(!val)return;
+  if(/.+@.+\..+/.test(val))setFieldState(inputId,msgId,'ok','');
+  else setFieldState(inputId,msgId,'error','Nieprawidłowy format email');
+}
+function validatePass(inputId,msgId){
+  const val=document.getElementById(inputId).value;
+  if(!val)return;
+  if(val.length>=8)setFieldState(inputId,msgId,'ok','');
+  else setFieldState(inputId,msgId,'error','Hasło musi mieć min. 8 znaków');
+}
+function validatePass2(inputId,msgId){
+  const val=document.getElementById(inputId).value;
+  const pass=document.getElementById('reg-pass').value;
+  if(!val)return;
+  if(val===pass)setFieldState(inputId,msgId,'ok','');
+  else setFieldState(inputId,msgId,'error','Hasła nie są identyczne');
+}
 
 async function doLogin(){
   clearAuthMsgs();
   const email=document.getElementById('login-email').value.trim();
   const pass=document.getElementById('login-pass').value;
   if(!email||!pass){authErr('login-error','Wypełnij email i hasło.');return;}
+  const btn=document.getElementById('login-btn');
+  const orig=btn.textContent;
+  btn.classList.add('loading');btn.textContent='Logowanie...';
   const{data,error}=await supa.auth.signInWithPassword({email,password:pass});
+  btn.classList.remove('loading');btn.textContent=orig;
   if(error){authErr('login-error',error.message);return;}
   currentSession=data.session;currentUser=data.user;
   await afterLogin();
@@ -1934,10 +2074,14 @@ async function doRegister(){
   if(!name||!email||!pass){authErr('reg-error','Wypełnij wszystkie pola.');return;}
   if(pass.length<8){authErr('reg-error','Hasło musi mieć min. 8 znaków.');return;}
   if(pass!==pass2){authErr('reg-error','Hasła nie są identyczne.');return;}
+  const btn=document.getElementById('reg-btn');
+  const orig=btn.textContent;
+  btn.classList.add('loading');btn.textContent='Tworzenie konta...';
   const{data,error}=await supa.auth.signUp({email,password:pass,options:{
     data:{full_name:name},
     emailRedirectTo:'https://translatescorm.com'
   }});
+  btn.classList.remove('loading');btn.textContent=orig;
   if(error){authErr('reg-error',error.message);return;}
   // If session exists — email confirmation disabled, go straight to app
   if(data.session){
