@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TranslateTool</title>
+<title>TranslateScorm</title>
 <script>
 // Apply dark mode immediately to prevent flash
 if(localStorage.getItem('darkMode')!=='false'){
@@ -802,7 +802,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
 
   <!-- Nav -->
   <nav class="lp-nav">
-    <div class="lp-nav-logo"><img src="logo.png" alt="" class="logo-img logo-nav"> TranslateTool</div>
+    <div class="lp-nav-logo"><img src="logo.png" alt="" class="logo-img logo-nav"> TranslateScorm</div>
     <div class="lp-nav-links">
       <a class="lp-nav-link" href="#">Strona główna</a>
       <a class="lp-nav-link" href="#cennik">Cennik</a>
@@ -836,7 +836,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
 
   <!-- Benefits -->
   <section class="lp-benefits">
-    <div class="lp-section-label">Dlaczego TranslateTool</div>
+    <div class="lp-section-label">Dlaczego TranslateScorm</div>
     <h2 class="lp-section-title">Wszystko czego potrzebuje zespół L&D</h2>
     <p class="lp-section-sub">Od uploadu pliku po gotowy XLIFF z tłumaczeniem — w kilka minut, nie dni.</p>
     <div class="lp-cards">
@@ -1021,7 +1021,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
   <!-- ══ /CENNIK ══ -->
 
   <footer class="lp-footer">
-    <span class="lp-footer-copy">© 2026 TranslateTool</span>
+    <span class="lp-footer-copy">© 2026 TranslateScorm</span>
     <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
       <a class="lp-footer-link" href="#cennik">Cennik</a>
       <span class="lp-footer-link" onclick="hideLanding();showScreen('screen-register')">Zarejestruj się</span>
@@ -1036,7 +1036,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
 ══════════════════════════════════════════════════════ -->
 <div class="auth-screen" id="screen-login">
   <div class="auth-box">
-    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateTool</div>
+    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateScorm</div>
     <div class="auth-sub">Zaloguj się do swojego konta</div>
     <div class="auth-error" id="login-error"></div>
     <div class="auth-success" id="login-success"></div>
@@ -1051,7 +1051,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
 <!-- ══════ AUTH: REGISTER ══════ -->
 <div class="auth-screen" id="screen-register">
   <div class="auth-box">
-    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateTool</div>
+    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateScorm</div>
     <div class="auth-sub">Utwórz nowe konto</div>
     <div class="auth-error" id="reg-error"></div>
     <div class="auth-field"><label>Imię i nazwisko</label><input type="text" id="reg-name" placeholder="Jan Kowalski" /></div>
@@ -1066,7 +1066,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
 <!-- ══════ AUTH: RESET ══════ -->
 <div class="auth-screen" id="screen-reset">
   <div class="auth-box">
-    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateTool</div>
+    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateScorm</div>
     <div class="auth-sub">Resetuj hasło</div>
     <div class="auth-error" id="reset-error"></div>
     <div class="auth-success" id="reset-success"></div>
@@ -1079,7 +1079,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
 <!-- ══════ ONBOARDING ══════ -->
 <div class="auth-screen" id="screen-onboard">
   <div class="auth-box" style="max-width:480px;">
-    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateTool</div>
+    <div class="auth-logo"><img src="logo.png" alt="" class="logo-img logo-auth">TranslateScorm</div>
     <div class="auth-sub" id="onboard-subtitle">Skonfiguruj swoją organizację</div>
     <div class="onboard-progress">
       <div class="onboard-dot done" id="od1"></div>
@@ -1126,7 +1126,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
 ══════════════════════════════════════════════════════ -->
 <div id="app-shell">
 <header>
-  <h1><img src="logo.png" alt="" class="logo-img logo-hdr"> TranslateTool</h1>
+  <h1><img src="logo.png" alt="" class="logo-img logo-hdr"> TranslateScorm</h1>
   <div class="hdr-right">
     <span class="hdr-org" id="hdr-org-name">—</span>
     <div class="token-badge" onclick="switchTab('shop')" title="Kliknij aby kupić kredyty">
@@ -1936,7 +1936,7 @@ async function doRegister(){
   if(pass!==pass2){authErr('reg-error','Hasła nie są identyczne.');return;}
   const{data,error}=await supa.auth.signUp({email,password:pass,options:{
     data:{full_name:name},
-    emailRedirectTo:'https://translate-tool.pages.dev'
+    emailRedirectTo:'https://translatescorm.com'
   }});
   if(error){authErr('reg-error',error.message);return;}
   // If session exists — email confirmation disabled, go straight to app
@@ -2296,7 +2296,7 @@ function renderPendingInvites(pending){
   const list=document.getElementById('pending-list');
   if(!pending||!pending.length){if(title)title.style.display='none';if(list)list.innerHTML='';return;}
   if(title)title.style.display='block';
-  const baseUrl='https://translate-tool.pages.dev';
+  const baseUrl='https://translatescorm.com';
   list.innerHTML=`<div style="border:1px solid #eee;border-radius:8px;overflow:hidden;">`+
     pending.map(inv=>{
       const expired=new Date(inv.expires_at)<new Date();
