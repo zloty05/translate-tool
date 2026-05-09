@@ -1,8 +1,8 @@
-# CLAUDE.md — TranslateTool
+# CLAUDE.md — TranslateScorm
 
 ## Opis aplikacji
 
-TranslateTool to wielotenantowa aplikacja SaaS do tłumaczenia materiałów e-learningowych. Obsługuje pliki XLIFF (Articulate Storyline), PPTX (PowerPoint) i napisy (SRT/VTT). Tłumaczenia wykonywane są przez Claude API (claude-sonnet-4-20250514) bezpośrednio z przeglądarki. Aplikacja zarządza organizacjami, zespołami tłumaczy, pamięcią tłumaczeń (TM) i słownikiem terminologii — dane synchronizowane przez Supabase. Rozliczenie oparte na kredytach: 1 kredyt = 1 000 znaków = 1 PLN.
+TranslateScorm to wielotenantowa aplikacja SaaS do tłumaczenia materiałów e-learningowych. Obsługuje pliki XLIFF (Articulate Storyline), PPTX (PowerPoint) i napisy (SRT/VTT). Tłumaczenia wykonywane są przez Claude API (claude-sonnet-4-20250514) bezpośrednio z przeglądarki. Aplikacja zarządza organizacjami, zespołami tłumaczy, pamięcią tłumaczeń (TM) i słownikiem terminologii — dane synchronizowane przez Supabase. Rozliczenie oparte na kredytach: 1 kredyt = 1 000 znaków = 1 PLN.
 
 ---
 
@@ -29,7 +29,7 @@ Projekt jest **single-file SPA** — jeden plik `index.html` zawiera wszystko. N
 | Excel | SheetJS xlsx 0.18.5 (CDN) — import/eksport .xlsx |
 | Formularz kontaktowy | Formspree (`https://formspree.io/f/meenlzod`) |
 | Płatności | Stripe (klucz testowy `pk_test_...` — checkout niegotowy, admin ma ręczne doładowanie) |
-| Hosting | Cloudflare Pages (https://translate-tool.pages.dev) |
+| Hosting | Cloudflare Pages (https://translatescorm.com) |
 
 **Zewnętrzne biblioteki ładowane z CDN:**
 ```html
@@ -59,7 +59,7 @@ Projekt jest **single-file SPA** — jeden plik `index.html` zawiera wszystko. N
       pakiety kredytów → jak działa rozliczenie → co zawiera plan → FAQ → #kontakt
     footer.lp-footer
 
-  Ekrany auth (login / register / reset / onboarding)
+  Ekrany auth (login / register / reset / onboarding) ← split-screen layout
 
   App Shell (#app-shell):
     <header>    ← logo, kredyty, powiadomienia, menu użytkownika
@@ -89,9 +89,13 @@ Otwórz URL
 ```
 
 **Kluczowe funkcje nawigacji:**
-- `showLanding()` — pokazuje landing, ukrywa auth + app + `.tab-content.active`
-- `hideLanding()` — ukrywa landing; wywoływana na początku każdego `showScreen()`
+- `showLanding()` — public; robi `history.pushState({view:'landing'})` + wywołuje `_showLanding()`
+- `showScreen(id)` — public; robi `history.pushState({view:id})` + wywołuje `_showScreen(id)`
+- `_showLanding()` — internal (bez pushState); pokazuje landing, ukrywa auth + app + `.tab-content.active`
+- `_showScreen(id)` — internal (bez pushState); ukrywa landing, pokazuje dany ekran auth
+- `hideLanding()` — ukrywa tylko landing (zachowana dla backward compat)
 - `showApp()` — pokazuje app-shell + przywraca `tab-projects.active`
+- `popstate` listener — obsługuje przycisk Wstecz przeglądarki: null/landing → `_showLanding()`, screen-* → `_showScreen()`
 
 ### Sekcje JavaScript (oznaczone banerami `// ══════...══════`)
 
@@ -100,7 +104,7 @@ Otwórz URL
 | SUPABASE | Init klienta, `sbRest()`, helpery `dbGet/dbPost/dbPatch/dbDelete` |
 | STATE | Globalne zmienne stanu: `xliffSegs`, `pptxSegs`, `dictCache`, `tmCache`, `currentOrg`, `currentRole` itd. |
 | LANGUAGES | Tablica `LANGS[]` (25 języków), `PRIMARY` (8 głównych), `langOptionsHTML()` |
-| AUTH | `doLogin`, `doRegister`, `doReset`, `doLogout`, `afterLogin`, `acceptInvitation` |
+| AUTH | `doLogin`, `doRegister`, `doReset`, `doLogout`, `afterLogin`, `acceptInvitation`; walidacja: `setFieldState`, `validateEmail`, `validatePass`, `validatePass2` |
 | ONBOARDING | Tworzenie org via RPC (`create_org_record`, `add_org_admin`), 15 kredytów powitalnych |
 | APP LOAD | `loadApp()`, `switchTab()`, helpery utils (`esc`, `download`, `readFile`, `sleep`, `fmtDate`) |
 | TEAM MANAGEMENT | `loadTeam`, `renderTeamList`, limity kredytów na tłumacza, języki członka |
@@ -187,6 +191,27 @@ const CHUNK=20                       // segmentów na wywołanie API (XLIFF/PPTX
 4. Retry failed — jeden segment = jedno wywołanie
 5. Po zakończeniu: `pushTMBatch` (zapis do TM) + `deductCredits(charsThisBatch, ...)`
 
+### Ekrany auth — layout split-screen
+
+Każdy ekran auth ma strukturę:
+```html
+<div class="auth-screen" id="screen-*">
+  <div class="auth-split-left">   ← ciemny panel: logo, tagline, bullets
+  <div class="auth-split-right">  ← jasny panel: przycisk Wróć + formularz (.auth-box)
+```
+
+**Klasy CSS lewego panelu:** `.auth-left-logo`, `.auth-left-tag` (kolor `#4CDE80`), `.auth-left-bullets`, `.auth-left-bullet` (z `::before` ✓)
+
+**Klasy CSS prawego panelu:** `.auth-back-btn` (position:absolute, top-left), `.auth-box` (max-width:400px, transparent), `.auth-title`, `.auth-sub`
+
+**Walidacja inline:** `.auth-field-msg` + `.show.error/.ok`; klasy na input: `.field-invalid` / `.field-valid`
+
+**Loading state:** `.auth-btn.loading` — opacity + spinner `::after` + `pointer-events:none`
+
+**Responsive:** `@media(max-width:700px)` — `.auth-split-left{display:none}`, `.auth-split-right{width:100%}`
+
+Dark mode: `body.dark .auth-split-left{background:#111}`, `body.dark .auth-split-right{background:#0f0f0f}`, `body.dark .auth-btn{background:#4CDE80;color:#000}`
+
 ### Landing page (CSS prefix `lp-`)
 
 Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplikacji). Dark mode przez `body.dark .lp-*`. Płynne przewijanie: `html { scroll-behavior: smooth }`. Anchory: `#cennik`, `#kontakt`.
@@ -214,6 +239,7 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 - **`PRIMARY` vs `LANGS`** — słownik i TM używają tylko `PRIMARY` (8 języków), dropdowny tłumaczeń mają pełne `LANGS` (25)
 - **`tokens_balance`** — kolumna przechowuje teraz kredyty (nie tokeny API); nie zmieniać nazwy w bazie
 - **Landing vs App tabs** — `showLanding()` czyści `tab-content.active`; `showApp()` przywraca `tab-projects.active`; nie pomijaj tych wywołań
+- **`showLanding()` vs `_showLanding()`** — publiczna wersja robi pushState (dodaje wpis do historii przeglądarki); wewnętrzna `_showLanding()` tylko manipuluje DOM. Użyj `_showLanding()` gdy **nie chcesz** dodawać wpisu do historii (np. w popstate handlerze). Analogicznie `showScreen()` vs `_showScreen()`
 
 ### Przy dodawaniu nowej zakładki w aplikacji
 
