@@ -143,6 +143,20 @@ input:focus,select:focus{border-color:#888}
 body.dark .xliff-info-file{color:#ccc}
 body.dark .xliff-stat-val{color:#fff}
 body.dark .xliff-stat-tm{color:#c084fc}
+.q-cost-summary{display:flex;gap:0;align-items:stretch;border-radius:10px;overflow:hidden;border:1px solid #e8e6e0;margin-bottom:12px}
+.q-cost-block{flex:1;text-align:center;padding:20px 16px}
+.q-cost-block+.q-cost-block{border-left:1px solid #e8e6e0}
+.q-cost-num{font-size:36px;font-weight:700;letter-spacing:-1.5px;line-height:1;color:#1a1a1a}
+.q-cost-lbl{font-size:11px;color:#aaa;margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+.q-tm-note{font-size:12px;color:#38a169;margin-top:4px}
+.q-file-info{display:none;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;background:#f8f7f4;border-radius:8px;font-size:13px}
+.q-file-info svg{flex-shrink:0;color:#888}
+.q-file-name{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.dark .q-cost-summary{border-color:#2a2a2a}
+body.dark .q-cost-block+.q-cost-block{border-color:#2a2a2a}
+body.dark .q-cost-block{background:#1a1a1a}
+body.dark .q-cost-num{color:#fff}
+body.dark .q-file-info{background:#111}
 .status-line{font-size:12px;color:#666;min-height:18px;margin-top:5px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{font-size:11px;font-weight:600;color:#999;text-align:left;padding:7px 10px;border-bottom:1px solid #eee;background:#fafaf8;position:sticky;top:0;z-index:1}
@@ -1379,9 +1393,9 @@ body.dark .lp-contact-email a{color:#5a9eff}
 
 <!-- QUICK -->
 <div class="tab-content" id="tab-quick"><div class="container">
+
+  <!-- Karta 1: Drop zone -->
   <div class="card">
-    <p class="card-title">Szybkie tłumaczenie</p>
-    <p class="card-sub">Wrzuć plik dowolnego obsługiwanego formatu — automatycznie wykryjemy typ i otworzymy odpowiednie narzędzie.</p>
     <div class="drop-zone" id="quick-drop"
          onclick="document.getElementById('quick-file').click()"
          ondragover="dzOver(event,'quick-drop')"
@@ -1394,14 +1408,73 @@ body.dark .lp-contact-email a{color:#5a9eff}
         <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
       </svg>
       <p style="font-weight:600;font-size:14px;margin-top:12px;">Przeciągnij plik tutaj</p>
-      <p style="font-size:12px;color:#aaa;margin-top:4px;">lub kliknij aby wybrać</p>
+      <p style="font-size:12px;color:#aaa;margin-top:4px;">lub kliknij · XLIFF, PPTX, SRT, VTT</p>
     </div>
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-      <span class="badge b-blue">XLIFF / XLF</span>
-      <span class="badge b-orange">PowerPoint (PPTX)</span>
-      <span class="badge b-purple">Napisy SRT / VTT</span>
+    <div id="q-file-info" class="q-file-info">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span id="q-fname" class="q-file-name"></span>
+      <button class="btn btn-sm" onclick="resetQuick()">Zmień plik</button>
     </div>
   </div>
+
+  <!-- Karta 2: Koszt (duże cyfry) -->
+  <div class="card" id="q-cost-card" style="display:none;">
+    <div class="q-cost-summary">
+      <div class="q-cost-block">
+        <div class="q-cost-num" id="q-chars">0</div>
+        <div class="q-cost-lbl">Znaków</div>
+      </div>
+      <div class="q-cost-block">
+        <div class="q-cost-num" id="q-credits">0</div>
+        <div class="q-cost-lbl">Kredytów</div>
+      </div>
+      <div class="q-cost-block">
+        <div class="q-cost-num" id="q-balance">0</div>
+        <div class="q-cost-lbl">Saldo</div>
+      </div>
+    </div>
+    <div id="q-tm-note" class="q-tm-note" style="display:none;"></div>
+  </div>
+
+  <!-- Karta 3: Język + tłumacz -->
+  <div class="card" id="q-lang-card" style="display:none;">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+      <div><label>Język docelowy</label><select id="q-target-lang" style="width:220px;"></select></div>
+      <button class="btn btn-dark hide-viewer" id="q-translate-btn" onclick="startQuickTranslation()">Tłumacz automatycznie</button>
+    </div>
+    <div class="progress-wrap" id="q-pw"><div class="progress-fill" id="q-pf" style="width:0%"></div></div>
+    <p class="status-line" id="q-status"></p>
+  </div>
+
+  <!-- Karta 4: Segmenty -->
+  <div class="card" id="q-segments-card" style="display:none;">
+    <div class="toolbar">
+      <p class="card-title" style="margin:0;"><span id="q-format-label">Segmenty</span> <span class="badge b-yellow" id="q-prog-badge">0/0</span></p>
+      <div class="row">
+        <button class="btn btn-sm hide-viewer" onclick="retranslateQuickEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-dark btn-sm" id="q-export-btn" onclick="exportQuick()">↓ Pobierz</button>
+      </div>
+    </div>
+    <div class="filter-row">
+      <input type="search" id="q-filter" placeholder="Szukaj..." oninput="renderQuickTable()" style="max-width:260px;" />
+      <select id="q-fs" onchange="renderQuickTable()" style="width:150px;">
+        <option value="all">Wszystkie</option>
+        <option value="pending">Oczekujące</option>
+        <option value="done">Przetłumaczone</option>
+        <option value="tm">Z TM</option>
+        <option value="error">Błędy</option>
+      </select>
+    </div>
+    <div class="table-wrap" style="margin-top:6px;">
+      <table><thead id="q-thead"><tr>
+        <th style="width:90px;" id="q-col1">ID</th>
+        <th style="width:38%;">Źródło</th>
+        <th>Tłumaczenie</th>
+        <th style="width:70px;">Status</th>
+      </tr></thead><tbody id="q-tbody"></tbody></table>
+    </div>
+  </div>
+
 </div></div>
 
 <!-- XLIFF -->
@@ -2048,6 +2121,7 @@ const dbDelete=(t,p)=>sbRest('DELETE',t,null,p);
 let currentSession=null, currentUser=null, currentOrg=null, currentRole=null;
 let xliffSegs=[],xliffRawXml='',xliffXmlDoc=null;
 let pptxSegs=[],pptxZip=null,pptxFilename='';
+let quickMode=null;
 let dictCache=[],tmCache=[],histCache=[];
 let tmApiSaved=0;
 const domParser=new DOMParser(),xmlSer=new XMLSerializer();
@@ -2369,6 +2443,7 @@ async function loadApp(){
   document.getElementById('target-lang').innerHTML=langOptionsHTML();
   document.getElementById('pptx-target-lang').innerHTML=langOptionsHTML();
   document.getElementById('sub-target-lang').innerHTML=langOptionsHTML();
+  document.getElementById('q-target-lang').innerHTML=langOptionsHTML();
   buildDictNewRow();buildDictLangFilter();
   // Load data
   try{
@@ -2439,10 +2514,170 @@ function getApiKey(){return(document.getElementById('api-key')?.value||'').trim(
 async function loadQuickFile(file){
   if(!file)return;
   const ext=file.name.split('.').pop().toLowerCase();
-  if(['xliff','xlf','xml'].includes(ext)){switchTab('xliff');await loadXliff(file);}
-  else if(ext==='pptx'){switchTab('pptx');await loadPptx(file);}
-  else if(['srt','vtt'].includes(ext)){switchTab('subtitles');await loadSubtitles(file);}
-  else{alert('Nieobsługiwany format: .'+ext+'\nObsługiwane: .xliff, .pptx, .srt, .vtt');}
+  document.getElementById('q-target-lang').innerHTML=langOptionsHTML();
+  if(['xliff','xlf','xml'].includes(ext)){quickMode='xliff';await loadXliff(file);}
+  else if(ext==='pptx'){quickMode='pptx';await loadPptx(file);}
+  else if(['srt','vtt'].includes(ext)){quickMode=ext;await loadSubtitles(file);}
+  else{alert('Nieobsługiwany format: .'+ext);return;}
+  showQuickLoaded(file.name);
+  renderQuickTable();
+  renderQuickCost();
+}
+function showQuickLoaded(filename){
+  document.getElementById('quick-drop').style.display='none';
+  const fi=document.getElementById('q-file-info');fi.style.display='flex';
+  document.getElementById('q-fname').textContent=filename;
+  document.getElementById('q-cost-card').style.display='block';
+  document.getElementById('q-lang-card').style.display='block';
+  document.getElementById('q-segments-card').style.display='block';
+  const fmtLabels={xliff:'XLIFF',pptx:'PowerPoint',srt:'Napisy SRT',vtt:'Napisy VTT'};
+  const expLabels={xliff:'↓ XLIFF',pptx:'↓ PPTX',srt:'↓ SRT',vtt:'↓ VTT'};
+  const col1Labels={xliff:'ID',pptx:'Slajd',srt:'Nr / Czas',vtt:'Nr / Czas'};
+  document.getElementById('q-format-label').textContent=fmtLabels[quickMode]||'Segmenty';
+  document.getElementById('q-export-btn').textContent=expLabels[quickMode]||'↓ Pobierz';
+  document.getElementById('q-col1').textContent=col1Labels[quickMode]||'ID';
+}
+function resetQuick(){
+  quickMode=null;
+  document.getElementById('quick-drop').style.display='block';
+  document.getElementById('q-file-info').style.display='none';
+  document.getElementById('q-cost-card').style.display='none';
+  document.getElementById('q-lang-card').style.display='none';
+  document.getElementById('q-segments-card').style.display='none';
+  document.getElementById('q-pw').style.display='none';
+  document.getElementById('q-pf').style.width='0%';
+  document.getElementById('q-status').textContent='';
+  document.getElementById('q-tbody').innerHTML='';
+  document.getElementById('quick-file').value='';
+}
+function renderQuickTable(){
+  const tbody=document.getElementById('q-tbody');tbody.innerHTML='';
+  if(!quickMode)return;
+  const ft=(document.getElementById('q-filter')?.value||'').toLowerCase();
+  const fs=document.getElementById('q-fs')?.value||'all';
+  const canEdit=currentRole!=='viewer';
+  if(quickMode==='xliff'){
+    xliffSegs.forEach((seg,i)=>{
+      const src=xliffSrc(seg),tgt=xliffTgt(seg);
+      if(ft&&!src.toLowerCase().includes(ft)&&!tgt.toLowerCase().includes(ft))return;
+      if(fs!=='all'){if(fs==='tm'&&!seg.fromTM)return;if(fs!=='tm'&&seg.status!==fs)return;}
+      const sc=seg.status==='done'?'b-green':seg.status==='error'?'b-red':'b-yellow';
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="id-cell">${esc(seg.id)}</td><td class="src-cell">${esc(src).replace(/\n/g,'<br>')}</td><td>${seg.fromTM?'<div class="tm-hint">↩ z TM</div>':''}<textarea id="qta-${i}" rows="2" ${canEdit?`onchange="quickEdit(${i},this.value)"`:'readonly'}>${esc(tgt)}</textarea></td><td><span class="badge ${sc}" id="qbadge-${i}">${seg.status==='done'?'OK':seg.status==='error'?'Błąd':'Oczekuje'}</span></td>`;
+      tbody.appendChild(tr);
+    });
+  } else if(quickMode==='pptx'){
+    pptxSegs.forEach((seg,i)=>{
+      if(ft&&!seg.source.toLowerCase().includes(ft)&&!seg.target.toLowerCase().includes(ft))return;
+      if(fs!=='all'){if(fs==='tm'&&!seg.fromTM)return;if(fs!=='tm'&&seg.status!==fs)return;}
+      const sc=seg.status==='done'?'b-green':seg.status==='error'?'b-red':'b-yellow';
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="id-cell">Slajd ${seg.slideNum}</td><td class="src-cell">${esc(seg.source)}</td><td>${seg.fromTM?'<div class="tm-hint">↩ z TM</div>':''}<textarea id="qta-${i}" rows="2" ${canEdit?`onchange="quickEditPptx(${i},this.value)"`:'readonly'}>${esc(seg.target)}</textarea></td><td><span class="badge ${sc}" id="qbadge-${i}">${seg.status==='done'?'OK':seg.status==='error'?'Błąd':'Oczekuje'}</span></td>`;
+      tbody.appendChild(tr);
+    });
+  } else {
+    subtitleSegs.forEach((seg,i)=>{
+      if(fs==='pending'&&seg.status==='done')return;
+      if(fs==='done'&&seg.status!=='done')return;
+      if(fs==='tm'&&!seg.fromTM)return;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td class="id-cell">${seg.num}<br><span style="font-size:10px;color:#aaa">${esc(seg.time).replace('-->','→')}</span></td><td class="src-cell">${seg.fromTM?'<div class="tm-hint">↩ z TM</div>':''}${esc(seg.source).replace(/\n/g,'<br>')}</td><td><textarea id="qta-${i}" rows="${Math.max(2,seg.source.split('\n').length)}" ${canEdit?`onchange="quickEditSub(${i},this.value)"`:'readonly'}>${esc(seg.target)}</textarea></td><td><span class="badge ${seg.status==='done'?'b-green':'b-yellow'}" id="qbadge-${i}">${seg.status==='done'?'OK':'Oczekuje'}</span></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+  updateQuickProgress();
+}
+function renderQuickCost(){
+  if(!quickMode)return;
+  let totalChars=0,tmChars=0;
+  if(quickMode==='xliff'){
+    xliffSegs.forEach(s=>{
+      if(s.type==='plain'){totalChars+=s.source.length;if(s.fromTM||s.status==='done')tmChars+=s.source.length;}
+      else{s.textNodes.forEach((n,i)=>{totalChars+=n.text.length;if(s.fromTM||s.targets[i]?.text?.trim())tmChars+=n.text.length;});}
+    });
+  } else if(quickMode==='pptx'){
+    pptxSegs.forEach(s=>{totalChars+=s.source.length;if(s.fromTM||s.status==='done')tmChars+=s.source.length;});
+  } else {
+    subtitleSegs.forEach(s=>{totalChars+=s.source.length;if(s.fromTM)tmChars+=s.source.length;});
+  }
+  const toTranslate=Math.max(0,totalChars-tmChars);
+  const cred=estimateCredits(toTranslate);
+  const bal=currentOrg?.tokens_balance||0;
+  const ok=bal>=cred;
+  const credEl=document.getElementById('q-credits');
+  const balEl=document.getElementById('q-balance');
+  document.getElementById('q-chars').textContent=toTranslate.toLocaleString('pl-PL');
+  credEl.textContent=cred;credEl.style.color=ok?'#4CDE80':'#e53e3e';
+  balEl.textContent=formatTokens(bal);balEl.style.color=ok?'#4CDE80':'#e53e3e';
+  const tn=document.getElementById('q-tm-note');
+  if(tmChars>0){tn.style.display='block';tn.textContent=`✓ ${tmChars.toLocaleString('pl-PL')} znaków bezpłatnie z pamięci TM — oszczędność ${estimateCredits(tmChars)} kredytów`;}
+  else tn.style.display='none';
+}
+async function startQuickTranslation(){
+  const apiKey=getApiKey();
+  if(!apiKey){alert('Wpisz klucz API w zakładce Ustawienia.');return;}
+  if(!quickMode)return;
+  const lang=document.getElementById('q-target-lang').value;
+  const selMap={xliff:'target-lang',pptx:'pptx-target-lang',srt:'sub-target-lang',vtt:'sub-target-lang'};
+  const sel=document.getElementById(selMap[quickMode]);if(sel)sel.value=lang;
+  const btn=document.getElementById('q-translate-btn');
+  const pw=document.getElementById('q-pw');
+  const pf=document.getElementById('q-pf');
+  const statusEl=document.getElementById('q-status');
+  btn.disabled=true;pw.style.display='block';pf.style.width='0%';
+  const srcPfId={xliff:'xliff-pf',pptx:'pptx-pf',srt:'sub-pf',vtt:'sub-pf'}[quickMode];
+  const srcStId={xliff:'xliff-status',pptx:'pptx-status',srt:'sub-status',vtt:'sub-status'}[quickMode];
+  const poll=setInterval(()=>{
+    const sp=document.getElementById(srcPfId);if(sp)pf.style.width=sp.style.width;
+    const ss=document.getElementById(srcStId);if(ss)statusEl.textContent=ss.textContent;
+  },200);
+  try{
+    if(quickMode==='xliff')await startXliffTranslation();
+    else if(quickMode==='pptx')await startPptxTranslation();
+    else await startSubtitleTranslation();
+  }finally{
+    clearInterval(poll);
+    btn.disabled=false;
+    pf.style.width='100%';
+    renderQuickTable();
+    renderQuickCost();
+  }
+}
+function exportQuick(){
+  if(quickMode==='xliff')exportXliff();
+  else if(quickMode==='pptx')exportPptx();
+  else exportSubtitles();
+}
+function retranslateQuickEmpty(){
+  if(quickMode==='xliff')xliffRetranslateEmpty();
+  else if(quickMode==='pptx')pptxRetranslateEmpty();
+}
+function quickEdit(i,val){
+  const seg=xliffSegs[i];if(!seg)return;
+  if(seg.type==='plain'){seg.target=val;seg.status=val.trim()?'done':'pending';}
+  const b=document.getElementById('qbadge-'+i);
+  if(b){b.className='badge '+(seg.status==='done'?'b-green':'b-yellow');b.textContent=seg.status==='done'?'OK':'Oczekuje';}
+  updateQuickProgress();renderQuickCost();
+}
+function quickEditPptx(i,val){
+  const seg=pptxSegs[i];if(!seg)return;
+  seg.target=val;seg.status=val.trim()?'done':'pending';
+  const b=document.getElementById('qbadge-'+i);
+  if(b){b.className='badge '+(seg.status==='done'?'b-green':'b-yellow');b.textContent=seg.status==='done'?'OK':'Oczekuje';}
+  updateQuickProgress();renderQuickCost();
+}
+function quickEditSub(i,val){
+  const seg=subtitleSegs[i];if(!seg)return;
+  seg.target=val;seg.status=val.trim()?'done':'pending';
+  const b=document.getElementById('qbadge-'+i);
+  if(b){b.className='badge '+(seg.status==='done'?'b-green':'b-yellow');b.textContent=seg.status==='done'?'OK':'Oczekuje';}
+  updateQuickProgress();renderQuickCost();
+}
+function updateQuickProgress(){
+  const segs=quickMode==='xliff'?xliffSegs:quickMode==='pptx'?pptxSegs:subtitleSegs;
+  const done=segs.filter(s=>s.status==='done').length;
+  const b=document.getElementById('q-prog-badge');
+  if(b){b.textContent=`${done}/${segs.length}`;b.className='badge '+(done===segs.length?'b-green':'b-yellow');}
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL')+' '+d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});}
