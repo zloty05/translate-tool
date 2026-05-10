@@ -1420,7 +1420,8 @@ body.dark .lp-contact-email a{color:#5a9eff}
       </div>
       <!-- User menu (opens upward) -->
       <div class="user-menu" id="user-menu">
-        <div class="user-menu-item" onclick="switchTab('team')">Zarządzaj zespołem</div>
+        <div class="user-menu-item" onclick="openAccountSettings()">Moje konto</div>
+        <div class="user-menu-item" onclick="switchTab('team');toggleUserMenu()">Zarządzaj zespołem</div>
         <div class="user-menu-sep"></div>
         <div class="user-menu-item danger" onclick="doLogout()">↩ Wyloguj się</div>
       </div>
@@ -1430,6 +1431,49 @@ body.dark .lp-contact-email a{color:#5a9eff}
 
 <!-- SETTINGS -->
 <div class="tab-content" id="tab-settings"><div class="container">
+
+  <!-- Moje konto -->
+  <div class="card" id="account-card">
+    <p class="card-title">Moje konto</p>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+      <div class="avatar" id="account-avatar" style="width:48px;height:48px;font-size:20px;font-weight:700;background:#2a2a2a;flex-shrink:0;">?</div>
+      <div>
+        <div style="font-size:15px;font-weight:600;color:#1a1a1a;" id="account-name-display">—</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px;" id="account-email-display">—</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <label>Imię i nazwisko</label>
+      <div class="input-row" style="margin-top:4px;">
+        <input type="text" id="account-name" placeholder="Jan Kowalski" />
+        <button class="btn btn-dark btn-sm" onclick="saveAccountName(event)">Zapisz</button>
+      </div>
+      <p id="account-name-msg" style="font-size:12px;margin-top:6px;display:none;"></p>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <label>Zmiana hasła</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:4px;align-items:start;">
+        <input type="password" id="account-pass1" placeholder="Nowe hasło (min. 8 znaków)" />
+        <input type="password" id="account-pass2" placeholder="Powtórz hasło" />
+        <button class="btn btn-dark btn-sm" onclick="changePassword(event)">Zmień hasło</button>
+      </div>
+      <p id="account-pass-msg" style="font-size:12px;margin-top:6px;display:none;"></p>
+    </div>
+
+    <div style="border-top:1px solid #f0ede8;padding-top:20px;">
+      <p style="font-size:13px;font-weight:600;color:#b32424;margin-bottom:6px;">Strefa niebezpieczna</p>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">Usunięcie konta jest nieodwracalne. Utracisz dostęp do wszystkich projektów i danych organizacji.</p>
+      <div class="input-row">
+        <input type="email" id="account-delete-confirm" placeholder="Wpisz swój email aby potwierdzić" />
+        <button class="btn btn-red btn-sm" onclick="deleteAccount(event)">Usuń konto</button>
+      </div>
+      <p id="account-delete-msg" style="font-size:12px;margin-top:6px;display:none;"></p>
+    </div>
+  </div>
+
+  <!-- Klucz API -->
   <div class="card">
     <p class="card-title">Klucz API Anthropic</p>
     <p class="card-sub">Używany do tłumaczeń XLIFF, PPTX i Napisów. Klucz działa bezpośrednio z przeglądarki i jest zapisywany lokalnie w tej przeglądarce.</p>
@@ -1443,6 +1487,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
       · Klucz nie jest wysyłany na serwer Anthropic przez nas — działa w Twojej przeglądarce.
     </p>
   </div>
+
 </div></div>
 
 <!-- QUICK -->
@@ -2365,6 +2410,68 @@ async function doLogout(){
   dictCache=[];tmCache=[];histCache=[];
   showScreen('screen-login');
 }
+function showAccountMsg(id,msg,type){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent=msg;el.style.display='block';
+  el.style.color=type==='ok'?'#16a34a':'#b32424';
+  if(type==='ok')setTimeout(()=>{el.style.display='none';},3000);
+}
+function openAccountSettings(){
+  switchTab('settings');
+  toggleUserMenu();
+  const name=currentUser?.user_metadata?.full_name||'';
+  const email=currentUser?.email||'';
+  document.getElementById('account-name').value=name;
+  document.getElementById('account-name-display').textContent=name||email;
+  document.getElementById('account-email-display').textContent=email;
+  document.getElementById('account-avatar').textContent=(name||email).charAt(0).toUpperCase();
+}
+async function saveAccountName(e){
+  const name=document.getElementById('account-name').value.trim();
+  if(!name){showAccountMsg('account-name-msg','Wpisz imię i nazwisko.','error');return;}
+  const btn=e.target;btn.disabled=true;btn.textContent='Zapisywanie...';
+  try{
+    const{error}=await supa.auth.updateUser({data:{full_name:name}});
+    if(error)throw error;
+    if(currentUser.user_metadata)currentUser.user_metadata.full_name=name;
+    document.getElementById('menu-name').textContent=name;
+    document.getElementById('hdr-avatar').textContent=name.charAt(0).toUpperCase();
+    document.getElementById('account-name-display').textContent=name;
+    document.getElementById('account-avatar').textContent=name.charAt(0).toUpperCase();
+    showAccountMsg('account-name-msg','Zapisano.','ok');
+  }catch(err){showAccountMsg('account-name-msg',err.message||'Błąd zapisu.','error');}
+  finally{btn.disabled=false;btn.textContent='Zapisz';}
+}
+async function changePassword(e){
+  const p1=document.getElementById('account-pass1').value;
+  const p2=document.getElementById('account-pass2').value;
+  if(p1.length<8){showAccountMsg('account-pass-msg','Hasło musi mieć min. 8 znaków.','error');return;}
+  if(p1!==p2){showAccountMsg('account-pass-msg','Hasła nie są identyczne.','error');return;}
+  const btn=e.target;btn.disabled=true;btn.textContent='Zmienianie...';
+  try{
+    const{error}=await supa.auth.updateUser({password:p1});
+    if(error)throw error;
+    document.getElementById('account-pass1').value='';
+    document.getElementById('account-pass2').value='';
+    showAccountMsg('account-pass-msg','Hasło zmienione pomyślnie.','ok');
+  }catch(err){showAccountMsg('account-pass-msg',err.message||'Błąd zmiany hasła.','error');}
+  finally{btn.disabled=false;btn.textContent='Zmień hasło';}
+}
+async function deleteAccount(e){
+  const email=document.getElementById('account-delete-confirm').value.trim();
+  if(email!==currentUser?.email){showAccountMsg('account-delete-msg','Email nie pasuje do konta.','error');return;}
+  if(!confirm('Czy na pewno chcesz usunąć konto? Tej operacji nie można cofnąć.'))return;
+  const btn=e.target;btn.disabled=true;btn.textContent='Usuwanie...';
+  try{
+    const{error}=await supa.rpc('delete_user');
+    if(error)throw error;
+    await supa.auth.signOut();
+    _showLanding();
+  }catch(err){
+    showAccountMsg('account-delete-msg',err.message||'Błąd usuwania konta. Upewnij się, że RPC delete_user istnieje w Supabase.','error');
+    btn.disabled=false;btn.textContent='Usuń konto';
+  }
+}
 
 async function afterLogin(){
   try{
@@ -2522,6 +2629,13 @@ async function loadApp(){
   // Restore API key from localStorage
   const savedKey=localStorage.getItem('anthropicKey');
   if(savedKey){const el=document.getElementById('api-key');if(el)el.value=savedKey;}
+  // Prefill account form
+  const accName=currentUser?.user_metadata?.full_name||'';
+  const accEmail=currentUser?.email||'';
+  const accEl=document.getElementById('account-name');if(accEl)accEl.value=accName;
+  const accND=document.getElementById('account-name-display');if(accND)accND.textContent=accName||accEmail;
+  const accED=document.getElementById('account-email-display');if(accED)accED.textContent=accEmail;
+  const accAv=document.getElementById('account-avatar');if(accAv)accAv.textContent=(accName||accEmail).charAt(0).toUpperCase();
 }
 
 async function loadOrgBalance(){
