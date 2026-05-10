@@ -2520,9 +2520,10 @@ async function loadQuickFile(file){
   if(!file)return;
   const ext=file.name.split('.').pop().toLowerCase();
   document.getElementById('q-target-lang').innerHTML=langOptionsHTML();
-  if(['xliff','xlf','xml'].includes(ext)){quickMode='xliff';await loadXliff(file);}
-  else if(ext==='pptx'){quickMode='pptx';await loadPptx(file);}
-  else if(['srt','vtt'].includes(ext)){quickMode=ext;await loadSubtitles(file);}
+  const lang=document.getElementById('q-target-lang').value;
+  if(['xliff','xlf','xml'].includes(ext)){quickMode='xliff';document.getElementById('target-lang').value=lang;await loadXliff(file);}
+  else if(ext==='pptx'){quickMode='pptx';document.getElementById('pptx-target-lang').value=lang;await loadPptx(file);}
+  else if(['srt','vtt'].includes(ext)){quickMode=ext;document.getElementById('sub-target-lang').value=lang;await loadSubtitles(file);}
   else{alert('Nieobsługiwany format: .'+ext);return;}
   showQuickLoaded(file.name);
   renderQuickTable();
