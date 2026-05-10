@@ -132,7 +132,17 @@ input:focus,select:focus{border-color:#888}
 .btn-red:hover{background:#fad4d4}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .progress-wrap{margin:10px 0 4px;height:5px;background:#eee;border-radius:3px;overflow:hidden;display:none}
-.progress-fill{height:100%;background:#2a8a4a;border-radius:3px;transition:width .3s}
+.progress-fill{height:100%;background:#4CDE80;border-radius:3px;transition:width .3s}
+.xliff-info{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.xliff-info-file{display:flex;align-items:center;gap:8px;font-size:13px;color:#1a1a1a}
+.xliff-info-stats{display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap}
+.xliff-stat-val{font-weight:600;color:#1a1a1a}
+.xliff-stat-lbl{color:#aaa;font-size:12px}
+.xliff-stat-sep{color:#ddd}
+.xliff-stat-tm{color:#6b21a8;font-weight:500;font-size:12px}
+body.dark .xliff-info-file{color:#ccc}
+body.dark .xliff-stat-val{color:#fff}
+body.dark .xliff-stat-tm{color:#c084fc}
 .status-line{font-size:12px;color:#666;min-height:18px;margin-top:5px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{font-size:11px;font-weight:600;color:#999;text-align:left;padding:7px 10px;border-bottom:1px solid #eee;background:#fafaf8;position:sticky;top:0;z-index:1}
@@ -1253,6 +1263,10 @@ body.dark .lp-contact-email a{color:#5a9eff}
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       Projekty <span class="sidebar-badge" id="proj-count">0</span>
     </div>
+    <div class="sidebar-item hide-viewer" data-tab="quick" onclick="switchTab('quick')">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Szybkie tłumaczenie
+    </div>
     <div class="sidebar-item hide-viewer" data-tab="xliff" onclick="switchTab('xliff')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       XLIFF
@@ -1287,6 +1301,11 @@ body.dark .lp-contact-email a{color:#5a9eff}
     <div class="sidebar-item" data-tab="shop" onclick="switchTab('shop')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Kredyty
+    </div>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-item" data-tab="settings" onclick="switchTab('settings')">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Ustawienia
     </div>
   </nav>
 
@@ -1341,47 +1360,91 @@ body.dark .lp-contact-email a{color:#5a9eff}
   </div>
 </div>
 
-<!-- XLIFF -->
-<div class="tab-content" id="tab-xliff"><div class="container">
+<!-- SETTINGS -->
+<div class="tab-content" id="tab-settings"><div class="container">
   <div class="card">
     <p class="card-title">Klucz API Anthropic</p>
+    <p class="card-sub">Używany do tłumaczeń XLIFF, PPTX i Napisów. Klucz działa bezpośrednio z przeglądarki i jest zapisywany lokalnie w tej przeglądarce.</p>
     <div class="input-row">
-      <input type="password" id="api-key" placeholder="sk-ant-api03-..." />
+      <input type="password" id="api-key" placeholder="sk-ant-api03-..."
+             oninput="localStorage.setItem('anthropicKey',this.value)" />
       <button class="btn btn-sm" onclick="toggleKey('api-key',this)">Pokaż</button>
     </div>
-    <p style="font-size:11px;color:#aaa;margin-top:6px;"><a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a> · Klucz nie jest zapisywany.</p>
+    <p style="font-size:11px;color:#aaa;margin-top:6px;">
+      <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a>
+      · Klucz nie jest wysyłany na serwer Anthropic przez nas — działa w Twojej przeglądarce.
+    </p>
   </div>
+</div></div>
+
+<!-- QUICK -->
+<div class="tab-content" id="tab-quick"><div class="container">
+  <div class="card">
+    <p class="card-title">Szybkie tłumaczenie</p>
+    <p class="card-sub">Wrzuć plik dowolnego obsługiwanego formatu — automatycznie wykryjemy typ i otworzymy odpowiednie narzędzie.</p>
+    <div class="drop-zone" id="quick-drop"
+         onclick="document.getElementById('quick-file').click()"
+         ondragover="dzOver(event,'quick-drop')"
+         ondragleave="dzLeave('quick-drop')"
+         ondrop="dzDrop(event,'quick-drop',loadQuickFile)">
+      <input type="file" id="quick-file" accept=".xliff,.xlf,.xml,.pptx,.srt,.vtt"
+             onchange="loadQuickFile(event.target.files[0])" />
+      <svg width="36" height="36" fill="none" stroke="#ccc" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <p style="font-weight:600;font-size:14px;margin-top:12px;">Przeciągnij plik tutaj</p>
+      <p style="font-size:12px;color:#aaa;margin-top:4px;">lub kliknij aby wybrać</p>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <span class="badge b-blue">XLIFF / XLF</span>
+      <span class="badge b-orange">PowerPoint (PPTX)</span>
+      <span class="badge b-purple">Napisy SRT / VTT</span>
+    </div>
+  </div>
+</div></div>
+
+<!-- XLIFF -->
+<div class="tab-content" id="tab-xliff"><div class="container">
   <div class="card">
     <p class="card-title">Plik XLIFF (Articulate Storyline)</p>
     <div class="drop-zone" id="xliff-drop" onclick="document.getElementById('xliff-file').click()" ondragover="dzOver(event,'xliff-drop')" ondragleave="dzLeave('xliff-drop')" ondrop="dzDrop(event,'xliff-drop',loadXliff)">
       <input type="file" id="xliff-file" accept=".xliff,.xlf,.xml" onchange="loadXliff(event.target.files[0])" />
-      <div style="font-size:22px;color:#ccc;margin-bottom:6px;">↑</div>
-      <p style="font-weight:600;font-size:14px;">Przeciągnij plik XLIFF tutaj</p>
+      <svg width="32" height="32" fill="none" stroke="#ccc" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <p style="font-weight:600;font-size:14px;margin-top:10px;">Przeciągnij plik XLIFF tutaj</p>
       <p style="font-size:12px;color:#aaa;margin-top:3px;">lub kliknij · .xliff .xlf .xml</p>
     </div>
-    <div class="badges" id="xliff-badges" style="display:none;">
-      <span class="badge b-blue" id="xliff-fname"></span>
-      <span class="badge b-green" id="xliff-segs"></span>
-      <span class="badge b-blue" id="xliff-frags"></span>
-      <span class="badge b-purple" id="xliff-tm-hits" style="display:none;"></span>
+    <div class="xliff-info" id="xliff-badges" style="display:none;">
+      <div class="xliff-info-file">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span id="xliff-fname" style="font-weight:600;font-size:13px;"></span>
+      </div>
+      <div class="xliff-info-stats">
+        <span id="xliff-chars" class="xliff-stat-val">0</span><span class="xliff-stat-lbl">znaków</span>
+        <span class="xliff-stat-sep">·</span>
+        <span id="xliff-segs" class="xliff-stat-val">0</span><span class="xliff-stat-lbl">segmentów</span>
+        <span class="xliff-stat-sep" id="xliff-tm-sep" style="display:none;">·</span>
+        <span id="xliff-tm-hits" class="xliff-stat-tm" style="display:none;"></span>
+      </div>
     </div>
   </div>
-  <div class="card" id="lang-card">
-    <div class="row">
+  <div class="card" id="lang-card" style="display:none;">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
       <div><label>Język docelowy</label><select id="target-lang" style="width:220px;" onchange="xliffLangChange()"></select></div>
-      <div style="margin-top:19px;"><button class="btn btn-dark hide-viewer" onclick="startXliffTranslation()">✓ Tłumacz automatycznie</button></div>
+      <button class="btn btn-dark hide-viewer" onclick="startXliffTranslation()">Tłumacz automatycznie</button>
     </div>
     <div class="cost-box" id="xliff-cost-box"><div class="cost-tm-savings" id="xliff-cost-tm"></div><div class="cost-grid" id="xliff-cost-grid"></div><div class="cost-note" id="xliff-cost-note"></div></div>
     <div class="progress-wrap" id="xliff-pw"><div class="progress-fill" id="xliff-pf" style="width:0%"></div></div>
     <p class="status-line" id="xliff-status"></p>
   </div>
-  <div class="card" id="segments-card">
+  <div class="card" id="segments-card" style="display:none;">
     <div class="toolbar">
-      <p class="card-title" style="margin:0;">Segmenty</p>
+      <p class="card-title" style="margin:0;">Segmenty <span class="badge b-yellow" id="xliff-prog-badge">0/0</span></p>
       <div class="row">
-        <span class="badge b-yellow" id="xliff-prog-badge">0/0</span>
         <button class="btn btn-sm hide-viewer" onclick="xliffRetranslateEmpty()">Przetłumacz puste</button>
-        <button class="btn btn-sm hide-viewer" onclick="showVerifySummary('xliff')" title="Weryfikuj zgodność ze słownikiem">📖 Weryfikuj</button>
         <button class="btn btn-sm" onclick="xliffExportExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('xliff-xl-imp').click()">↑ Excel</button>
         <input type="file" id="xliff-xl-imp" accept=".xlsx" style="display:none;" onchange="xliffImportExcel(event)" />
@@ -1397,7 +1460,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
       </select>
     </div>
     <div class="table-wrap" style="margin-top:6px;">
-      <table><thead><tr><th style="width:80px;">ID</th><th style="width:34%;">Źródło (PL)</th><th>Tłumaczenie</th><th style="width:70px;">Status</th></tr></thead>
+      <table><thead><tr><th style="width:80px;">ID</th><th style="width:34%;">Źródło</th><th>Tłumaczenie</th><th style="width:70px;">Status</th></tr></thead>
       <tbody id="xliff-tbody"></tbody></table>
     </div>
     <div class="row" style="margin-top:12px;">
@@ -1409,14 +1472,6 @@ body.dark .lp-contact-email a{color:#5a9eff}
 
 <!-- PPTX -->
 <div class="tab-content" id="tab-pptx"><div class="container">
-  <div class="card">
-    <p class="card-title">Klucz API Anthropic</p>
-    <div class="input-row">
-      <input type="password" id="pptx-api-key" placeholder="sk-ant-api03-..." />
-      <button class="btn btn-sm" onclick="toggleKey('pptx-api-key',this)">Pokaż</button>
-    </div>
-    <p style="font-size:11px;color:#aaa;margin-top:6px;"><a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a></p>
-  </div>
   <div class="card">
     <p class="card-title">Plik PowerPoint</p>
     <p class="card-sub">Tekst ze wszystkich slajdów i tabel zostanie przetłumaczony z zachowaniem formatowania.</p>
@@ -1757,7 +1812,6 @@ body.dark .lp-contact-email a{color:#5a9eff}
         <button class="btn btn-sm hide-viewer" onclick="applyTMToProject()">🧠 Z TM</button>
         <button class="btn btn-sm hide-viewer" onclick="translateEmptyAI()">✦ Przetłumacz puste</button>
         <button class="btn btn-sm hide-viewer" id="editor-ai-btn" onclick="showAISummary()">✦ Tłumacz wszystko</button>
-        <button class="btn btn-sm hide-viewer" onclick="showVerifySummary('project')" title="Weryfikuj zgodność ze słownikiem">📖 Weryfikuj</button>
         <button class="btn btn-sm" onclick="exportProjectExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
         <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
@@ -2329,6 +2383,9 @@ async function loadApp(){
   await loadProjects();
   // Load notifications for admins
   if(currentRole==='admin') loadNotifications();
+  // Restore API key from localStorage
+  const savedKey=localStorage.getItem('anthropicKey');
+  if(savedKey){const el=document.getElementById('api-key');if(el)el.value=savedKey;}
 }
 
 async function loadOrgBalance(){
@@ -2378,7 +2435,15 @@ function dzLeave(id){document.getElementById(id).classList.remove('drag');}
 function dzDrop(e,id,fn){e.preventDefault();document.getElementById(id).classList.remove('drag');const f=e.dataTransfer.files[0];if(f)fn(f);}
 function download(c,fn,m){const b=new Blob([c],{type:m}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);}
 function readFile(file,mode='text'){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;mode==='array'?r.readAsArrayBuffer(file):r.readAsText(file,'UTF-8');});}
-function getApiKey(){return(document.getElementById('api-key').value||document.getElementById('pptx-api-key').value).trim();}
+function getApiKey(){return(document.getElementById('api-key')?.value||'').trim();}
+async function loadQuickFile(file){
+  if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(['xliff','xlf','xml'].includes(ext)){switchTab('xliff');await loadXliff(file);}
+  else if(ext==='pptx'){switchTab('pptx');await loadPptx(file);}
+  else if(['srt','vtt'].includes(ext)){switchTab('subtitles');await loadSubtitles(file);}
+  else{alert('Nieobsługiwany format: .'+ext+'\nObsługiwane: .xliff, .pptx, .srt, .vtt');}
+}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL')+' '+d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});}
 function fmtPLN(v){return Number(v).toFixed(2).replace('.',',');}
@@ -3068,12 +3133,15 @@ async function loadXliff(file){
     else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:(g.textContent||'').replace(/^[ \t]+|[ \t]+$/g,'')})).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
   });
   const tmHits=await applyTMToSegsAsync(xliffSegs,document.getElementById('target-lang').value);
-  const fc=xliffSegs.reduce((a,s)=>a+(s.type==='rich'?s.textNodes.length:1),0);
+  const totalChars=xliffSegs.reduce((a,s)=>s.type==='plain'?a+s.source.length:a+s.textNodes.reduce((b,n)=>b+n.text.length,0),0);
   document.getElementById('xliff-badges').style.display='flex';
   document.getElementById('xliff-fname').textContent=file.name;
-  document.getElementById('xliff-segs').textContent=xliffSegs.length+' segmentów';
-  document.getElementById('xliff-frags').textContent=fc+' fragmentów';
-  const th=document.getElementById('xliff-tm-hits');if(tmHits>0){th.style.display='';th.textContent=tmHits+' z TM';}else th.style.display='none';
+  document.getElementById('xliff-chars').textContent=totalChars.toLocaleString('pl-PL');
+  document.getElementById('xliff-segs').textContent=xliffSegs.length;
+  const tmSep=document.getElementById('xliff-tm-sep');
+  const th=document.getElementById('xliff-tm-hits');
+  if(tmHits>0){th.style.display='';th.textContent=tmHits+' z TM';if(tmSep)tmSep.style.display='';}
+  else{th.style.display='none';if(tmSep)tmSep.style.display='none';}
   document.getElementById('lang-card').style.display='block';document.getElementById('segments-card').style.display='block';
   renderXliffTable();updateXliffProgress();updateXliffCost();
 }
