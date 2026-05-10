@@ -425,13 +425,13 @@ body.dark .seg-src{color:#aaa}
 body.dark .editor-header{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .editor-header-top{border-color:#2a2a2a}
 body.dark .editor-header-tabs{background:#111;border-color:#2a2a2a}
+body.dark .editor-header-actions{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .editor-lang-tab{color:#555}
 body.dark .editor-lang-tab:hover{color:#aaa}
 body.dark .editor-lang-tab.active{color:#fff;border-bottom-color:#4CDE80}
 body.dark .editor-lang-tab.approved{color:#4ade80}
 body.dark .editor-tab-prog{background:rgba(255,255,255,.08);color:#555}
 body.dark .editor-lang-tab.active .editor-tab-prog{background:rgba(76,222,128,.15);color:#4ade80}
-body.dark .editor-tab-actions{border-color:#2a2a2a}
 body.dark #autosave-indicator{color:#666}
 body.dark .editor-progress-wrap{background:#2a2a2a}
 body.dark .progress-fill{background:#4ade80}
@@ -639,19 +639,19 @@ body.dark .dash-metric-value{color:#fff;}
 /* PROJECT EDITOR */
 .editor-header{background:#fff;border-bottom:1px solid #e8e6e0;flex-shrink:0}
 .editor-header-top{padding:12px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f0ede8}
-.editor-header-tabs{padding:0 24px;display:flex;align-items:center;gap:0;border-bottom:1px solid #e8e6e0;background:#fafaf8}
+.editor-header-tabs{padding:0 24px;display:flex;align-items:center;border-bottom:1px solid #e8e6e0;background:#fafaf8}
+.editor-header-actions{padding:8px 24px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #e8e6e0;flex-wrap:wrap;background:#fff}
 .editor-back{cursor:pointer;font-size:13px;color:#888;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
 .editor-back:hover{color:#1a1a1a}
 .editor-title{font-size:15px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.editor-lang-tabs{display:flex;gap:0;flex:1;overflow-x:auto}
-.editor-lang-tab{padding:10px 18px;font-size:13px;font-weight:500;cursor:pointer;color:#888;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0}
+.editor-lang-tabs{display:flex;gap:0;width:100%;overflow-x:auto}
+.editor-lang-tab{padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;color:#888;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0}
 .editor-lang-tab:hover{color:#444}
 .editor-lang-tab.active{color:#1a1a1a;border-bottom-color:#4CDE80;font-weight:600}
 .editor-lang-tab.approved{color:#16a34a}
 .editor-lang-tab.active.approved{border-bottom-color:#4CDE80}
 .editor-tab-prog{font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(0,0,0,.07);color:#aaa;font-weight:500}
 .editor-lang-tab.active .editor-tab-prog{background:rgba(76,222,128,.2);color:#16a34a}
-.editor-tab-actions{display:flex;align-items:center;gap:6px;padding:6px 0 6px 16px;border-left:1px solid #e8e6e0;margin-left:auto;flex-shrink:0}
 .seg-editor-table{width:100%;border-collapse:collapse}
 .seg-editor-table th{font-size:11px;font-weight:600;color:#999;text-align:left;padding:8px 12px;border-bottom:1px solid #eee;background:#fafaf8;position:sticky;top:0;z-index:1}
 .seg-editor-table td{padding:6px 8px;border-bottom:1px solid #f0ede8;vertical-align:top}
@@ -1935,23 +1935,24 @@ body.dark .lp-contact-email a{color:#5a9eff}
         <span class="badge b-gray" id="editor-progress-badge" style="flex-shrink:0;">0/0</span>
         <button class="btn btn-dark btn-sm hide-viewer" id="editor-submit-btn" onclick="submitForReview()" style="flex-shrink:0;">Wyślij do weryfikacji</button>
       </div>
-      <!-- Wiersz 2: zakładki języków + akcje -->
+      <!-- Wiersz 2: zakładki języków (100%) -->
       <div class="editor-header-tabs">
         <div class="editor-lang-tabs" id="editor-lang-tabs"></div>
-        <div class="editor-tab-actions">
-          <select id="editor-sort" onchange="renderEditorTable(currentProjectLang)" style="width:120px;font-size:12px;padding:4px 8px;">
-            <option value="order">Kolejność</option>
-            <option value="status-empty">Puste pierwsze</option>
-            <option value="status-done">Gotowe pierwsze</option>
-          </select>
-          <button class="btn btn-sm admin-only" onclick="applyTMToProject()" title="Zastosuj pamięć tłumaczeń">Z TM</button>
-          <button class="btn btn-sm admin-only" onclick="translateEmptyAI()" title="Przetłumacz puste segmenty">✦ Puste</button>
-          <button class="btn btn-sm admin-only" id="editor-ai-btn" onclick="showAISummary()" title="Tłumacz wszystko">✦ Wszystko</button>
-          <button class="btn btn-sm" onclick="exportProjectExcel()">↓ Excel</button>
-          <button class="btn btn-sm hide-viewer" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
-          <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
-          <button class="btn btn-sm" onclick="exportProjectXliff()">↓ XLIFF</button>
-        </div>
+      </div>
+      <!-- Wiersz 3: akcje (100%) -->
+      <div class="editor-header-actions">
+        <select id="editor-sort" onchange="renderEditorTable(currentProjectLang)" style="width:120px;font-size:12px;padding:4px 8px;">
+          <option value="order">Kolejność</option>
+          <option value="status-empty">Puste pierwsze</option>
+          <option value="status-done">Gotowe pierwsze</option>
+        </select>
+        <button class="btn btn-sm admin-only" onclick="applyTMToProject()">Z TM</button>
+        <button class="btn btn-sm admin-only" onclick="translateEmptyAI()">✦ Przetłumacz puste</button>
+        <button class="btn btn-sm admin-only" id="editor-ai-btn" onclick="showAISummary()">✦ Tłumacz wszystko</button>
+        <button class="btn btn-sm" onclick="exportProjectExcel()">↓ Excel</button>
+        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
+        <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
+        <button class="btn btn-sm" onclick="exportProjectXliff()">↓ XLIFF</button>
       </div>
     </div>
 
