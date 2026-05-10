@@ -211,21 +211,50 @@ a{color:#2451b3}
 .stat-box{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:10px;text-align:center}
 .stat-num{font-size:20px;font-weight:600}
 .stat-lbl{font-size:10px;color:#999;margin-top:2px}
+/* Nowe stat cards */
+.hist-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+.hist-stat{background:#fff;border:1px solid #e8e6e0;border-radius:10px;padding:16px;text-align:center}
+.hist-stat-num{font-size:28px;font-weight:700;letter-spacing:-1px;color:#1a1a1a;line-height:1}
+.hist-stat-lbl{font-size:11px;color:#aaa;margin-top:6px;text-transform:uppercase;letter-spacing:.4px}
 .tm-list{max-height:380px;overflow-y:auto;border:1px solid #eee;border-radius:8px}
-.tm-row{display:grid;grid-template-columns:1fr 1fr 90px 70px 70px;border-bottom:1px solid #f0ede8}
+.tm-row{display:grid;grid-template-columns:1fr 1fr 90px 70px 70px;border-bottom:1px solid #f0ede8;border-left:3px solid transparent}
 .tm-row:last-child{border-bottom:none}
-.tm-col{padding:7px 10px;font-size:11px;border-right:1px solid #f0ede8}
+.tm-col{padding:8px 10px;font-size:12px;border-right:1px solid #f0ede8}
 .tm-col:last-child{border-right:none;color:#aaa}
-.hist-list{border:1px solid #eee;border-radius:8px;overflow:hidden;max-height:500px;overflow-y:auto}
-.hist-thead{display:grid;grid-template-columns:1fr 70px 100px 80px 90px 90px 110px;background:#fafaf8;border-bottom:1px solid #eee}
-.hist-row{display:grid;grid-template-columns:1fr 70px 100px 80px 90px 90px 110px;border-bottom:1px solid #f0ede8;align-items:center}
+.tm-src{color:#888;font-size:11px}
+.hist-list{border:1px solid #eee;border-radius:8px;overflow:hidden;max-height:560px;overflow-y:auto}
+.hist-thead{display:grid;grid-template-columns:1fr 80px 120px 80px 90px 100px 110px;background:#fafaf8;border-bottom:1px solid #eee}
+.hist-row{display:grid;grid-template-columns:1fr 80px 120px 80px 90px 100px 110px;border-bottom:1px solid #f0ede8;align-items:center;border-left:3px solid transparent}
 .hist-row:last-child{border-bottom:none}
 .hist-row:hover{background:#fdfcfa}
+.hist-row.type-xliff{border-left-color:#60a5fa}
+.hist-row.type-pptx{border-left-color:#fb923c}
+.hist-row.type-srt,.hist-row.type-vtt{border-left-color:#a78bfa}
 .hist-col{padding:8px 10px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hist-th{padding:7px 10px;font-size:11px;font-weight:600;color:#999}
 .hist-empty{padding:32px;text-align:center;color:#ccc;font-size:13px}
+.hist-pill-done{display:inline-block;background:rgba(76,222,128,.15);color:#16a34a;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.hist-pill-prog{display:inline-block;background:#fef9c3;color:#854d0e;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
 .ft-xliff{background:#e8f0ff;color:#2451b3;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
 .ft-pptx{background:#fff3e8;color:#b35a00;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
+.ft-srt,.ft-vtt{background:#f3f0ff;color:#5b21b6;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.18);width:100%;overflow:hidden;max-height:90vh;display:flex;flex-direction:column}
+.modal-header{padding:18px 20px 14px;border-bottom:1px solid #e8e6e0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-title{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:0;line-height:1}
+.modal-close:hover{color:#1a1a1a}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 20px;border-top:1px solid #e8e6e0;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+/* Team member cards */
+.member-card{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid #f0ede8}
+.member-card:last-child{border-bottom:none}
+.member-card:hover{background:#fdfcfa}
+.member-avatar{width:36px;height:36px;border-radius:50%;background:#e8e6e0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;color:#666}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:13px;font-weight:600;color:#1a1a1a}
+.member-email{font-size:11px;color:#aaa;margin-top:1px}
 .loading{display:flex;align-items:center;gap:8px;font-size:13px;color:#888;padding:20px}
 .spinner{width:16px;height:16px;border:2px solid #eee;border-top-color:#888;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -236,15 +265,17 @@ a{color:#2451b3}
 .member-row:hover{background:#fdfcfa}
 .member-col{padding:10px 12px;font-size:13px}
 .role-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
-.role-admin{background:#fef9e6;color:#8a6a00}
-.role-translator{background:#e8f0ff;color:#2451b3}
-.role-viewer{background:#f0ede8;color:#666}
+.role-admin{background:#1a1a1a;color:#fff}
+.role-translator{background:#f0fdf4;color:#166534}
+.role-viewer{background:#f5f5f5;color:#666}
 .invite-box{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:14px}
 
 /* ── ROLE GUARD ── */
 .viewer-only{display:none}
 [data-role=viewer] .hide-viewer{display:none}
 [data-role=viewer] .viewer-only{display:block}
+[data-role=viewer] .admin-only{display:none}
+[data-role=translator] .admin-only{display:none}
 
 #pptx-segs-card,#pptx-lang-card,#lang-card,#segments-card{display:none}
 /* TOKENS */
@@ -329,6 +360,19 @@ body.dark .auth-link a{color:#fff}
 body.dark .auth-left-bullet{color:#aaa}
 /* Stats */
 body.dark .stat-box{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
+body.dark .hist-stat{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .hist-stat-num{color:#fff}
+body.dark .hist-stat-lbl{color:#555}
+body.dark .modal-box{background:#1a1a1a;border:1px solid #2a2a2a}
+body.dark .modal-header,.body.dark .modal-footer{border-color:#2a2a2a}
+body.dark .modal-header{border-bottom-color:#2a2a2a}
+body.dark .modal-footer{border-top-color:#2a2a2a}
+body.dark .modal-title{color:#fff}
+body.dark .modal-close:hover{color:#fff}
+body.dark .member-card{border-color:#2a2a2a}
+body.dark .member-card:hover{background:#1e1e1e}
+body.dark .member-name{color:#fff}
+body.dark .member-avatar{background:#2a2a2a;color:#aaa}
 body.dark .stat-num{color:#fff}
 body.dark .stat-lbl{color:#666}
 /* Cost box */
@@ -1445,7 +1489,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
   <div class="card" id="q-lang-card" style="display:none;">
     <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
       <div><label>Język docelowy</label><select id="q-target-lang" style="width:220px;" onchange="quickLangChange()"></select></div>
-      <button class="btn btn-dark hide-viewer" id="q-translate-btn" onclick="startQuickTranslation()">Tłumacz automatycznie</button>
+      <button class="btn btn-dark admin-only" id="q-translate-btn" onclick="startQuickTranslation()">Tłumacz automatycznie</button>
     </div>
     <div class="progress-wrap" id="q-pw"><div class="progress-fill" id="q-pf" style="width:0%"></div></div>
     <p class="status-line" id="q-status"></p>
@@ -1456,7 +1500,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
     <div class="toolbar">
       <p class="card-title" style="margin:0;"><span id="q-format-label">Segmenty</span> <span class="badge b-yellow" id="q-prog-badge">0/0</span></p>
       <div class="row">
-        <button class="btn btn-sm hide-viewer" onclick="retranslateQuickEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-sm admin-only" onclick="retranslateQuickEmpty()">Przetłumacz puste</button>
         <button class="btn btn-dark btn-sm" id="q-export-btn" onclick="exportQuick()">↓ Pobierz</button>
       </div>
     </div>
@@ -1512,7 +1556,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
   <div class="card" id="lang-card" style="display:none;">
     <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
       <div><label>Język docelowy</label><select id="target-lang" style="width:220px;" onchange="xliffLangChange()"></select></div>
-      <button class="btn btn-dark hide-viewer" onclick="startXliffTranslation()">Tłumacz automatycznie</button>
+      <button class="btn btn-dark admin-only" onclick="startXliffTranslation()">Tłumacz automatycznie</button>
     </div>
     <div class="cost-box" id="xliff-cost-box"><div class="cost-tm-savings" id="xliff-cost-tm"></div><div class="cost-grid" id="xliff-cost-grid"></div><div class="cost-note" id="xliff-cost-note"></div></div>
     <div class="progress-wrap" id="xliff-pw"><div class="progress-fill" id="xliff-pf" style="width:0%"></div></div>
@@ -1522,7 +1566,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
     <div class="toolbar">
       <p class="card-title" style="margin:0;">Segmenty <span class="badge b-yellow" id="xliff-prog-badge">0/0</span></p>
       <div class="row">
-        <button class="btn btn-sm hide-viewer" onclick="xliffRetranslateEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-sm admin-only" onclick="xliffRetranslateEmpty()">Przetłumacz puste</button>
         <button class="btn btn-sm" onclick="xliffExportExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('xliff-xl-imp').click()">↑ Excel</button>
         <input type="file" id="xliff-xl-imp" accept=".xlsx" style="display:none;" onchange="xliffImportExcel(event)" />
@@ -1569,7 +1613,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
   <div class="card" id="pptx-lang-card">
     <div class="row">
       <div><label>Język docelowy</label><select id="pptx-target-lang" style="width:220px;" onchange="pptxLangChange()"></select></div>
-      <div style="margin-top:19px;"><button class="btn btn-dark hide-viewer" onclick="startPptxTranslation()">✓ Tłumacz automatycznie</button></div>
+      <div style="margin-top:19px;"><button class="btn btn-dark admin-only" onclick="startPptxTranslation()">✓ Tłumacz automatycznie</button></div>
     </div>
     <div class="cost-box" id="pptx-cost-box"><div class="cost-tm-savings" id="pptx-cost-tm"></div><div class="cost-grid" id="pptx-cost-grid"></div><div class="cost-note" id="pptx-cost-note"></div></div>
     <div class="progress-wrap" id="pptx-pw"><div class="progress-fill" id="pptx-pf" style="width:0%"></div></div>
@@ -1580,7 +1624,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
       <p class="card-title" style="margin:0;">Teksty w prezentacji</p>
       <div class="row">
         <span class="badge b-yellow" id="pptx-prog-badge">0/0</span>
-        <button class="btn btn-sm hide-viewer" onclick="pptxRetranslateEmpty()">Przetłumacz puste</button>
+        <button class="btn btn-sm admin-only" onclick="pptxRetranslateEmpty()">Przetłumacz puste</button>
         <button class="btn btn-sm hide-viewer" onclick="showVerifySummary('pptx')" title="Weryfikuj zgodność ze słownikiem">📖 Weryfikuj</button>
         <button class="btn btn-sm" onclick="pptxExportExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('pptx-xl-imp').click()">↑ Excel</button>
@@ -1611,19 +1655,21 @@ body.dark .lp-contact-email a{color:#5a9eff}
 <!-- HISTORIA -->
 <div class="tab-content" id="tab-history"><div class="container">
   <div class="card">
-    <p class="card-title">Historia tłumaczeń</p>
-    <div class="hist-stats">
-      <div class="stat-box"><div class="stat-num" id="hist-total">0</div><div class="stat-lbl">Tłumaczeń</div></div>
-      <div class="stat-box"><div class="stat-num" id="hist-xliff-c">0</div><div class="stat-lbl">Plików XLIFF</div></div>
-      <div class="stat-box"><div class="stat-num" id="hist-pptx-c">0</div><div class="stat-lbl">Plików PPTX</div></div>
-      <div class="stat-box"><div class="stat-num" id="hist-cost-total">0</div><div class="stat-lbl">Wydane kredyty</div></div>
-      <div class="stat-box"><div class="stat-num" id="hist-tm-total">0</div><div class="stat-lbl">Segmentów z TM</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <p class="card-title" style="margin:0;">Historia tłumaczeń</p>
+      <button class="btn btn-sm" onclick="loadHistory()">↺ Odśwież</button>
+    </div>
+    <div class="hist-stat-grid">
+      <div class="hist-stat"><div class="hist-stat-num" id="hist-total">0</div><div class="hist-stat-lbl">Tłumaczeń</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="hist-xliff-c">0</div><div class="hist-stat-lbl">Pliki XLIFF</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="hist-pptx-c">0</div><div class="hist-stat-lbl">Pliki PPTX</div></div>
+      <div id="hist-cost-total-wrap" class="hist-stat"><div class="hist-stat-num" style="color:#4CDE80;" id="hist-cost-total">0</div><div class="hist-stat-lbl">Wydane kredyty</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="hist-tm-total">0</div><div class="hist-stat-lbl">Z pamięci TM</div></div>
     </div>
     <div class="filter-row">
       <input type="search" id="hist-filter" placeholder="Szukaj pliku..." oninput="renderHistory()" style="max-width:260px;" />
       <select id="hist-ftype" onchange="renderHistory()" style="width:140px;"><option value="all">Wszystkie typy</option><option value="xliff">XLIFF</option><option value="pptx">PowerPoint</option></select>
       <select id="hist-flang" onchange="renderHistory()" style="width:175px;"><option value="all">Wszystkie języki</option></select>
-      <button class="btn btn-sm" style="margin-left:auto;" onclick="loadHistory()">↺ Odśwież</button>
     </div>
     <div id="hist-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
     <div class="hist-list" id="hist-list"><div class="hist-empty">Brak historii</div></div>
@@ -1633,45 +1679,51 @@ body.dark .lp-contact-email a{color:#5a9eff}
 <!-- SŁOWNIK -->
 <div class="tab-content" id="tab-dict"><div class="container">
   <div class="card">
-    <p class="card-title">Słownik terminologii — wielojęzyczny</p>
-    <p class="card-sub">Jeden wpis = jeden termin z tłumaczeniami na wszystkie języki. Claude stosuje słownik przy każdym tłumaczeniu. Dane współdzielone w ramach organizacji.</p>
-    <div class="hide-viewer dict-add-form">
-      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">Dodaj nowy termin</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <div><label>Termin źródłowy (PL) *</label><input type="text" id="dict-src" placeholder="np. pasta stykowa" /></div>
-        <div><label>Uwaga / kontekst</label><input type="text" id="dict-note" placeholder="np. nazwa produktu" /></div>
+    <div class="toolbar" style="margin-bottom:14px;">
+      <div>
+        <p class="card-title" style="margin:0;">Słownik terminologii</p>
+        <p style="font-size:12px;color:#aaa;margin-top:2px;">Stosowany automatycznie przy każdym tłumaczeniu AI</p>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:6px;margin-bottom:10px;" id="dict-new-langs"></div>
-      <button class="btn btn-dark btn-sm" onclick="addDictEntry()">+ Dodaj termin</button>
+      <div class="row">
+        <button class="btn btn-dark btn-sm hide-viewer" onclick="openDictModal()">+ Dodaj termin</button>
+        <button class="btn btn-sm admin-only" onclick="fillDictWithAI()">✦ AI</button>
+        <button class="btn btn-sm" onclick="exportDictExcel()">↓ Excel</button>
+        <button class="btn btn-sm" onclick="exportDictJSON()">↓ JSON</button>
+        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('dict-xl-imp').click()">↑ Excel</button>
+        <input type="file" id="dict-xl-imp" accept=".xlsx" style="display:none;" onchange="importDictExcel(event)" />
+        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('dict-json-imp').click()">↑ JSON</button>
+        <input type="file" id="dict-json-imp" accept=".json" style="display:none;" onchange="importDictJSON(event)" />
+        <button class="btn btn-red btn-sm hide-viewer" onclick="clearDict()">Wyczyść</button>
+      </div>
     </div>
     <div class="filter-row">
       <input type="search" id="dict-filter" placeholder="Szukaj..." oninput="renderDict()" style="max-width:240px;" />
       <select id="dict-filter-lang" onchange="renderDict()" style="width:180px;"></select>
-      <button class="btn btn-sm hide-viewer" style="margin-left:auto;" onclick="fillDictWithAI()">✦ Uzupełnij AI</button>
     </div>
     <div id="dict-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
     <div class="dict-wrap"><table class="dict-grid"><thead id="dict-thead"></thead><tbody id="dict-tbody"></tbody></table></div>
-    <div class="row" style="margin-top:10px;">
-      <button class="btn btn-sm" onclick="exportDictExcel()">↓ Excel</button>
-      <button class="btn btn-sm hide-viewer" onclick="document.getElementById('dict-xl-imp').click()">↑ Excel</button>
-      <input type="file" id="dict-xl-imp" accept=".xlsx" style="display:none;" onchange="importDictExcel(event)" />
-      <button class="btn btn-sm" onclick="exportDictJSON()">↓ JSON</button>
-      <button class="btn btn-sm hide-viewer" onclick="document.getElementById('dict-json-imp').click()">↑ JSON</button>
-      <input type="file" id="dict-json-imp" accept=".json" style="display:none;" onchange="importDictJSON(event)" />
-      <button class="btn btn-red btn-sm hide-viewer" style="margin-left:auto;" onclick="clearDict()">Wyczyść</button>
-    </div>
   </div>
 </div></div>
 
 <!-- TM -->
 <div class="tab-content" id="tab-tm"><div class="container">
   <div class="card">
-    <p class="card-title">Pamięć tłumaczeń (Translation Memory)</p>
-    <p class="card-sub">Wspólna baza organizacji dla XLIFF i PPTX. Zatwierdzone tłumaczenia zapisywane automatycznie.</p>
-    <div class="tm-stats">
-      <div class="stat-box"><div class="stat-num" id="tm-total">0</div><div class="stat-lbl">Segmentów</div></div>
-      <div class="stat-box"><div class="stat-num" id="tm-langs-count">0</div><div class="stat-lbl">Języków</div></div>
-      <div class="stat-box"><div class="stat-num" id="tm-saved-count">0</div><div class="stat-lbl">Zaoszczędzone API</div></div>
+    <div class="toolbar" style="margin-bottom:16px;">
+      <div>
+        <p class="card-title" style="margin:0;">Pamięć tłumaczeń</p>
+        <p style="font-size:12px;color:#aaa;margin-top:2px;">Zatwierdzone tłumaczenia stosowane automatycznie przy wczytaniu pliku</p>
+      </div>
+      <div class="row">
+        <button class="btn btn-sm" onclick="exportTM()">↓ JSON</button>
+        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('tm-imp').click()">↑ JSON</button>
+        <input type="file" id="tm-imp" accept=".json" style="display:none;" onchange="importTM(event)" />
+        <button class="btn btn-red btn-sm hide-viewer" onclick="clearTM()">Wyczyść TM</button>
+      </div>
+    </div>
+    <div class="hist-stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
+      <div class="hist-stat"><div class="hist-stat-num" id="tm-total">0</div><div class="hist-stat-lbl">Segmentów</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="tm-langs-count">0</div><div class="hist-stat-lbl">Języków</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" style="color:#4CDE80;" id="tm-saved-count">0</div><div class="hist-stat-lbl">Trafień TM</div></div>
     </div>
     <div class="filter-row">
       <input type="search" id="tm-filter" placeholder="Szukaj..." oninput="renderTMList()" style="max-width:260px;" />
@@ -1680,70 +1732,61 @@ body.dark .lp-contact-email a{color:#5a9eff}
     </div>
     <div id="tm-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
     <div class="tm-list" id="tm-list"><div style="padding:20px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</div></div>
-    <div class="row" style="margin-top:12px;">
-      <button class="btn btn-sm" onclick="exportTM()">↓ JSON</button>
-      <button class="btn btn-sm hide-viewer" onclick="document.getElementById('tm-imp').click()">↑ JSON</button>
-      <input type="file" id="tm-imp" accept=".json" style="display:none;" onchange="importTM(event)" />
-      <button class="btn btn-red btn-sm hide-viewer" style="margin-left:auto;" onclick="clearTM()">Wyczyść TM</button>
-    </div>
   </div>
 </div></div>
 
 <!-- ZESPÓŁ -->
 <div class="tab-content" id="tab-team"><div class="container">
-  <div class="card">
-    <p class="card-title">Zarządzanie zespołem</p>
-    <p class="card-sub" id="team-org-info">Organizacja: —</p>
 
-    <!-- Zaproś -->
-    <div class="invite-box hide-viewer">
-      <p style="font-size:13px;font-weight:600;margin-bottom:10px;">Zaproś nowego członka</p>
-      <div class="input-row">
-        <input type="email" id="invite-email" placeholder="email@firma.pl" />
-        <select id="invite-role" style="width:140px;flex:none;">
-          <option value="translator">Translator</option>
+  <!-- Karta Zaproś -->
+  <div class="card hide-viewer" style="border-left:3px solid #4CDE80;margin-bottom:14px;">
+    <p class="card-title">Zaproś nowego członka</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:200px;"><label>Email</label><input type="email" id="invite-email" placeholder="email@firma.pl" /></div>
+      <div><label>Rola</label>
+        <select id="invite-role" style="width:140px;">
           <option value="admin">Admin</option>
           <option value="viewer">Viewer</option>
         </select>
-        <button class="btn btn-dark btn-sm" onclick="sendInvite()" style="flex:none;">Wyślij zaproszenie</button>
       </div>
-      <p style="font-size:11px;color:#aaa;margin-top:6px;">Zaproszenie ważne 7 dni. Osoba otrzyma email z linkiem.</p>
+      <button class="btn btn-dark" onclick="sendInvite()">Wyślij zaproszenie →</button>
     </div>
+    <p style="font-size:11px;color:#aaa;margin-top:10px;">Zaproszenie ważne 7 dni · osoba otrzyma link na email</p>
+  </div>
 
-    <!-- Lista członków -->
-    <p style="font-size:13px;font-weight:600;margin-bottom:10px;">Członkowie organizacji</p>
+  <!-- Karta Członkowie -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <p class="card-title" style="margin:0;">Członkowie organizacji <span class="badge b-gray" id="team-member-count"></span></p>
+      <p style="font-size:12px;color:#aaa;margin:0;" id="team-org-info"></p>
+    </div>
     <div id="team-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
-    <div style="border:1px solid #eee;border-radius:8px;overflow:hidden;" id="team-list">
+    <div style="border:1px solid #e8e6e0;border-radius:10px;overflow:hidden;" id="team-list">
       <div style="padding:20px;text-align:center;color:#ccc;font-size:13px;">Ładowanie...</div>
     </div>
+  </div>
 
-    <!-- Oczekujące zaproszenia -->
-    <p style="font-size:13px;font-weight:600;margin:16px 0 10px;display:none;" id="pending-title">Oczekujące zaproszenia</p>
+  <!-- Oczekujące zaproszenia -->
+  <div class="card" id="pending-card" style="display:none;">
+    <p class="card-title" id="pending-title">Oczekujące zaproszenia</p>
     <div id="pending-list"></div>
+  </div>
 
-    <!-- Admin: manual token top-up for testing -->
-    <div class="hide-viewer admin-token-panel" style="margin-top:16px;border-radius:8px;padding:14px;">
-      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">🛠 Panel admina — ręczne doładowanie kredytów (tryb testowy)</p>
-      <div class="row">
-        <select id="admin-token-amount" style="width:220px;">
-          <option value="10">10 kredytów</option>
-          <option value="50">50 kredytów</option>
-          <option value="100">100 kredytów</option>
-          <option value="500">500 kredytów</option>
-        </select>
-        <button class="btn btn-dark btn-sm" onclick="adminAddTokens(parseInt(document.getElementById('admin-token-amount').value),'Ręczne doładowanie testowe')">+ Dodaj kredyty</button>
+  <!-- Legenda ról -->
+  <div class="card" style="background:#fafaf8;">
+    <p class="card-title" style="margin-bottom:10px;">Role w organizacji</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;font-size:13px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span class="role-badge role-admin" style="flex-shrink:0;margin-top:1px;">Admin</span>
+        <span style="color:#666;font-size:12px;">Pełny dostęp: tłumaczenie AI, zarządzanie organizacją, kredytami i danymi</span>
       </div>
-      <p style="font-size:11px;color:#999;margin-top:6px;">Tylko do testowania — zastąpione przez Stripe przed launchem. 1 kredyt = 1 000 znaków = 1 PLN.</p>
-    </div>
-
-    <!-- Legendy ról -->
-    <div class="roles-legend" style="margin-top:16px;padding:12px;border-radius:8px;font-size:12px;color:#888;line-height:1.8;">
-      <strong>Role:</strong><br>
-      🔑 <strong>Admin</strong> — pełny dostęp, zarządzanie zespołem, usuwanie danych<br>
-      ✏️ <strong>Translator</strong> — tłumaczenie, edycja słownika i TM, pobieranie plików<br>
-      👁 <strong>Viewer</strong> — tylko podgląd historii i słownika, pobieranie plików
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span class="role-badge role-viewer" style="flex-shrink:0;margin-top:1px;">Viewer</span>
+        <span style="color:#666;font-size:12px;">Przeglądanie projektów, historii, słownika i TM; pobieranie plików</span>
+      </div>
     </div>
   </div>
+
 </div></div>
 
 <!-- SUBTITLES -->
@@ -1778,7 +1821,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
     <div class="row">
       <div><label>Język docelowy</label><select id="sub-target-lang" style="width:220px;" onchange="subLangChange()"></select></div>
       <div style="margin-top:19px;">
-        <button class="btn btn-dark" onclick="startSubtitleTranslation()">✦ Tłumacz napisy</button>
+        <button class="btn btn-dark admin-only" onclick="startSubtitleTranslation()">✦ Tłumacz napisy</button>
       </div>
     </div>
     <div class="cost-box" id="sub-cost-box" style="display:none;">
@@ -1848,13 +1891,6 @@ body.dark .lp-contact-email a{color:#5a9eff}
       </div>
     </div>
 
-    <!-- Translator token limit bar -->
-    <div id="proj-token-bar" style="display:none;" class="token-limit-bar">
-      <div class="tlb-label">Kredyty miesięczne:</div>
-      <div class="tlb-bar"><div id="tlb-fill" style="height:100%;border-radius:2px;background:#2451b3;transition:width .3s;"></div></div>
-      <div class="tlb-val" id="tlb-val">—</div>
-    </div>
-
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
       <div class="filter-tabs">
         <div class="ftab active" onclick="setProjFilter('active',this)">Aktywne</div>
@@ -1887,9 +1923,9 @@ body.dark .lp-contact-email a{color:#5a9eff}
           <option value="status-empty">Puste pierwsze</option>
           <option value="status-done">Przetłumaczone pierwsze</option>
         </select>
-        <button class="btn btn-sm hide-viewer" onclick="applyTMToProject()">🧠 Z TM</button>
-        <button class="btn btn-sm hide-viewer" onclick="translateEmptyAI()">✦ Przetłumacz puste</button>
-        <button class="btn btn-sm hide-viewer" id="editor-ai-btn" onclick="showAISummary()">✦ Tłumacz wszystko</button>
+        <button class="btn btn-sm admin-only" onclick="applyTMToProject()">🧠 Z TM</button>
+        <button class="btn btn-sm admin-only" onclick="translateEmptyAI()">✦ Przetłumacz puste</button>
+        <button class="btn btn-sm admin-only" id="editor-ai-btn" onclick="showAISummary()">✦ Tłumacz wszystko</button>
         <button class="btn btn-sm" onclick="exportProjectExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
         <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
@@ -2769,48 +2805,27 @@ async function saveMemberTokenLimit(memberId, limit){
 }
 
 function renderTeamList(members){
-  const roles={admin:'🔑 Admin',translator:'✏️ Translator',viewer:'👁 Viewer'};
   const roleClass={admin:'role-admin',translator:'role-translator',viewer:'role-viewer'};
+  const roleLabel={admin:'Admin',translator:'Translator',viewer:'Viewer'};
   const list=document.getElementById('team-list');
-  if(!members.length){list.innerHTML='<div style="padding:16px;text-align:center;color:#ccc;font-size:13px;">Brak członków</div>';return;}
+  const countEl=document.getElementById('team-member-count');
+  if(countEl)countEl.textContent=members.length;
+  if(!members.length){list.innerHTML='<div style="padding:20px;text-align:center;color:#ccc;font-size:13px;">Brak członków</div>';return;}
   const isAdmin=currentRole==='admin';
-
   list.innerHTML=members.map(m=>{
     const isMe=m.user_id===currentUser.id;
     const name=getMemberName(m);
+    const email=m.email||m.display_name||'';
     const canRemove=isAdmin&&!isMe;
-    const memberLangs=m.languages||[];
-    const langPills=PRIMARY.map(l=>`<span class="lang-tag${memberLangs.includes(l.code)?' selected':''}"
-      onclick="${isAdmin?`toggleMemberLang('${m.id}','${l.code}',this)`:'return false'}"
-      title="${l.label}">${l.flag} ${l.code.substring(0,2)}</span>`).join('');
-    const tokenLimit=m.monthly_token_limit;
-    const tokenUsed=m.tokens_used_this_month||0;
-    const limitPct=tokenLimit?Math.min(100,Math.round(tokenUsed/tokenLimit*100)):0;
-
-    return`<div style="border-bottom:1px solid #f0ede8;padding:12px 14px;">
-      <div style="display:grid;grid-template-columns:1fr 100px 90px;align-items:start;gap:8px;margin-bottom:10px;">
-        <div>
-          <strong style="font-size:13px;">${esc(name)}</strong>
-          ${isMe?'<span style="font-size:10px;color:#888;"> (Ty)</span>':''}
-        </div>
-        <div><span class="role-badge ${roleClass[m.role]||''}">${roles[m.role]||m.role}</span></div>
-        <div>${canRemove?`<button class="btn btn-red btn-sm" onclick="removeMember('${m.id}')">Usuń</button>`:''}</div>
+    const initials=name.charAt(0).toUpperCase();
+    return`<div class="member-card">
+      <div class="member-avatar">${esc(initials)}</div>
+      <div class="member-info">
+        <div class="member-name">${esc(name)}${isMe?' <span style="font-size:10px;color:#aaa;font-weight:400;">(Ty)</span>':''}</div>
+        ${email&&email!==name?`<div class="member-email">${esc(email)}</div>`:''}
       </div>
-      <div style="margin-bottom:8px;">
-        <div style="font-size:11px;color:#888;margin-bottom:4px;">Języki:</div>
-        <div class="member-lang-tags">${langPills}</div>
-      </div>
-      ${m.role==='translator'?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div style="font-size:11px;color:#888;">Limit kredytów/mies.:</div>
-        ${isAdmin?`<input type="number" value="${tokenLimit||''}" placeholder="bez limitu"
-          style="width:120px;padding:4px 8px;font-size:12px;border:1px solid #ddd;border-radius:5px;"
-          onchange="saveMemberTokenLimit('${m.id}',this.value)" />`
-          :`<span style="font-size:12px;">${tokenLimit?tokenLimit.toLocaleString('pl-PL')+' kredytów':'bez limitu'}</span>`}
-        ${tokenLimit?`<div style="flex:1;min-width:100px;">
-          <div style="font-size:11px;color:#888;">${tokenUsed.toLocaleString('pl-PL')} / ${tokenLimit.toLocaleString('pl-PL')} (${limitPct}%)</div>
-          <div class="progress-bar-thin"><div class="progress-bar-fill" style="width:${limitPct}%;background:${limitPct>90?'#b32424':'#2a8a4a'};"></div></div>
-        </div>`:''}
-      </div>`:''}
+      <span class="role-badge ${roleClass[m.role]||''}">${roleLabel[m.role]||m.role}</span>
+      ${canRemove?`<button class="btn btn-red btn-sm" style="flex-shrink:0;" onclick="removeMember('${m.id}')">Usuń</button>`:'<div style="width:52px;"></div>'}
     </div>`;
   }).join('');
 }
@@ -3100,6 +3115,48 @@ async function addDictEntry(){
   document.querySelectorAll('.dict-new-lang').forEach(inp=>inp.value='');
   document.getElementById('dict-count').textContent=dictCache.length;renderDict();
 }
+let _dictModalEditId=null;
+function openDictModal(entryId=null){
+  _dictModalEditId=entryId;
+  document.getElementById('dict-modal-title').textContent=entryId?'Edytuj termin':'Dodaj termin';
+  buildDictNewRow();
+  document.getElementById('dict-src').value='';
+  document.getElementById('dict-note').value='';
+  if(entryId){
+    const e=dictCache.find(x=>x.id===entryId);
+    if(e){
+      document.getElementById('dict-src').value=e.src||'';
+      document.getElementById('dict-note').value=e.note||'';
+      PRIMARY.forEach(l=>{const inp=document.querySelector(`#dict-new-langs [data-lang="${l.code}"]`);if(inp)inp.value=e.translations?.[l.code]||'';});
+    }
+  }
+  document.getElementById('dict-modal').style.display='flex';
+  setTimeout(()=>document.getElementById('dict-src').focus(),50);
+}
+function closeDictModal(){
+  document.getElementById('dict-modal').style.display='none';
+  _dictModalEditId=null;
+}
+async function saveDictModal(){
+  const btn=document.getElementById('dict-modal-save');
+  btn.disabled=true;btn.textContent='Zapisywanie...';
+  try{
+    if(_dictModalEditId){
+      const src=document.getElementById('dict-src').value.trim();
+      const note=document.getElementById('dict-note').value.trim();
+      const translations={};document.querySelectorAll('.dict-new-lang').forEach(inp=>{const v=inp.value.trim();if(v)translations[inp.dataset.lang]=v;});
+      const e=dictCache.find(x=>x.id===_dictModalEditId);
+      if(e){e.src=src;e.note=note;e.translations=translations;}
+      await dbPatch('dictionary',{src,note,translations},`?id=eq.${_dictModalEditId}`);
+      renderDict();
+      closeDictModal();
+    } else {
+      await addDictEntry();
+      if(!document.getElementById('dict-src').value.trim())closeDictModal();
+    }
+  }finally{btn.disabled=false;btn.textContent='Zapisz';}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('dict-modal')?.style.display!=='none')closeDictModal();});
 async function deleteDict(id){await dbDelete('dictionary',`?id=eq.${id}`);dictCache=dictCache.filter(e=>e.id!==id);document.getElementById('dict-count').textContent=dictCache.length;renderDict();}
 async function updateDictCell(id,lang,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.translations={...e.translations,[lang]:val};await dbPatch('dictionary',{translations:e.translations},`?id=eq.${id}`);}
 async function updateDictNote(id,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.note=val;await dbPatch('dictionary',{note:val},`?id=eq.${id}`);}
@@ -3115,13 +3172,22 @@ function renderDict(){
     if(fl!=='all')return!e.translations?.[fl];
     return true;
   });
-  document.getElementById('dict-thead').innerHTML='<tr><th style="min-width:150px;">Termin PL</th>'+PRIMARY.map(l=>`<th style="min-width:120px;">${l.flag} ${l.label}</th>`).join('')+'<th style="min-width:110px;">Uwaga</th><th style="width:34px;"></th></tr>';
-  const tbody=document.getElementById('dict-tbody');
   const canEdit=currentRole!=='viewer';
-  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="${PRIMARY.length+3}" style="padding:18px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów</td></tr>`;return;}
+  document.getElementById('dict-thead').innerHTML='<tr><th style="min-width:150px;">Termin PL</th>'+PRIMARY.map(l=>`<th style="min-width:110px;">${l.flag} ${l.label}</th>`).join('')+'<th style="min-width:100px;">Uwaga</th>'+(canEdit?'<th style="width:70px;"></th>':'')+'</tr>';
+  const tbody=document.getElementById('dict-tbody');
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="${PRIMARY.length+(canEdit?3:2)}" style="padding:18px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów w słowniku</td></tr>`;return;}
   tbody.innerHTML=filtered.map(e=>{
-    const cells=PRIMARY.map(l=>{const v=e.translations?.[l.code]||'';return`<td><input class="dict-inp${v?'':' missing'}" value="${esc(v)}" placeholder="—" ${canEdit?`onchange="updateDictCell('${e.id}','${l.code}',this.value)" onblur="this.className='dict-inp'+(this.value.trim()?'':' missing')"`:' readonly'} /></td>`;}).join('');
-    return`<tr><td><input class="dict-inp" style="font-weight:600;" value="${esc(e.src)}" placeholder="Termin PL..." ${canEdit?`onchange="updateDictSrc('${e.id}',this.value)"`:' readonly'} /></td>${cells}<td><input class="dict-inp" value="${esc(e.note||'')}" placeholder="—" ${canEdit?`onchange="updateDictNote('${e.id}',this.value)"`:' readonly'} /></td><td>${canEdit?`<button class="del-btn" onclick="deleteDict('${e.id}')">×</button>`:''}</td></tr>`;
+    const cells=PRIMARY.map(l=>{const v=e.translations?.[l.code]||'';return`<td style="padding:4px 5px;"><span style="font-size:12px;color:${v?'inherit':'#ddd'}">${v?esc(v):'—'}</span></td>`;}).join('');
+    const noteTxt=e.note?`<span style="font-size:11px;color:#aaa;">${esc(e.note)}</span>`:'';
+    return`<tr>
+      <td style="padding:4px 8px;font-weight:600;font-size:13px;">${esc(e.src)}</td>
+      ${cells}
+      <td style="padding:4px 5px;">${noteTxt}</td>
+      ${canEdit?`<td style="padding:2px 5px;white-space:nowrap;">
+        <button class="btn btn-sm" style="padding:2px 7px;font-size:11px;" onclick="openDictModal('${e.id}')">✏️</button>
+        <button class="del-btn" onclick="deleteDict('${e.id}')">×</button>
+      </td>`:''}
+    </tr>`;
   }).join('');
 }
 
@@ -3310,14 +3376,14 @@ function renderHistory(){
   lsel.innerHTML='<option value="all">Wszystkie języki</option>'+langs.map(l=>`<option value="${esc(l)}"${l===lcur?' selected':''}>${esc(l)}</option>`).join('');
   const list=document.getElementById('hist-list');
   if(!data.length){list.innerHTML='<div class="hist-empty">Brak historii</div>';return;}
-  list.innerHTML=`<div class="hist-thead"><div class="hist-th">Plik</div><div class="hist-th">Typ</div><div class="hist-th">Język</div><div class="hist-th">Segmenty</div><div class="hist-th">Koszt</div><div class="hist-th">Status</div><div class="hist-th">Data</div></div>`+
-    data.map(h=>`<div class="hist-row">
-      <div class="hist-col" title="${esc(h.filename)}" style="font-weight:500;">${esc(h.filename)}</div>
-      <div class="hist-col"><span class="ft-${h.filetype}">${h.filetype.toUpperCase()}</span></div>
+  list.innerHTML=`<div class="hist-thead" style="border-left:3px solid transparent;"><div class="hist-th">Plik</div><div class="hist-th">Typ</div><div class="hist-th">Język</div><div class="hist-th">Segmenty</div><div class="hist-th">Koszt</div><div class="hist-th">Status</div><div class="hist-th">Data</div></div>`+
+    data.map(h=>`<div class="hist-row type-${h.filetype||'xliff'}">
+      <div class="hist-col" title="${esc(h.filename)}" style="font-weight:500;color:#1a1a1a;">${esc(h.filename)}</div>
+      <div class="hist-col"><span class="ft-${h.filetype}">${(h.filetype||'').toUpperCase()}</span></div>
       <div class="hist-col">${esc(h.lang)}</div>
-      <div class="hist-col"><span style="color:#1a7a3f;">${h.segments_done||0}</span>/<span style="color:#888;">${h.segments_total||0}</span>${h.segments_from_tm>0?` <span style="color:#6b21a8;font-size:10px;">+${h.segments_from_tm}TM</span>`:''}</div>
-      <div class="hist-col"><strong>${Math.round(h.cost_pln||0)}</strong> kr.</div>
-      <div class="hist-col">${h.status==='completed'?'<span style="color:#1a7a3f;">✓ Ukończone</span>':'<span style="color:#888;">W toku</span>'}</div>
+      <div class="hist-col"><span style="font-weight:600;">${h.segments_done||0}</span><span style="color:#aaa;">/${h.segments_total||0}</span>${h.segments_from_tm>0?` <span style="color:#6b21a8;font-size:10px;">+${h.segments_from_tm}TM</span>`:''}</div>
+      <div class="hist-col"><strong>${Math.round(h.cost_pln||0)}</strong><span style="color:#aaa;font-size:11px;"> kr.</span></div>
+      <div class="hist-col">${h.status==='completed'?'<span class="hist-pill-done">✓ Ukończone</span>':'<span class="hist-pill-prog">W toku</span>'}</div>
       <div class="hist-col" style="color:#aaa;font-size:11px;">${fmtDate(h.created_at)}</div>
     </div>`).join('');
 }
@@ -5601,5 +5667,28 @@ async function applyVerifyCorrection(mode, seg, lang, corrected){
   });
 })();
 </script>
+
+<!-- ══════ MODAL: SŁOWNIK ══════ -->
+<div class="modal-overlay" id="dict-modal" style="display:none;" onclick="if(event.target===this)closeDictModal()">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="modal-header">
+      <span class="modal-title" id="dict-modal-title">Dodaj termin</span>
+      <button class="modal-close" onclick="closeDictModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div><label>Termin źródłowy (PL) *</label><input type="text" id="dict-src" placeholder="np. pasta stykowa" /></div>
+        <div><label>Uwaga / kontekst</label><input type="text" id="dict-note" placeholder="np. nazwa produktu" /></div>
+      </div>
+      <label style="display:block;margin-bottom:8px;">Tłumaczenia na języki:</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;" id="dict-new-langs"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeDictModal()">Anuluj</button>
+      <button class="btn btn-dark" id="dict-modal-save" onclick="saveDictModal()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
