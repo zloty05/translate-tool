@@ -204,6 +204,9 @@ a{color:#2451b3}
 .b-gray{background:#f0ede8;color:#666}
 .b-purple{background:#f0eaff;color:#6b21a8}
 .b-orange{background:#fff3e8;color:#b35a00}
+.card-muted{background:#fafaf8}
+.text-muted{color:#666;font-size:12px}
+.account-danger-zone{border-top:1px solid #f0ede8;padding-top:20px}
 .badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .drop-zone{border:2px dashed #d0cec8;border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:background .15s,border-color .15s}
 .drop-zone:hover,.drop-zone.drag{background:#f5f4f0;border-color:#aaa}
@@ -470,6 +473,37 @@ body.dark #new-proj-modal > div,body.dark #edit-proj-modal > div{background:#1a1
 body.dark #new-proj-modal h3,body.dark #edit-proj-modal h3{color:#fff}
 /* Token limit bar */
 body.dark .token-limit-bar{background:#1a1a1a;border-color:#2a2a2a}
+/* Historia pills & badges */
+body.dark .hist-pill-done{background:rgba(76,222,128,.15);color:#4ade80}
+body.dark .hist-pill-prog{background:rgba(251,191,36,.12);color:#fbbf24}
+body.dark .ft-xliff{background:#1e2d4a;color:#60a5fa}
+body.dark .ft-pptx{background:#2d1a0a;color:#fb923c}
+body.dark .ft-srt,body.dark .ft-vtt{background:#2a1a3a;color:#c084fc}
+/* Account card */
+body.dark #account-name-display{color:#fff}
+body.dark .account-danger-zone{border-top-color:#2a2a2a}
+/* Editor status pills */
+body.dark .sp-empty{background:#222;color:#666}
+body.dark .sp-translated{background:rgba(76,222,128,.1);color:#4ade80}
+body.dark .sp-approved{background:rgba(76,222,128,.12);color:#4ade80}
+/* Project language pills */
+body.dark .dlp-ok{background:#0a2a1a;color:#4ade80}
+body.dark .dlp-go{background:#1a2a4a;color:#60a5fa}
+body.dark .dlp-wait{background:#2a2a2a;color:#666}
+body.dark .dlp-ready{background:#2a1f00;color:#fbbf24}
+/* Utility */
+body.dark .card-muted{background:#161616}
+body.dark .text-muted{color:#888}
+body.dark .b-gray{background:#2a2a2a;color:#888}
+body.dark .b-blue{background:#1a2d4a;color:#60a5fa}
+body.dark .b-green{background:#0a2a1a;color:#4ade80}
+body.dark .b-yellow{background:#2a1f00;color:#fbbf24}
+body.dark .b-orange{background:#2d1a0a;color:#fb923c}
+body.dark .b-purple{background:#2a1a3a;color:#c084fc}
+/* Notifications */
+body.dark .notif-item-title{color:#ccc}
+body.dark .notif-text{color:#888}
+body.dark .notif-empty{color:#666}
 body.dark .tlb-label{color:#888}
 body.dark .tlb-bar{background:#2a2a2a}
 body.dark .tlb-val{color:#fff}
@@ -1466,7 +1500,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
       <div class="avatar" id="account-avatar" style="width:48px;height:48px;font-size:20px;font-weight:700;background:#2a2a2a;flex-shrink:0;">?</div>
       <div>
-        <div style="font-size:15px;font-weight:600;color:#1a1a1a;" id="account-name-display">—</div>
+        <div style="font-size:15px;font-weight:600;" id="account-name-display">—</div>
         <div style="font-size:12px;color:#aaa;margin-top:2px;" id="account-email-display">—</div>
       </div>
     </div>
@@ -1490,7 +1524,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
       <p id="account-pass-msg" style="font-size:12px;margin-top:6px;display:none;"></p>
     </div>
 
-    <div style="border-top:1px solid #f0ede8;padding-top:20px;">
+    <div class="account-danger-zone">
       <p style="font-size:13px;font-weight:600;color:#b32424;margin-bottom:6px;">Strefa niebezpieczna</p>
       <p style="font-size:12px;color:#888;margin-bottom:12px;">Usunięcie konta jest nieodwracalne. Utracisz dostęp do wszystkich projektów i danych organizacji.</p>
       <div class="input-row">
@@ -1854,16 +1888,16 @@ body.dark .lp-contact-email a{color:#5a9eff}
   </div>
 
   <!-- Legenda ról -->
-  <div class="card" style="background:#fafaf8;">
+  <div class="card card-muted">
     <p class="card-title" style="margin-bottom:10px;">Role w organizacji</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;font-size:13px;">
       <div style="display:flex;gap:10px;align-items:flex-start;">
         <span class="role-badge role-admin" style="flex-shrink:0;margin-top:1px;">Admin</span>
-        <span style="color:#666;font-size:12px;">Pełny dostęp: tłumaczenie AI, zarządzanie organizacją, kredytami i danymi</span>
+        <span class="text-muted">Pełny dostęp: tłumaczenie AI, zarządzanie organizacją, kredytami i danymi</span>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;">
         <span class="role-badge role-viewer" style="flex-shrink:0;margin-top:1px;">Viewer</span>
-        <span style="color:#666;font-size:12px;">Przeglądanie projektów, historii, słownika i TM; pobieranie plików</span>
+        <span class="text-muted">Przeglądanie projektów, historii, słownika i TM; pobieranie plików</span>
       </div>
     </div>
   </div>
@@ -3547,7 +3581,7 @@ function renderHistory(){
   if(!data.length){list.innerHTML='<div class="hist-empty">Brak historii</div>';return;}
   list.innerHTML=`<div class="hist-thead" style="border-left:3px solid transparent;"><div class="hist-th">Plik</div><div class="hist-th">Typ</div><div class="hist-th">Język</div><div class="hist-th">Segmenty</div><div class="hist-th">Koszt</div><div class="hist-th">Status</div><div class="hist-th">Data</div></div>`+
     data.map(h=>`<div class="hist-row type-${h.filetype||'xliff'}">
-      <div class="hist-col" title="${esc(h.filename)}" style="font-weight:500;color:#1a1a1a;">${esc(h.filename)}</div>
+      <div class="hist-col" title="${esc(h.filename)}" style="font-weight:500;">${esc(h.filename)}</div>
       <div class="hist-col"><span class="ft-${h.filetype}">${(h.filetype||'').toUpperCase()}</span></div>
       <div class="hist-col">${esc(h.lang)}</div>
       <div class="hist-col"><span style="font-weight:600;">${h.segments_done||0}</span><span style="color:#aaa;">/${h.segments_total||0}</span>${h.segments_from_tm>0?` <span style="color:#6b21a8;font-size:10px;">+${h.segments_from_tm}TM</span>`:''}</div>
