@@ -430,8 +430,10 @@ body.dark .editor-lang-tab{color:#555}
 body.dark .editor-lang-tab:hover{color:#aaa}
 body.dark .editor-lang-tab.active{color:#fff;border-bottom-color:#4CDE80}
 body.dark .editor-lang-tab.approved{color:#4ade80}
-body.dark .editor-tab-prog{background:rgba(255,255,255,.08);color:#555}
-body.dark .editor-lang-tab.active .editor-tab-prog{background:rgba(76,222,128,.15);color:#4ade80}
+body.dark .etab-pending{background:#1f2937;color:#6b7280}
+body.dark .etab-in_progress{background:#422006;color:#fbbf24}
+body.dark .etab-ready{background:#1e3a5f;color:#60a5fa}
+body.dark .etab-approved{background:rgba(76,222,128,.12);color:#4ade80}
 body.dark #autosave-indicator{color:#666}
 body.dark .editor-progress-wrap{background:#2a2a2a}
 body.dark .progress-fill{background:#4ade80}
@@ -650,8 +652,11 @@ body.dark .dash-metric-value{color:#fff;}
 .editor-lang-tab.active{color:#1a1a1a;border-bottom-color:#4CDE80;font-weight:600}
 .editor-lang-tab.approved{color:#16a34a}
 .editor-lang-tab.active.approved{border-bottom-color:#4CDE80}
-.editor-tab-prog{font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(0,0,0,.07);color:#aaa;font-weight:500}
-.editor-lang-tab.active .editor-tab-prog{background:rgba(76,222,128,.2);color:#16a34a}
+.etab-status{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600;flex-shrink:0}
+.etab-pending{background:#f3f4f6;color:#9ca3af}
+.etab-in_progress{background:#fef3c7;color:#d97706}
+.etab-ready{background:#dbeafe;color:#2563eb}
+.etab-approved{background:rgba(76,222,128,.2);color:#16a34a}
 .seg-editor-table{width:100%;border-collapse:collapse}
 .seg-editor-table th{font-size:11px;font-weight:600;color:#999;text-align:left;padding:8px 12px;border-bottom:1px solid #eee;background:#fafaf8;position:sticky;top:0;z-index:1}
 .seg-editor-table td{padding:6px 8px;border-bottom:1px solid #f0ede8;vertical-align:top}
@@ -4047,13 +4052,13 @@ function buildEditorLangTabs(){
     return;
   }
 
-  const total=currentProjectSegs.length;
+  const statusCls={pending:'etab-pending',in_progress:'etab-in_progress',ready:'etab-ready',approved:'etab-approved'};
   tabs.innerHTML=langs.map((a,i)=>{
-    const done=currentProjectSegs.filter(s=>s.translations?.[a.lang]?.text).length;
     const isApproved=a.status==='approved'||a.status==='ready';
+    const cls=statusCls[a.status]||'etab-pending';
     return`<div class="editor-lang-tab${isApproved?' approved':''}" onclick="switchEditorLang('${a.lang}')" id="etab-${a.lang}">
-      ${getLangFlag(a.lang)} <span style="font-size:13px;">${a.lang}</span>
-      <span class="editor-tab-prog" id="etab-prog-${a.lang}">${done}/${total}</span>
+      ${getLangFlag(a.lang)} <span>${a.lang}</span>
+      <span class="etab-status ${cls}" id="etab-status-${a.lang}">${statusLabel(a.status)}</span>
     </div>`;
   }).join('');
 
@@ -4209,9 +4214,6 @@ function updateEditorProgress(lang){
   const done=currentProjectSegs.filter(s=>s.translations?.[lang]?.text).length;
   const badge=document.getElementById('editor-progress-badge');
   if(badge){ badge.textContent=`${done}/${total}`; badge.className='badge '+(done===total?'b-green':'b-yellow'); }
-  // Update tab progress counter
-  const tabProg=document.getElementById('etab-prog-'+lang);
-  if(tabProg){ tabProg.textContent=`${done}/${total}`; }
 }
 
 async function runAITranslation(toTranslate, lang, apiKey){
