@@ -646,8 +646,8 @@ body.dark .dash-metric-value{color:#fff;}
 .editor-back{cursor:pointer;font-size:13px;color:#888;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
 .editor-back:hover{color:#1a1a1a}
 .editor-title{font-size:15px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.editor-lang-tabs{display:flex;gap:0;width:100%;overflow-x:auto}
-.editor-lang-tab{padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;color:#888;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0}
+.editor-lang-tabs{display:flex;gap:0;width:100%;flex-wrap:wrap}
+.editor-lang-tab{padding:8px 14px;font-size:12px;font-weight:500;cursor:pointer;color:#888;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
 .editor-lang-tab:hover{color:#444}
 .editor-lang-tab.active{color:#1a1a1a;border-bottom-color:#4CDE80;font-weight:600}
 .editor-lang-tab.approved{color:#16a34a}
@@ -1343,18 +1343,6 @@ body.dark .lp-contact-email a{color:#5a9eff}
     <div class="sidebar-item hide-viewer" data-tab="quick" onclick="switchTab('quick')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       Szybkie tłumaczenie
-    </div>
-    <div class="sidebar-item hide-viewer" data-tab="xliff" onclick="switchTab('xliff')">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      XLIFF
-    </div>
-    <div class="sidebar-item hide-viewer" data-tab="pptx" onclick="switchTab('pptx')">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      PowerPoint <span class="sidebar-badge" id="pptx-count"></span>
-    </div>
-    <div class="sidebar-item hide-viewer" data-tab="subtitles" onclick="switchTab('subtitles')">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Napisy
     </div>
 
     <div class="sidebar-sep"></div>
