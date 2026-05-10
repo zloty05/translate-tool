@@ -146,9 +146,11 @@ body.dark .xliff-stat-tm{color:#c084fc}
 .q-cost-summary{display:flex;gap:0;align-items:stretch;border-radius:10px;overflow:hidden;border:1px solid #e8e6e0;margin-bottom:12px}
 .q-cost-block{flex:1;text-align:center;padding:20px 16px}
 .q-cost-block+.q-cost-block{border-left:1px solid #e8e6e0}
+.q-cost-title{font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .q-cost-num{font-size:36px;font-weight:700;letter-spacing:-1.5px;line-height:1;color:#1a1a1a}
-.q-cost-lbl{font-size:11px;color:#aaa;margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+.q-cost-lbl{font-size:12px;color:#aaa;margin-top:5px}
 .q-tm-note{font-size:12px;color:#38a169;margin-top:4px}
+body.dark .q-cost-title{color:#555}
 .q-file-info{display:none;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;background:#f8f7f4;border-radius:8px;font-size:13px}
 .q-file-info svg{flex-shrink:0;color:#888}
 .q-file-name{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1421,16 +1423,19 @@ body.dark .lp-contact-email a{color:#5a9eff}
   <div class="card" id="q-cost-card" style="display:none;">
     <div class="q-cost-summary">
       <div class="q-cost-block">
+        <div class="q-cost-title">Do tłumaczenia</div>
         <div class="q-cost-num" id="q-chars">0</div>
-        <div class="q-cost-lbl">Znaków</div>
+        <div class="q-cost-lbl">znaków</div>
       </div>
       <div class="q-cost-block">
+        <div class="q-cost-title">Szacunkowy koszt</div>
         <div class="q-cost-num" id="q-credits">0</div>
-        <div class="q-cost-lbl">Kredytów</div>
+        <div class="q-cost-lbl">kredytów</div>
       </div>
       <div class="q-cost-block">
+        <div class="q-cost-title">Twoje saldo</div>
         <div class="q-cost-num" id="q-balance">0</div>
-        <div class="q-cost-lbl">Saldo</div>
+        <div class="q-cost-lbl">kredytów</div>
       </div>
     </div>
     <div id="q-tm-note" class="q-tm-note" style="display:none;"></div>
@@ -1439,7 +1444,7 @@ body.dark .lp-contact-email a{color:#5a9eff}
   <!-- Karta 3: Język + tłumacz -->
   <div class="card" id="q-lang-card" style="display:none;">
     <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
-      <div><label>Język docelowy</label><select id="q-target-lang" style="width:220px;"></select></div>
+      <div><label>Język docelowy</label><select id="q-target-lang" style="width:220px;" onchange="quickLangChange()"></select></div>
       <button class="btn btn-dark hide-viewer" id="q-translate-btn" onclick="startQuickTranslation()">Tłumacz automatycznie</button>
     </div>
     <div class="progress-wrap" id="q-pw"><div class="progress-fill" id="q-pf" style="width:0%"></div></div>
@@ -2612,6 +2617,29 @@ function renderQuickCost(){
   const tn=document.getElementById('q-tm-note');
   if(tmChars>0){tn.style.display='block';tn.textContent=`✓ ${tmChars.toLocaleString('pl-PL')} znaków bezpłatnie z pamięci TM — oszczędność ${estimateCredits(tmChars)} kredytów`;}
   else tn.style.display='none';
+}
+async function quickLangChange(){
+  if(!quickMode)return;
+  const lang=document.getElementById('q-target-lang').value;
+  if(quickMode==='xliff'){
+    document.getElementById('target-lang').value=lang;
+    xliffSegs.forEach(seg=>{
+      if(seg.type==='plain'){seg.target='';seg.status='pending';seg.fromTM=false;}
+      else{seg.targets.forEach(t=>t.text='');seg.status='pending';seg.fromTM=false;}
+    });
+    await applyTMToSegsAsync(xliffSegs,lang);
+  } else if(quickMode==='pptx'){
+    document.getElementById('pptx-target-lang').value=lang;
+    pptxSegs.forEach(seg=>{seg.target='';seg.status='pending';seg.fromTM=false;});
+    const tmMap=await lookupTMBatch(pptxSegs.map(s=>s.source),lang);
+    pptxSegs.forEach(seg=>{const f=tmMap[tmKey(seg.source)];if(f){seg.target=f;seg.status='done';seg.fromTM=true;}});
+  } else {
+    document.getElementById('sub-target-lang').value=lang;
+    subtitleSegs.forEach(s=>{s.target='';s.status='pending';s.fromTM=false;});
+    await subApplyTM(lang);
+  }
+  renderQuickTable();
+  renderQuickCost();
 }
 async function startQuickTranslation(){
   const apiKey=getApiKey();
