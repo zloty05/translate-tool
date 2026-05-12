@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(dir /b)",
+      "Bash(xargs ls -lt)",
+      "Bash(git commit *)",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" status)",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" diff)",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" add index.html)",
+      "Bash(git -C 'c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool' commit -m 'zmiana nazwy na TranslateScorm i aktualizacja domeny na translatescorm.com')",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" push)",
+      "Bash(git -C 'c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool' commit -m ' *)",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" add CLAUDE.md)",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" commit -m \"aktualizacja CLAUDE.md — rebranding na TranslateScorm, nowa domena, architektura auth\")",
+      "Bash(git -C 'c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool' commit -m 'naprawa odświeżania po zmianie języka i opisy liczb w Szybkim tłumaczeniu *)",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" commit -m \"naprawa synchronizacji języka przy wczytaniu pliku w Szybkim tłumaczeniu\")",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" commit -m \"naprawa layoutu edytora — zakładki i akcje na pełną szerokość \\(osobne wiersze\\)\")",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" commit -m \"zakładki języków: kolorowe oznaczenie statusu, usunięty licznik segmentów\")",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" commit -m \"usuniecie zakładek XLIFF/PPTX/Napisy z sidebara, zawijanie zakładek języków\")",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" log --oneline -30)"
+    ]
+  }
+}
