@@ -917,6 +917,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div><label>Rola</label>
         <select id="invite-role" style="width:140px;">
           <option value="admin">Admin</option>
+          <option value="translator">Translator</option>
           <option value="viewer">Viewer</option>
         </select>
       </div>
@@ -950,6 +951,10 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div style="display:flex;gap:10px;align-items:flex-start;">
         <span class="role-badge role-admin" style="flex-shrink:0;margin-top:1px;">Admin</span>
         <span class="text-muted">Pełny dostęp: tłumaczenie AI, zarządzanie organizacją, kredytami i danymi</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span class="role-badge role-translator" style="flex-shrink:0;margin-top:1px;">Translator</span>
+        <span class="text-muted">Tłumaczenie projektów, edycja TM i słownika; brak dostępu do ustawień organizacji</span>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;">
         <span class="role-badge role-viewer" style="flex-shrink:0;margin-top:1px;">Viewer</span>
