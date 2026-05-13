@@ -66,7 +66,7 @@ Projekt jest **single-file SPA** — jeden plik `index.html` zawiera wszystko. N
     <div.tabs>  ← nawigacja zakładkowa
 
   Zawartość zakładek (poza app-shell, aktywowane przez .tab-content.active):
-    tab-xliff, tab-pptx, tab-history, tab-dict, tab-tm, tab-team, tab-shop
+    tab-xliff, tab-pptx, tab-stats, tab-dict, tab-tm, tab-team, tab-shop
     tab-projects (domyślna) — lista projektów + edytor projektu
 
   Modals: new-proj-modal, edit-proj-modal
@@ -101,16 +101,16 @@ Otwórz URL
 
 | Sekcja | Opis |
 |---|---|
-| SUPABASE | Init klienta, `sbRest()`, helpery `dbGet/dbPost/dbPatch/dbDelete` |
+| SUPABASE | Init klienta, `sbRest()`, helpery `dbGet/dbPost/dbPatch/dbDelete/dbUpsert` |
 | STATE | Globalne zmienne stanu: `xliffSegs`, `pptxSegs`, `dictCache`, `tmCache`, `currentOrg`, `currentRole` itd. |
 | LANGUAGES | Tablica `LANGS[]` (25 języków), `PRIMARY` (8 głównych), `langOptionsHTML()` |
 | AUTH | `doLogin`, `doRegister`, `doReset`, `doLogout`, `afterLogin`, `acceptInvitation`; walidacja: `setFieldState`, `validateEmail`, `validatePass`, `validatePass2` |
 | ONBOARDING | Tworzenie org via RPC (`create_org_record`, `add_org_admin`), 15 kredytów powitalnych |
 | APP LOAD | `loadApp()`, `switchTab()`, helpery utils (`esc`, `download`, `readFile`, `sleep`, `fmtDate`) |
 | TEAM MANAGEMENT | `loadTeam`, `renderTeamList`, limity kredytów na tłumacza, języki członka |
-| TRANSLATION MEMORY | `lookupTMBatch` (RPC), `pushTMBatch`, `applyTMToSegsAsync`, edycja wpisów TM |
+| TRANSLATION MEMORY | `lookupTMBatch` (RPC), `pushTMBatch` (upsert via `dbUpsert`), `applyTMToSegsAsync`, edycja wpisów TM |
 | DICTIONARY | `dictCache[]`, CRUD, `buildDictPromptForChunk()`, `fillDictWithAI()`, stemming |
-| HISTORIA | `histCache[]`, `createHistoryEntry`, `updateHistoryEntry` |
+| STATYSTYKI | `loadStats`, `renderStats` — finanse (saldo, wydatki), TM (liczba wpisów, języki), jakość AI (% poprawek per projekt) |
 | COST | `renderCostBox()` — 3 kafelki: Znaków / Koszt (kredytów) / Saldo |
 | API CALL | `apiCall(apiKey, prompt, maxTokens)` — POST do `https://api.anthropic.com/v1/messages` |
 | XLIFF | `loadXliff`, `runXliffBatch`, `exportXliff`, import/eksport Excel |
