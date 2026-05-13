@@ -67,7 +67,11 @@
     }
     if(event==='SIGNED_OUT'){
       currentOrg=null;currentRole=null;currentUser=null;
-      showLanding();
+      if(localStorage.getItem('pendingInvite')){
+        _showScreen('screen-invite');
+      } else {
+        showLanding();
+      }
     }
   });
 })();
