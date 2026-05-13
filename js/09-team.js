@@ -139,9 +139,26 @@ async function sendInvite(){
   if(!email){alert('Wpisz email.');return;}
   if(currentRole!=='admin'){alert('Tylko admin może zapraszać.');return;}
   try{
-    await dbPost('invitations',{organization_id:currentOrg.id,email,role,invited_by:currentUser.id});
+    const result=await dbPost('invitations',{organization_id:currentOrg.id,email,role,invited_by:currentUser.id});
     document.getElementById('invite-email').value='';
-    alert(`Zaproszenie wysłane do ${email}.\n\nUwaga: automatyczne wysyłanie emaili wymaga konfiguracji w Supabase (Auth → SMTP). Na razie skopiuj link ręcznie z tabeli invitations.`);
+    const inv=Array.isArray(result)?result[0]:result;
+    if(inv?.token){
+      const inviteUrl=`https://translatescorm.com?invite=${inv.token}`;
+      try{
+        const r=await fetch('/api/invite',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession.access_token}`},
+          body:JSON.stringify({email,inviteUrl,orgName:currentOrg.name})
+        });
+        if(!r.ok)throw new Error(await r.text());
+        alert(`Zaproszenie wysłane do ${email}.`);
+      }catch(emailErr){
+        alert(`Zaproszenie zostało utworzone dla ${email}, ale wysyłka emaila nie powiodła się.\nSkopiuj link z tabeli poniżej.`);
+        console.error('invite email error:',emailErr);
+      }
+    }else{
+      alert(`Zaproszenie wysłane do ${email}.`);
+    }
     loadTeam();
   }catch(e){alert('Błąd: '+e.message);}
 }
