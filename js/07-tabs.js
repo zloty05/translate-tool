@@ -7,7 +7,7 @@ function switchTab(name){
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='tm')renderTMList();
   if(name==='dict')renderDict();
-  if(name==='history')loadHistory();
+  if(name==='stats')loadStats();
   if(name==='team')loadTeam();
   if(name==='shop'){updateShopBalance();loadTokenHistory();}
   if(name==='projects'){loadProjects();}

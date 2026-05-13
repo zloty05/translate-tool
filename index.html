@@ -482,9 +482,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     <div class="sidebar-sep"></div>
 
-    <div class="sidebar-item hide-translator" data-tab="history" onclick="switchTab('history')">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Historia <span class="sidebar-badge" id="hist-count">0</span>
+    <div class="sidebar-item hide-translator" data-tab="stats" onclick="switchTab('stats')">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Statystyki
     </div>
     <div class="sidebar-item hide-translator" data-tab="dict" onclick="switchTab('dict')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -823,27 +823,54 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 </div></div>
 
-<!-- HISTORIA -->
-<div class="tab-content" id="tab-history"><div class="container">
+<!-- STATYSTYKI -->
+<div class="tab-content" id="tab-stats"><div class="container">
+  <div id="stats-loading" class="loading" style="display:none;margin-bottom:16px;"><div class="spinner"></div> Ładowanie...</div>
+
+  <!-- Finanse -->
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <p class="card-title" style="margin:0;">Historia tłumaczeń</p>
-      <button class="btn btn-sm" onclick="loadHistory()">↺ Odśwież</button>
+      <p class="card-title" style="margin:0;">Finanse</p>
+      <button class="btn btn-sm" onclick="loadStats()">↺ Odśwież</button>
     </div>
-    <div class="hist-stat-grid">
-      <div class="hist-stat"><div class="hist-stat-num" id="hist-total">0</div><div class="hist-stat-lbl">Tłumaczeń</div></div>
-      <div class="hist-stat"><div class="hist-stat-num" id="hist-xliff-c">0</div><div class="hist-stat-lbl">Pliki XLIFF</div></div>
-      <div class="hist-stat"><div class="hist-stat-num" id="hist-pptx-c">0</div><div class="hist-stat-lbl">Pliki PPTX</div></div>
-      <div id="hist-cost-total-wrap" class="hist-stat"><div class="hist-stat-num" style="color:#4CDE80;" id="hist-cost-total">0</div><div class="hist-stat-lbl">Wydane kredyty</div></div>
-      <div class="hist-stat"><div class="hist-stat-num" id="hist-tm-total">0</div><div class="hist-stat-lbl">Z pamięci TM</div></div>
+    <div class="hist-stat-grid" style="grid-template-columns:repeat(5,1fr);">
+      <div class="hist-stat"><div class="hist-stat-num" style="color:#4CDE80;" id="stats-balance">—</div><div class="hist-stat-lbl">Saldo kredytów</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="stats-spent-total">—</div><div class="hist-stat-lbl">Wydano łącznie</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="stats-spent-month">—</div><div class="hist-stat-lbl">Wydano ten miesiąc</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="stats-avg-cost">—</div><div class="hist-stat-lbl">Średni koszt / tłum.</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="stats-translations-count">—</div><div class="hist-stat-lbl">Tłumaczeń AI</div></div>
     </div>
-    <div class="filter-row">
-      <input type="search" id="hist-filter" placeholder="Szukaj pliku..." oninput="renderHistory()" style="max-width:260px;" />
-      <select id="hist-ftype" onchange="renderHistory()" style="width:140px;"><option value="all">Wszystkie typy</option><option value="xliff">XLIFF</option><option value="pptx">PowerPoint</option></select>
-      <select id="hist-flang" onchange="renderHistory()" style="width:175px;"><option value="all">Wszystkie języki</option></select>
+  </div>
+
+  <!-- Pamięć TM -->
+  <div class="card">
+    <p class="card-title" style="margin-bottom:16px;">Pamięć tłumaczeń (TM)</p>
+    <div class="hist-stat-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="hist-stat"><div class="hist-stat-num" id="stats-tm-total">—</div><div class="hist-stat-lbl">Segmentów w TM</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" id="stats-tm-langs">—</div><div class="hist-stat-lbl">Języków</div></div>
+      <div class="hist-stat"><div class="hist-stat-num" style="color:#4CDE80;" id="stats-tm-savings">—</div><div class="hist-stat-lbl">Szacowana oszczędność*</div></div>
     </div>
-    <div id="hist-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
-    <div class="hist-list" id="hist-list"><div class="hist-empty">Brak historii</div></div>
+    <p style="font-size:11px;color:#aaa;margin-top:10px;">* Szacunek: liczba segmentów TM × 1 kr. — gdyby każdy był tłumaczony przez AI od zera</p>
+  </div>
+
+  <!-- Jakość AI -->
+  <div class="card" id="stats-ai-section" style="display:none;">
+    <p class="card-title" style="margin-bottom:16px;">Jakość AI — korekty tłumaczy</p>
+    <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="font-size:48px;font-weight:700;line-height:1;" id="stats-ai-pct">—</div>
+      <div style="font-size:13px;color:#888;max-width:340px;" id="stats-ai-desc"></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:2px solid #eee;">
+          <th style="text-align:left;padding:8px 6px;font-weight:600;color:#555;">Projekt</th>
+          <th style="text-align:center;padding:8px 6px;font-weight:600;color:#555;">Segmentów AI</th>
+          <th style="text-align:center;padding:8px 6px;font-weight:600;color:#555;">Poprawiono</th>
+          <th style="text-align:center;padding:8px 6px;font-weight:600;color:#555;">% korekt</th>
+        </tr>
+      </thead>
+      <tbody id="stats-ai-table-body"></tbody>
+    </table>
   </div>
 </div></div>
 

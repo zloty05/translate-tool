@@ -434,6 +434,14 @@ async function saveSegment(segId, lang, textarea){
       if(!seg.translations) seg.translations={};
       seg.translations[lang]={text,status:text?'translated':'empty',updated_by:currentUser.id,updated_at:new Date().toISOString()};
     }
+    // Detect manual correction vs AI translation
+    if(seg && seg.ai_translation !== undefined){
+      const isEdited=text.trim()!==(seg.ai_translation||'').trim();
+      if(isEdited!==seg.manually_edited){
+        await dbPatch('project_segments',{manually_edited:isEdited},`?id=eq.${segId}`);
+        seg.manually_edited=isEdited;
+      }
+    }
     // Save to TM if text is not empty
     if(text.trim()&&seg){
       pushTMBatch([{src:seg.source_text,tgt:text}],lang,'xliff');
@@ -547,8 +555,11 @@ Odpowiedz TYLKO JSON: [{"key":"...","translation":"..."}] — bez markdown, bez 
         const seg=currentProjectSegs.find(s=>s.id===r.key);
         if(!seg) continue;
         await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:r.translation});
+        await dbPatch('project_segments',{ai_translation:r.translation,manually_edited:false},`?id=eq.${seg.id}`);
         if(!seg.translations) seg.translations={};
         seg.translations[lang]={text:r.translation,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+        seg.ai_translation=r.translation;
+        seg.manually_edited=false;
         const ta=document.getElementById('seg-'+seg.id);
         if(ta){ ta.value=r.translation; ta.className='seg-textarea saved'; setTimeout(()=>ta.className='seg-textarea',2000); }
         const pill=document.getElementById(`spill-${seg.id}-${lang}`);
@@ -580,8 +591,11 @@ Tekst: ${JSON.stringify(seg.source_text)}`;
         const tText=res.translation||res.text||'';
         if(!tText) continue;
         await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:tText});
+        await dbPatch('project_segments',{ai_translation:tText,manually_edited:false},`?id=eq.${seg.id}`);
         if(!seg.translations) seg.translations={};
         seg.translations[lang]={text:tText,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+        seg.ai_translation=tText;
+        seg.manually_edited=false;
         const ta=document.getElementById('seg-'+seg.id);
         if(ta){ ta.value=tText; ta.className='seg-textarea saved'; setTimeout(()=>ta.className='seg-textarea',2000); }
         const pill=document.getElementById(`spill-${seg.id}-${lang}`);
@@ -1003,6 +1017,7 @@ async function importProjectExcel(e){
   const rows=XLSX.utils.sheet_to_json(XLSX.read(buf,{type:'array'}).Sheets[XLSX.read(buf,{type:'array'}).SheetNames[0]],{header:1});
   const lang=currentProjectLang;
   let n=0;
+  const tmPairs=[];
   for(const row of rows.slice(1)){
     const key=String(row[1]||'').trim();
     const translation=String(row[3]||'').trim();
@@ -1012,8 +1027,10 @@ async function importProjectExcel(e){
     await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:translation});
     if(!seg.translations) seg.translations={};
     seg.translations[lang]={text:translation,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+    tmPairs.push({src:seg.source_text,tgt:translation});
     n++;
   }
+  if(tmPairs.length>0) await pushTMBatch(tmPairs,lang,'xliff');
   renderEditorTable(lang);
   updateEditorProgress(lang);
   alert('Zaimportowano '+n+' tłumaczeń.');

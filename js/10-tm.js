@@ -25,35 +25,20 @@ async function lookupTMBatch(sources,lang){
 
 async function pushTMBatch(pairs,lang,source){
   if(!currentOrg||!pairs.length)return;
-  const toIns=[], toUpd=[];
+  const rows=[];
   pairs.forEach(({src,tgt})=>{
     if(!src?.trim()||!tgt?.trim()) return;
     const k=tmKey(src);
-    const existing=tmCache.find(e=>e.key===k&&e.lang===lang);
-    if(existing){
-      // Update: if target changed
-      if(existing.target!==tgt){
-        toUpd.push({id:existing.id,target:tgt});
-        existing.target=tgt;
-      }
-    }else{
-      // Insert new
-      toIns.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});
-      // Keep rolling cache small - max 1000 entries
-      if(tmCache.length>1000) tmCache.shift();
-      tmCache.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});
-    }
+    rows.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});
+    const cached=tmCache.find(e=>e.key===k&&e.lang===lang);
+    if(cached) cached.target=tgt;
+    else{if(tmCache.length>1000)tmCache.shift();tmCache.push({key:k,source:src,target:tgt,lang,organization_id:currentOrg.id});}
   });
-  if(!toIns.length&&!toUpd.length)return;
+  if(!rows.length)return;
   try{
-    if(toIns.length) await dbPost('translation_memory',toIns);
-    if(toUpd.length){
-      for(const {id,target} of toUpd){
-        await dbPatch('translation_memory',{target},`?id=eq.${id}`);
-      }
-    }
+    await dbUpsert('translation_memory',rows,'key,lang');
     updateTMUI();
-  }catch(e){console.error('TM push:',e);}
+  }catch(e){}
 }
 
 async function updateTMUI(){
