@@ -1,4 +1,4 @@
-﻿// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // BOOT
 // ══════════════════════════════════════════════════════════
 (async()=>{
@@ -6,9 +6,26 @@
   const urlParams=new URLSearchParams(window.location.search);
   const inviteToken=urlParams.get('invite');
   if(inviteToken){
-    // Store token and show login/register
-    sessionStorage.setItem('pendingInvite',inviteToken);
+    localStorage.setItem('pendingInvite',inviteToken);
     window.history.replaceState(null,'',window.location.pathname);
+    // Try to pre-fill invite screen with email (anon read — graceful degradation if RLS blocks)
+    try{
+      const r=await fetch(`${SB_URL}/rest/v1/invitations?token=eq.${encodeURIComponent(inviteToken)}&select=email,organizations(name)`,{
+        headers:{apikey:SB_KEY,'Authorization':`Bearer ${SB_KEY}`}
+      });
+      if(r.ok){
+        const data=await r.json();
+        if(data.length){
+          const emailEl=document.getElementById('invite-email-reg');
+          if(emailEl){emailEl.value=data[0].email;emailEl.readOnly=true;emailEl.style.opacity='0.7';}
+          const orgName=data[0].organizations?.name;
+          if(orgName){
+            const orgEl=document.getElementById('invite-org-name');
+            if(orgEl)orgEl.textContent=orgName;
+          }
+        }
+      }
+    }catch(e){/* anon access denied — form stays empty */}
   }
 
   // Handle email confirmation callback (token in URL hash)
@@ -35,6 +52,8 @@
   if(session){
     currentSession=session;currentUser=session.user;
     await afterLogin();
+  } else if(inviteToken){
+    _showScreen('screen-invite');
   } else {
     showLanding();
   }

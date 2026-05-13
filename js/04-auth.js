@@ -204,10 +204,11 @@ async function deleteAccount(e){
 
 async function afterLogin(){
   try{
-    // Check for pending invitation
-    const pendingInvite=sessionStorage.getItem('pendingInvite');
+    // Check for pending invitation (localStorage persists across email confirmation redirects)
+    const pendingInvite=sessionStorage.getItem('pendingInvite')||localStorage.getItem('pendingInvite');
     if(pendingInvite){
       sessionStorage.removeItem('pendingInvite');
+      localStorage.removeItem('pendingInvite');
       await acceptInvitation(pendingInvite);
       return;
     }
@@ -262,5 +263,30 @@ async function acceptInvitation(token){
     console.error('acceptInvitation error:',e);
     alert('Błąd akceptacji zaproszenia: '+e.message);
     showScreen('screen-onboard');
+  }
+}
+
+async function doInviteRegister(){
+  const email=document.getElementById('invite-email-reg').value.trim();
+  const name=document.getElementById('invite-name').value.trim();
+  const pass=document.getElementById('invite-pass').value;
+  const errEl=document.getElementById('invite-reg-error');
+  errEl.style.display='none';
+  if(!email||!name||!pass){errEl.textContent='Wypełnij wszystkie pola.';errEl.style.display='block';return;}
+  if(pass.length<8){errEl.textContent='Hasło musi mieć min. 8 znaków.';errEl.style.display='block';return;}
+  const btn=document.getElementById('invite-btn');
+  const orig=btn.textContent;
+  btn.classList.add('loading');btn.textContent='Tworzenie konta...';
+  const{data,error}=await supa.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+  btn.classList.remove('loading');btn.textContent=orig;
+  if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
+  if(data.session){
+    currentSession=data.session;currentUser=data.user;
+    await afterLogin();
+  }else{
+    const ok=document.getElementById('invite-reg-success');
+    ok.textContent='Sprawdź skrzynkę '+email+' i kliknij link potwierdzający, aby dokończyć rejestrację.';
+    ok.style.display='block';
+    btn.disabled=true;
   }
 }

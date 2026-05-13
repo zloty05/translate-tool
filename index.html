@@ -360,6 +360,42 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 </div>
 
+<!-- ══════ AUTH: INVITE REGISTER ══════ -->
+<div class="auth-screen" id="screen-invite">
+  <div class="auth-split-left">
+    <div class="auth-left-logo"><img src="logo.png" alt="" class="logo-img logo-auth"> TranslateScorm</div>
+    <div class="auth-left-tag">Zaproszono Cię do współpracy</div>
+    <ul class="auth-left-bullets">
+      <li class="auth-left-bullet">Obsługa XLIFF, PPTX, SRT i VTT</li>
+      <li class="auth-left-bullet">Pamięć tłumaczeń i słownik terminologii</li>
+      <li class="auth-left-bullet">Praca zespołowa i zarządzanie projektami</li>
+    </ul>
+  </div>
+  <div class="auth-split-right">
+    <div class="auth-box">
+      <div class="auth-title">Dołącz do <span id="invite-org-name">organizacji</span></div>
+      <div class="auth-sub">Utwórz konto, aby rozpocząć pracę z zespołem</div>
+      <div class="auth-error" id="invite-reg-error"></div>
+      <div class="auth-success" id="invite-reg-success"></div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="invite-email-reg" placeholder="jan@firma.pl" />
+      </div>
+      <div class="auth-field">
+        <label>Imię i nazwisko</label>
+        <input type="text" id="invite-name" placeholder="Jan Kowalski" />
+      </div>
+      <div class="auth-field">
+        <label>Hasło (min. 8 znaków)</label>
+        <input type="password" id="invite-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doInviteRegister()" />
+        <div class="auth-field-msg" id="invite-pass-msg"></div>
+      </div>
+      <button class="auth-btn" id="invite-btn" onclick="doInviteRegister()">Dołącz →</button>
+      <div class="auth-link">Masz już konto? <a onclick="showScreen('screen-login')">Zaloguj się</a></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════ ONBOARDING ══════ -->
 <div class="auth-screen" id="screen-onboard">
   <div class="auth-split-left">
