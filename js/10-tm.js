@@ -25,22 +25,33 @@ async function lookupTMBatch(sources,lang){
 
 async function pushTMBatch(pairs,lang,source){
   if(!currentOrg||!pairs.length)return;
-  // Use small rolling cache just for dedup within session
-  const toIns=[];
+  const toIns=[], toUpd=[];
   pairs.forEach(({src,tgt})=>{
     if(!src?.trim()||!tgt?.trim()) return;
     const k=tmKey(src);
-    // Check local cache for dedup (avoid duplicate inserts in same session)
-    if(!tmCache.find(e=>e.key===k&&e.lang===lang)){
+    const existing=tmCache.find(e=>e.key===k&&e.lang===lang);
+    if(existing){
+      // Update: if target changed
+      if(existing.target!==tgt){
+        toUpd.push({id:existing.id,target:tgt});
+        existing.target=tgt;
+      }
+    }else{
+      // Insert new
       toIns.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});
       // Keep rolling cache small - max 1000 entries
       if(tmCache.length>1000) tmCache.shift();
       tmCache.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});
     }
   });
-  if(!toIns.length)return;
+  if(!toIns.length&&!toUpd.length)return;
   try{
-    await dbPost('translation_memory',toIns);
+    if(toIns.length) await dbPost('translation_memory',toIns);
+    if(toUpd.length){
+      for(const {id,target} of toUpd){
+        await dbPatch('translation_memory',{target},`?id=eq.${id}`);
+      }
+    }
     updateTMUI();
   }catch(e){console.error('TM push:',e);}
 }
@@ -79,35 +90,34 @@ async function renderTMList(){
       <div class="tm-row" id="tmrow-${e.id}">
         <div class="tm-col">${esc(e.source)}</div>
         <div class="tm-col" id="tmtgt-${e.id}">
-          <span class="tm-tgt-text" onclick="editTMEntry('${e.id}')" title="Kliknij aby edytować" style="cursor:pointer;">${esc(e.target)}</span>
+          <span class="tm-tgt-text" data-tm-edit="${e.id}" title="Kliknij aby edytować" style="cursor:pointer;">${esc(e.target)}</span>
         </div>
         <div class="tm-col"><span class="badge b-gray" style="font-size:10px;">${esc(e.lang.substring(0,8))}</span></div>
         <div class="tm-col"><span class="badge ${e.src==='pptx'?'b-orange':'b-blue'}" style="font-size:10px;">${esc(e.src||'xliff')}</span></div>
         <div class="tm-col" style="text-align:right;">
-          <button class="btn btn-sm" onclick="editTMEntry('${e.id}')" style="padding:2px 7px;font-size:10px;" title="Edytuj">✏️</button>
-          <button class="btn btn-sm" onclick="deleteTMEntry('${e.id}','${esc(e.source).substring(0,30)}')" style="padding:2px 7px;font-size:10px;color:#b32424;" title="Usuń">×</button>
+          <button class="btn btn-sm" data-tm-edit="${e.id}" style="padding:2px 7px;font-size:10px;" title="Edytuj">✏️</button>
+          <button class="btn btn-sm" data-tm-delete="${e.id}" style="padding:2px 7px;font-size:10px;color:#b32424;" title="Usuń">×</button>
         </div>
       </div>`).join('');
   }catch(e){list.innerHTML='<div style="padding:16px;text-align:center;color:#b32424;font-size:12px;">Błąd ładowania</div>';}
 }
 
 async function editTMEntry(id){
-  // Find the row and replace target text with input
   const tgtEl=document.getElementById('tmtgt-'+id);
   if(!tgtEl) return;
   const currentText=tgtEl.querySelector('.tm-tgt-text')?.textContent||'';
   tgtEl.innerHTML=`
     <div style="display:flex;gap:4px;align-items:center;">
       <input id="tmedit-${id}" class="seg-textarea" value="${esc(currentText)}" style="flex:1;padding:3px 6px;font-size:12px;min-height:unset;" />
-      <button class="btn btn-dark btn-sm" onclick="saveTMEntry('${id}')" style="padding:3px 8px;font-size:11px;">✓</button>
-      <button class="btn btn-sm" onclick="cancelTMEdit('${id}','${esc(currentText)}')" style="padding:3px 8px;font-size:11px;">✕</button>
+      <button class="btn btn-dark btn-sm" data-tm-save="${id}" style="padding:3px 8px;font-size:11px;">✓</button>
+      <button class="btn btn-sm" data-tm-cancel="${id}" data-tm-original="${esc(currentText)}" style="padding:3px 8px;font-size:11px;">✕</button>
     </div>`;
   document.getElementById('tmedit-'+id)?.focus();
 }
 
 function cancelTMEdit(id, originalText){
   const tgtEl=document.getElementById('tmtgt-'+id);
-  if(tgtEl) tgtEl.innerHTML=`<span class="tm-tgt-text" onclick="editTMEntry('${id}')" title="Kliknij aby edytować" style="cursor:pointer;">${esc(originalText)}</span>`;
+  if(tgtEl) tgtEl.innerHTML=`<span class="tm-tgt-text" data-tm-edit="${id}" title="Kliknij aby edytować" style="cursor:pointer;">${esc(originalText)}</span>`;
 }
 
 async function saveTMEntry(id){
@@ -187,3 +197,34 @@ async function applyTMToSegsAsync(segs,lang){
   updateTMUI();
   return hits;
 }
+
+// Event delegation for TM list
+document.addEventListener('click',(e)=>{
+  const tmEdit=e.target.closest('[data-tm-edit]');
+  if(tmEdit){
+    e.preventDefault();
+    editTMEntry(tmEdit.dataset.tmEdit);
+    return;
+  }
+  const tmDel=e.target.closest('[data-tm-delete]');
+  if(tmDel){
+    e.preventDefault();
+    const id=tmDel.dataset.tmDelete;
+    const entry=tmCache.find(x=>x.id===id);
+    const preview=entry?entry.source.substring(0,30):'...';
+    deleteTMEntry(id,preview);
+    return;
+  }
+  const tmSave=e.target.closest('[data-tm-save]');
+  if(tmSave){
+    e.preventDefault();
+    saveTMEntry(tmSave.dataset.tmSave);
+    return;
+  }
+  const tmCancel=e.target.closest('[data-tm-cancel]');
+  if(tmCancel){
+    e.preventDefault();
+    cancelTMEdit(tmCancel.dataset.tmCancel,tmCancel.dataset.tmOriginal);
+    return;
+  }
+});
