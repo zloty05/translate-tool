@@ -20,7 +20,23 @@
       "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" commit -m \"naprawa layoutu edytora — zakładki i akcje na pełną szerokość \\(osobne wiersze\\)\")",
       "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" commit -m \"zakładki języków: kolorowe oznaczenie statusu, usunięty licznik segmentów\")",
       "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" commit -m \"usuniecie zakładek XLIFF/PPTX/Napisy z sidebara, zawijanie zakładek języków\")",
-      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" log --oneline -30)"
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" log --oneline -30)",
+      "Bash(powershell -Command ' *)",
+      "Bash(Get-Content \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\\\\index.html\" -ReadCount 0)",
+      "Bash(Measure-Object -Line)",
+      "Bash(Select-Object -ExpandProperty Lines)",
+      "Bash(awk 'NR<=5')",
+      "Bash(grep -n \"^</div>$\" 'c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\\\\index.html')",
+      "Bash(awk 'NR>=95 && NR<=110')",
+      "Bash(awk '/^<div id=\"app-shell\">/{start=NR} /^<\\\\/div>$/{if\\(start && NR>start && NR<2300\\) {print NR\":\"$0; found=1}} found==1 && NR==start+120 {exit}' 'c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\\\\index.html')",
+      "Bash(awk '/<div class=\"tab-content\" id=\"tab-/{match\\($0, /id=\"\\([^\"]+\\)\"/, a\\); tab=a[1]; line=NR} /<div class=\"tab-content\" id=\"tab-|id=\"edit-proj-modal\"|id=\"new-proj-modal\"|<!-- SHOP -->/{if \\(NR>line && line>0\\) print tab\":\"line\"-\"NR-1; if \\(/id=\"edit-proj-modal\"/\\) {tab=\"\"; line=0}}' 'c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\\\\index.html')",
+      "Bash(grep -n \"\\\\.innerHTML\\\\s*=\\\\s*\\\\`\" 'c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\\\\index.html')",
+      "Bash(git -C \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" log --oneline -10)",
+      "PowerShell(New-Item -ItemType Directory -Path \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\\\\css\" -Force)",
+      "PowerShell(New-Item -ItemType Directory -Path \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\\\\js\" -Force)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\zloty\\\\OneDrive\\\\PROJEKTY KZ 2026\\\\translate-tool\" -Recurse -Include \"index.html\", \"*.js\")",
+      "Bash(Select-Object FullName)",
+      "Bash(grep -v \"\\\\.html:[0-9]\\\\{1,3\\\\}:\")"
     ]
   }
 }

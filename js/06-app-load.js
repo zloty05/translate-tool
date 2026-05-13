@@ -12,6 +12,7 @@ async function loadApp(){
   document.getElementById('menu-email').textContent=currentUser.email;
   // Set role guard
   document.getElementById('app-shell').setAttribute('data-role',currentRole||'viewer');
+  document.body.setAttribute('data-role',currentRole||'viewer');
   // Init UI
   document.getElementById('target-lang').innerHTML=langOptionsHTML();
   document.getElementById('pptx-target-lang').innerHTML=langOptionsHTML();

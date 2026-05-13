@@ -137,6 +137,7 @@ async function doLogout(){
   await supa.auth.signOut();
   currentSession=null;currentUser=null;currentOrg=null;currentRole=null;
   dictCache=[];tmCache=[];histCache=[];
+  document.body.removeAttribute('data-role');
   showScreen('screen-login');
 }
 function showAccountMsg(id,msg,type){

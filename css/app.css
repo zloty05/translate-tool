@@ -283,6 +283,12 @@ a{color:#2451b3}
 [data-role=viewer] .viewer-only{display:block}
 [data-role=viewer] .admin-only{display:none}
 [data-role=translator] .admin-only{display:none}
+[data-role=translator] .hide-translator{display:none}
+/* body-level role guard (elementy poza #app-shell) */
+body[data-role=viewer] .hide-viewer{display:none}
+body[data-role=viewer] .admin-only{display:none}
+body[data-role=translator] .admin-only{display:none}
+body[data-role=translator] .hide-translator{display:none}
 
 #pptx-segs-card,#pptx-lang-card,#lang-card,#segments-card{display:none}
 /* TOKENS */

@@ -14,7 +14,10 @@ async function loadProjects(){
       const assignments = await dbGet('project_language_assignments',`?project_id=in.(${ids})`);
       projectsCache.forEach(p=>{ p.assignments=assignments.filter(a=>a.project_id===p.id); });
     }
-    document.getElementById('proj-count').textContent = projectsCache.length;
+    const visibleCount = currentRole === 'translator'
+      ? projectsCache.filter(p => (p.assignments||[]).some(a => a.assigned_user_id === currentUser.id)).length
+      : projectsCache.length;
+    document.getElementById('proj-count').textContent = visibleCount;
     renderProjectList();
     await loadDashMetrics();
   }catch(e){ console.error('loadProjects error:',e); }
@@ -961,7 +964,10 @@ async function deleteProject(projectId, projectName){
   try{
     await dbDelete('projects',`?id=eq.${projectId}`);
     projectsCache=projectsCache.filter(p=>p.id!==projectId);
-    document.getElementById('proj-count').textContent=projectsCache.length;
+    const visibleCount = currentRole === 'translator'
+      ? projectsCache.filter(p => (p.assignments||[]).some(a => a.assigned_user_id === currentUser.id)).length
+      : projectsCache.length;
+    document.getElementById('proj-count').textContent=visibleCount;
     renderProjectList();
   }catch(e){ alert('Błąd usuwania projektu: '+e.message); }
 }
