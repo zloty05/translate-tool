@@ -2,6 +2,9 @@
 // BOOT
 // ══════════════════════════════════════════════════════════
 (async()=>{
+  console.log('[BOOT] href:', window.location.href);
+  console.log('[BOOT] hash:', window.location.hash);
+  console.log('[BOOT] search:', window.location.search);
   const rawHash=window.location.hash;
   const urlParams=new URLSearchParams(window.location.search);
   const inviteToken=urlParams.get('invite');
