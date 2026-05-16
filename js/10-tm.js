@@ -40,7 +40,7 @@ async function pushTMBatch(pairs,lang,source){
   try{
     await dbUpsert('translation_memory',deduped,'key,lang,organization_id');
     updateTMUI();
-  }catch(e){console.error('pushTMBatch error:',e.message);}
+  }catch(e){}
 }
 
 async function updateTMUI(){
