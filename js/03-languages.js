@@ -34,7 +34,45 @@ const LANGS=[
   {code:'Arabic',label:'AR — Arabski',flag:'🇸🇦'},
 ];
 const PRIMARY=LANGS.filter(l=>l.primary);
-function langOptionsHTML(){
-  return`<optgroup label="Twoje języki">${PRIMARY.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('')}</optgroup>`+
-    `<optgroup label="Pozostałe">${LANGS.filter(l=>!l.primary).map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('')}</optgroup>`;
+function getFavLangs(){
+  try{const s=localStorage.getItem('favLangs_'+(currentOrg?.id||'default'));if(s)return JSON.parse(s);}catch(e){}
+  return PRIMARY.map(l=>l.code);
+}
+function setFavLangs(codes){localStorage.setItem('favLangs_'+(currentOrg?.id||'default'),JSON.stringify(codes));}
+function langOptionsHTML(selectedLang){
+  const favCodes=getFavLangs();
+  const favs=LANGS.filter(l=>favCodes.includes(l.code));
+  const rest=LANGS.filter(l=>!favCodes.includes(l.code));
+  const opt=l=>`<option value="${l.code}"${selectedLang&&l.code===selectedLang?' selected':''}>${l.flag} ${l.label}</option>`;
+  return`<optgroup label="Twoje języki">${favs.map(opt).join('')}</optgroup>`+
+    `<optgroup label="Pozostałe">${rest.map(opt).join('')}</optgroup>`;
+}
+function buildFavLangsUI(){
+  const favCodes=getFavLangs();
+  const picker=document.getElementById('fav-lang-picker');if(!picker)return;
+  picker.innerHTML=LANGS.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('');
+  renderFavPills(favCodes);
+}
+function renderFavPills(codes){
+  const container=document.getElementById('fav-langs-pills');if(!container)return;
+  container.innerHTML=codes.map(code=>{
+    const l=LANGS.find(x=>x.code===code);if(!l)return'';
+    return`<span style="display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;border:1px solid #4CDE80;border-radius:20px;padding:4px 10px;font-size:13px;">${l.flag} ${l.label}<button onclick="removeFavLang('${code}')" style="background:none;border:none;cursor:pointer;color:#888;font-size:15px;line-height:1;padding:0 0 0 2px;">×</button></span>`;
+  }).join('');
+}
+function addFavLang(){
+  const code=document.getElementById('fav-lang-picker').value;
+  const favCodes=getFavLangs();
+  if(!favCodes.includes(code)){favCodes.push(code);setFavLangs(favCodes);renderFavPills(favCodes);}
+}
+function removeFavLang(code){
+  const favCodes=getFavLangs().filter(c=>c!==code);
+  setFavLangs(favCodes);renderFavPills(favCodes);
+}
+function saveFavLangs(){
+  ['target-lang','pptx-target-lang','sub-target-lang','q-target-lang'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.innerHTML=langOptionsHTML();
+  });
+  const npSrc=document.getElementById('np-src-lang');if(npSrc)npSrc.innerHTML=langOptionsHTML();
+  alert('Języki zapisane.');
 }

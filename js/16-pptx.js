@@ -26,7 +26,6 @@ async function loadPptx(file){
   document.getElementById('pptx-text-count').textContent=pptxSegs.length+' bloków';
   const ptb=document.getElementById('pptx-tm-badge');if(tmHits>0){ptb.style.display='';ptb.textContent=tmHits+' z TM';}else ptb.style.display='none';
   document.getElementById('pptx-lang-card').style.display='block';document.getElementById('pptx-segs-card').style.display='block';
-  document.getElementById('pptx-count').textContent=pptxSegs.length;
   buildPptxSlideFilter(slideFiles.length);renderPptxTable();updatePptxProgress();updateTMUI();updatePptxCost();
 }
 

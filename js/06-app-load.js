@@ -18,6 +18,7 @@ async function loadApp(){
   document.getElementById('pptx-target-lang').innerHTML=langOptionsHTML();
   document.getElementById('sub-target-lang').innerHTML=langOptionsHTML();
   document.getElementById('q-target-lang').innerHTML=langOptionsHTML();
+  const npSrc=document.getElementById('np-src-lang');if(npSrc)npSrc.innerHTML=langOptionsHTML();
   buildDictNewRow();buildDictLangFilter();
   // Load data
   try{

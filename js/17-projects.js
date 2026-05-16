@@ -130,7 +130,7 @@ async function addLangAssignment(){
     .filter(m=>m.role!=='viewer')
     .map(m=>`<option value="${m.user_id}">${esc(getMemberName(m))} (${m.role})</option>`)
     .join('');
-  const langOptions = PRIMARY.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('');
+  const langOptions = langOptionsHTML();
   const div=document.createElement('div');
   div.id=rowId;
   div.style.cssText='display:grid;grid-template-columns:1fr 1fr 32px;gap:8px;align-items:center;';
@@ -884,7 +884,7 @@ function addEpLangRow(lang='', userId='', status='pending'){
     .filter(m=>m.role!=='viewer')
     .map(m=>`<option value="${m.user_id}" ${m.user_id===userId?'selected':''}>${esc(getMemberName(m))} (${m.role})</option>`)
     .join('');
-  const langOptions = PRIMARY.map(l=>`<option value="${l.code}" ${l.code===lang?'selected':''}>${l.flag} ${l.label}</option>`).join('');
+  const langOptions = langOptionsHTML(lang);
   const statusOptions = ['pending','in_progress','review','approved']
     .map(s=>`<option value="${s}" ${s===status?'selected':''}>${statusLabel(s)}</option>`).join('');
   const rowId='ep-'+Date.now()+Math.random().toString(36).slice(2,6);

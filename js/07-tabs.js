@@ -11,6 +11,7 @@ function switchTab(name){
   if(name==='team')loadTeam();
   if(name==='shop'){updateShopBalance();loadTokenHistory();}
   if(name==='projects'){loadProjects();}
+  if(name==='settings'){buildFavLangsUI();}
   if(name==='subtitles'){renderSubtitleTable();}
   // Close sidebar on mobile after navigation
   document.getElementById('app-shell')?.classList.remove('sidebar-open');

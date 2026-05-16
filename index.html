@@ -605,6 +605,18 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
   </div>
 
+  <!-- Twoje języki -->
+  <div class="card">
+    <p class="card-title">Twoje języki</p>
+    <p class="card-sub">Wybrane języki będą wyświetlane na górze listy w projektach i tłumaczeniu.</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+      <select id="fav-lang-picker" style="width:220px;"></select>
+      <button class="btn btn-sm" onclick="addFavLang()">+ Dodaj</button>
+    </div>
+    <div id="fav-langs-pills" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>
+    <button class="btn btn-dark" style="margin-top:16px;" onclick="saveFavLangs()">Zapisz języki</button>
+  </div>
+
 </div></div>
 
 <!-- QUICK -->
@@ -1225,11 +1237,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
       <div>
         <label>Język źródłowy *</label>
-        <select id="np-src-lang" style="width:100%;">
-          <option value="English">🇬🇧 Angielski (EN)</option>
-          <option value="Polish">🇵🇱 Polski (PL)</option>
-          <option value="German">🇩🇪 Niemiecki (DE)</option>
-        </select>
+        <select id="np-src-lang" style="width:100%;"></select>
       </div>
       <div>
         <label>Typ pliku</label>
