@@ -36,7 +36,7 @@ async function pushTMBatch(pairs,lang,source){
   });
   if(!rows.length)return;
   try{
-    await dbUpsert('translation_memory',rows,'key,lang');
+    await dbUpsert('translation_memory',rows,'key,lang,organization_id');
     updateTMUI();
   }catch(e){}
 }
