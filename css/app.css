@@ -764,7 +764,7 @@ body.dark .dash-metric-value{color:#fff;}
 
 /* ── LOGO IMAGE ── */
 .logo-img{display:inline-block;object-fit:contain;border-radius:8px;vertical-align:middle;flex-shrink:0}
-.logo-nav{height:56px;border-radius:8px;margin-right:-16px}
+.logo-nav{height:28px;border-radius:6px;margin-right:-4px}
 .logo-hdr{height:48px;border-radius:8px;margin-right:-14px}
 .logo-auth{height:96px;border-radius:16px;display:block;margin:0 auto 4px}
 
