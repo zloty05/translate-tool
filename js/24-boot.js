@@ -2,8 +2,9 @@
 // BOOT
 // ══════════════════════════════════════════════════════════
 (async()=>{
-  const rawHash=window.location.hash;
-  const urlParams=new URLSearchParams(window.location.search);
+  // Use pre-captured URL values (Supabase SDK clears hash during createClient)
+  const rawHash=window._bootHash||window.location.hash;
+  const urlParams=new URLSearchParams(window._bootSearch||window.location.search);
   const inviteToken=urlParams.get('invite');
 
   // Save invite token — try storage, but also keep in memory var (Edge blocks CDN localStorage)
