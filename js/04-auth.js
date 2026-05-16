@@ -206,10 +206,11 @@ async function deleteAccount(e){
 async function afterLogin(){
   try{
     // Check for pending invitation (localStorage persists across email confirmation redirects)
-    const pendingInvite=sessionStorage.getItem('pendingInvite')||localStorage.getItem('pendingInvite');
+    const pendingInvite=sessionStorage.getItem('pendingInvite')||localStorage.getItem('pendingInvite')||window._pendingInviteUrl||null;
     if(pendingInvite){
       sessionStorage.removeItem('pendingInvite');
-      localStorage.removeItem('pendingInvite');
+      try{localStorage.removeItem('pendingInvite');}catch(e){}
+      window._pendingInviteUrl=null;
       await acceptInvitation(pendingInvite);
       return;
     }

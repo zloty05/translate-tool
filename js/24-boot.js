@@ -2,19 +2,15 @@
 // BOOT
 // ══════════════════════════════════════════════════════════
 (async()=>{
-  // DEBUG: show boot info on screen (remove after fix)
-  const _dbg=document.createElement('div');
-  _dbg.style='position:fixed;top:0;left:0;right:0;background:#000;color:#0f0;font:12px monospace;padding:8px;z-index:99999;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow:auto;';
-  _dbg.textContent='BOOT\nhref: '+window.location.href+'\nhash: '+window.location.hash+'\nsearch: '+window.location.search+'\npendingInvite: '+localStorage.getItem('pendingInvite');
-  document.body.appendChild(_dbg);
   const rawHash=window.location.hash;
   const urlParams=new URLSearchParams(window.location.search);
   const inviteToken=urlParams.get('invite');
 
-  // Save invite token to storage immediately (before any replaceState clears the URL)
+  // Save invite token — try storage, but also keep in memory var (Edge blocks CDN localStorage)
   if(inviteToken){
-    localStorage.setItem('pendingInvite',inviteToken);
-    sessionStorage.setItem('pendingInvite',inviteToken);
+    window._pendingInviteUrl=inviteToken;
+    try{localStorage.setItem('pendingInvite',inviteToken);}catch(e){}
+    try{sessionStorage.setItem('pendingInvite',inviteToken);}catch(e){}
   }
 
   // Handle PKCE code (Supabase v2 — email confirmation redirect lands here with ?code=...)
@@ -43,18 +39,12 @@
         const payload=JSON.parse(atob(accessToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
         currentSession={access_token:accessToken,refresh_token:refreshToken,user:{id:payload.sub,email:payload.email,user_metadata:payload.user_metadata}};
         currentUser=currentSession.user;
+        // Keep invite token in memory before clearing URL
+        if(inviteToken)window._pendingInviteUrl=inviteToken;
         window.history.replaceState(null,'',window.location.pathname);
         await afterLogin();
         return;
       }catch(e){/* malformed token — fall through */}
-    }
-    // fallback: try SDK getSession
-    const{data:d2}=await supa.auth.getSession();
-    if(d2?.session){
-      currentSession=d2.session;currentUser=d2.session.user;
-      window.history.replaceState(null,'',window.location.pathname);
-      await afterLogin();
-      return;
     }
   }
 
