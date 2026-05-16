@@ -35,8 +35,10 @@ async function pushTMBatch(pairs,lang,source){
     else{if(tmCache.length>1000)tmCache.shift();tmCache.push({key:k,source:src,target:tgt,lang,organization_id:currentOrg.id});}
   });
   if(!rows.length)return;
+  // Deduplicate by (key, lang, organization_id) — keep last value
+  const deduped=Object.values(rows.reduce((acc,r)=>{acc[r.key+'|'+r.lang+'|'+r.organization_id]=r;return acc;},{}));
   try{
-    await dbUpsert('translation_memory',rows,'key,lang,organization_id');
+    await dbUpsert('translation_memory',deduped,'key,lang,organization_id');
     updateTMUI();
   }catch(e){console.error('pushTMBatch error:',e.message);}
 }
