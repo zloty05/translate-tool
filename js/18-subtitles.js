@@ -258,7 +258,6 @@ async function runSubtitleBatch(toT){
   }
 
   const pairs=subtitleSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target}));
-  await pushTMBatch(pairs,lang,'srt');
   const totalChars=toT.reduce((a,s)=>a+s.source.length,0);
   const creditsUsed=estimateCredits(totalChars);
   await deductCredits(totalChars,subtitleFilename+' → '+lang,lang);

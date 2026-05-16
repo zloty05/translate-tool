@@ -198,6 +198,22 @@ function updateQuickProgress(){
   const b=document.getElementById('q-prog-badge');
   if(b){b.textContent=`${done}/${segs.length}`;b.className='badge '+(done===segs.length?'b-green':'b-yellow');}
 }
+async function saveQuickToTM(){
+  if(!quickMode) return;
+  const lang=document.getElementById('q-target-lang').value;
+  let pairs=[];
+  if(quickMode==='xliff'){
+    pairs=xliffSegs.filter(s=>s.status==='done').flatMap(s=>s.type==='plain'?[{src:s.source,tgt:s.target}]:s.textNodes.map((n,i)=>({src:n.text,tgt:s.targets[i]?.text||''})));
+  }else if(quickMode==='pptx'){
+    pairs=pptxSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target}));
+  }else{
+    pairs=subtitleSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target}));
+  }
+  const statusEl=document.getElementById('q-status');
+  if(!pairs.length){statusEl.textContent='Brak przetłumaczonych segmentów.';return;}
+  await pushTMBatch(pairs,lang,quickMode);
+  statusEl.textContent=`Zapisano ${pairs.length} segmentów do TM.`;
+}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL')+' '+d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});}
 function fmtPLN(v){return Number(v).toFixed(2).replace('.',',');}

@@ -93,7 +93,6 @@ async function runPptxBatch(toT){
     done+=chunk.length;document.getElementById('pptx-pf').style.width=Math.round(done/toT.length*100)+'%';updatePptxProgress();if(typeof quickMode!=='undefined'&&quickMode==='pptx')renderQuickTable();await sleep(150);
   }
   const finalDone=pptxSegs.filter(s=>s.status==='done').length;
-  await pushTMBatch(pptxSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target})),lang,'pptx');
   const charsThisBatch=toT.reduce((a,s)=>a+s.source.length,0);
   const creditsUsed=estimateCredits(charsThisBatch);
   await updateHistoryEntry(histId,finalDone,pptxSegs.filter(s=>s.fromTM).length,creditsUsed,creditsUsed);

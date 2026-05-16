@@ -89,7 +89,6 @@ async function runXliffBatch(toT){
     done+=chunk.length;document.getElementById('xliff-pf').style.width=Math.round(done/items.length*100)+'%';updateXliffProgress();if(typeof quickMode!=='undefined'&&quickMode==='xliff')renderQuickTable();await sleep(150);
   }
   const finalDone=xliffSegs.filter(s=>s.status==='done').length;
-  await pushTMBatch(xliffSegs.filter(s=>s.status==='done').flatMap(s=>s.type==='plain'?[{src:s.source,tgt:s.target}]:s.textNodes.map((n,i)=>({src:n.text,tgt:s.targets[i]?.text||''}))),lang,'xliff');
   const charsThisBatch=items.reduce((a,it)=>a+it.text.length,0);
   const creditsUsed=estimateCredits(charsThisBatch);
   await updateHistoryEntry(histId,finalDone,xliffSegs.filter(s=>s.fromTM).length,creditsUsed,creditsUsed);
