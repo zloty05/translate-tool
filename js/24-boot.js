@@ -2,40 +2,33 @@
 // BOOT
 // ══════════════════════════════════════════════════════════
 (async()=>{
-  // Capture hash before any replaceState calls (which clear window.location.hash)
   const rawHash=window.location.hash;
-
-  // Handle invitation link (?invite=TOKEN)
   const urlParams=new URLSearchParams(window.location.search);
   const inviteToken=urlParams.get('invite');
+
+  // Save invite token to storage immediately (before any replaceState clears the URL)
   if(inviteToken){
     localStorage.setItem('pendingInvite',inviteToken);
     sessionStorage.setItem('pendingInvite',inviteToken);
-    window.history.replaceState(null,'',window.location.pathname);
-    // Try to pre-fill invite screen with email (anon read — graceful degradation if RLS blocks)
-    try{
-      const r=await fetch(`${SB_URL}/rest/v1/invitations?token=eq.${encodeURIComponent(inviteToken)}&select=email,organizations(name)`,{
-        headers:{apikey:SB_KEY,'Authorization':`Bearer ${SB_KEY}`}
-      });
-      if(r.ok){
-        const data=await r.json();
-        if(data.length){
-          const emailEl=document.getElementById('invite-email-reg');
-          if(emailEl){emailEl.value=data[0].email;emailEl.readOnly=true;emailEl.style.opacity='0.7';}
-          const orgName=data[0].organizations?.name;
-          if(orgName){
-            const orgEl=document.getElementById('invite-org-name');
-            if(orgEl)orgEl.textContent=orgName;
-          }
-        }
-      }
-    }catch(e){/* anon access denied — form stays empty */}
   }
 
-  // Handle email confirmation callback (token in URL hash)
+  // Handle PKCE code (Supabase v2 — email confirmation redirect lands here with ?code=...)
+  const codeParam=urlParams.get('code');
+  if(codeParam){
+    try{
+      const{data}=await supa.auth.exchangeCodeForSession(window.location.href);
+      if(data?.session){
+        currentSession=data.session;currentUser=data.user;
+        window.history.replaceState(null,'',window.location.pathname);
+        await afterLogin();
+        return;
+      }
+    }catch(e){/* fall through to normal boot */}
+  }
+
+  // Handle email confirmation callback (token in URL hash — Supabase implicit flow)
   const hash=rawHash;
   if(hash&&hash.includes('access_token')){
-    // Try exchangeCodeForSession first (Supabase v2 PKCE), fall back to getSession
     let session=null;
     try{
       const{data:d}=await supa.auth.exchangeCodeForSession(hash);
@@ -57,6 +50,28 @@
   if(hash&&hash.includes('type=recovery')){
     showScreen('screen-reset');
     return;
+  }
+
+  // Pre-fill invite screen and clear URL (only when no auth code in URL)
+  if(inviteToken){
+    window.history.replaceState(null,'',window.location.pathname);
+    try{
+      const r=await fetch(`${SB_URL}/rest/v1/invitations?token=eq.${encodeURIComponent(inviteToken)}&select=email,organizations(name)`,{
+        headers:{apikey:SB_KEY,'Authorization':`Bearer ${SB_KEY}`}
+      });
+      if(r.ok){
+        const data=await r.json();
+        if(data.length){
+          const emailEl=document.getElementById('invite-email-reg');
+          if(emailEl){emailEl.value=data[0].email;emailEl.readOnly=true;emailEl.style.opacity='0.7';}
+          const orgName=data[0].organizations?.name;
+          if(orgName){
+            const orgEl=document.getElementById('invite-org-name');
+            if(orgEl)orgEl.textContent=orgName;
+          }
+        }
+      }
+    }catch(e){/* anon access denied — form stays empty */}
   }
 
   // Check existing session
