@@ -21,7 +21,7 @@ const dbPost=(t,b)=>sbRest('POST',t,b);
 const dbPatch=(t,b,p)=>sbRest('PATCH',t,b,p);
 const dbDelete=(t,p)=>sbRest('DELETE',t,null,p);
 async function dbUpsert(table,body,onConflict){
-  const params=onConflict?`?on_conflict=${encodeURIComponent(onConflict)}`:'';
+  const params=onConflict?`?on_conflict=${onConflict}`:'';
   const url=`${SB_URL}/rest/v1/${table}${params}`;
   const h={'apikey':SB_KEY,'Authorization':`Bearer ${currentSession?.access_token||SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation,resolution=merge-duplicates'};
   const r=await fetch(url,{method:'POST',headers:h,body:JSON.stringify(body)});

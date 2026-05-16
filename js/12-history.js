@@ -79,3 +79,33 @@ function renderStats(txs, tmData, corrections){
   document.getElementById('stats-ai-table-body').innerHTML=rows||
     '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:12px;">Brak danych</td></tr>';
 }
+
+async function createHistoryEntry(filename,fileType,lang,totalSegs,tmSegs){
+  if(!currentOrg) return null;
+  try{
+    const rows=await dbPost('translation_history',{
+      organization_id:currentOrg.id,
+      filename,
+      file_type:fileType,
+      target_lang:lang,
+      total_segments:totalSegs,
+      tm_segments:tmSegs,
+      status:'in_progress'
+    });
+    return rows?.[0]?.id||null;
+  }catch(e){console.error('createHistoryEntry:',e);return null;}
+}
+
+async function updateHistoryEntry(histId,finalDone,tmCount,creditsUsed,costPln){
+  if(!histId) return;
+  try{
+    await dbPatch('translation_history',{
+      translated_segments:finalDone,
+      tm_segments:tmCount,
+      credits_used:creditsUsed,
+      cost_pln:costPln,
+      status:'done',
+      finished_at:new Date().toISOString()
+    },`?id=eq.${histId}`);
+  }catch(e){console.error('updateHistoryEntry:',e);}
+}

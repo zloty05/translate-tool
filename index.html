@@ -1147,7 +1147,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         <button class="btn btn-sm hide-translator" onclick="exportProjectExcel()">↓ Excel</button>
         <button class="btn btn-sm hide-viewer hide-translator" onclick="document.getElementById('proj-xl-imp').click()">↑ Excel</button>
         <input type="file" id="proj-xl-imp" accept=".xlsx" style="display:none;" onchange="importProjectExcel(event)" />
-        <button class="btn btn-sm hide-translator" onclick="exportProjectXliff()">↓ XLIFF</button>
+        <button class="btn btn-sm hide-translator" id="proj-xliff-btn" onclick="exportProjectXliff()">↓ XLIFF</button>
+        <button class="btn btn-sm hide-translator" id="proj-pptx-btn" onclick="exportProjectPptx()" style="display:none">↓ PPTX</button>
       </div>
     </div>
 

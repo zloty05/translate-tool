@@ -299,6 +299,11 @@ async function openProject(projectId){
   document.getElementById('proj-editor-view').style.display='block';
   document.getElementById('editor-proj-title').textContent=proj.name;
 
+  // Show correct export button based on file type
+  const isPptx=proj.file_type==='pptx';
+  document.getElementById('proj-xliff-btn').style.display=isPptx?'none':'';
+  document.getElementById('proj-pptx-btn').style.display=isPptx?'':'none';
+
   // Build language tabs — admin sees all, translator sees only their langs
   buildEditorLangTabs();
 }
@@ -831,6 +836,68 @@ async function exportProjectXliff(){
     if(!xmlStr.startsWith('<?xml')) xmlStr='<?xml version="1.0" encoding="utf-8"?>'+xmlStr;
     const fname=`${proj.name}_${lang}.xliff`.replace(/[^a-z0-9_.-]/gi,'_');
     download(xmlStr, fname, 'application/xliff+xml');
+
+  }catch(e){
+    alert('Błąd eksportu: '+e.message);
+    console.error(e);
+  }
+}
+
+// ── EXPORT PPTX FROM PROJECT ──
+async function exportProjectPptx(){
+  if(!currentProject||!currentProjectLang){ alert('Brak projektu lub języka.'); return; }
+  const lang=currentProjectLang;
+  const proj=currentProject;
+
+  if(!proj.original_file_path){
+    alert('Brak oryginalnego pliku PPTX — ten projekt był utworzony bez uploadu pliku.');
+    return;
+  }
+
+  try{
+    const{data,error}=await supa.storage.from('project-files').download(proj.original_file_path);
+    if(error) throw new Error('Błąd pobierania pliku: '+error.message);
+
+    const buf=await data.arrayBuffer();
+    const zip=await JSZip.loadAsync(buf);
+
+    // Build map: segment_key → translated text
+    const translationMap={};
+    currentProjectSegs.forEach(seg=>{
+      const tText=seg.translations?.[lang]?.text||'';
+      if(tText) translationMap[seg.segment_key]=tText;
+    });
+
+    // Group project segs by slide file (extract slideNum from segment_key)
+    const bySlide={};
+    currentProjectSegs.forEach(seg=>{
+      const m=seg.segment_key?.match(/^s(\d+)_/);
+      if(!m) return;
+      const slideNum=parseInt(m[1]);
+      const slideFile=`ppt/slides/slide${slideNum}.xml`;
+      if(!bySlide[slideFile]) bySlide[slideFile]=[];
+      bySlide[slideFile].push({
+        key:seg.segment_key,
+        slideNum,
+        target:translationMap[seg.segment_key]||''
+      });
+    });
+
+    const newZip=new JSZip();
+    for(const path of Object.keys(zip.files)){
+      const entry=zip.files[path];
+      if(entry.dir){newZip.folder(path);continue;}
+      if(bySlide[path]){
+        const xml=await zip.file(path).async('string');
+        newZip.file(path,applyPptxTranslations(xml,bySlide[path]));
+      }else{
+        newZip.file(path,await zip.file(path).async('arraybuffer'));
+      }
+    }
+
+    const blob=await newZip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation',compression:'DEFLATE',compressionOptions:{level:6}});
+    const fname=`${proj.name}_${lang}.pptx`.replace(/[^a-z0-9_.-]/gi,'_');
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
 
   }catch(e){
     alert('Błąd eksportu: '+e.message);
