@@ -85,11 +85,12 @@ async function createHistoryEntry(filename,fileType,lang,totalSegs,tmSegs){
   try{
     const rows=await dbPost('translation_history',{
       organization_id:currentOrg.id,
+      user_id:currentUser?.id||null,
       filename,
-      file_type:fileType,
-      target_lang:lang,
-      total_segments:totalSegs,
-      tm_segments:tmSegs,
+      filetype:fileType,
+      lang,
+      segments_total:totalSegs,
+      segments_from_tm:tmSegs,
       status:'in_progress'
     });
     return rows?.[0]?.id||null;
@@ -100,12 +101,10 @@ async function updateHistoryEntry(histId,finalDone,tmCount,creditsUsed,costPln){
   if(!histId) return;
   try{
     await dbPatch('translation_history',{
-      translated_segments:finalDone,
-      tm_segments:tmCount,
-      credits_used:creditsUsed,
+      segments_done:finalDone,
+      segments_from_tm:tmCount,
       cost_pln:costPln,
-      status:'done',
-      finished_at:new Date().toISOString()
+      status:'done'
     },`?id=eq.${histId}`);
   }catch(e){console.error('updateHistoryEntry:',e);}
 }

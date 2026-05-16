@@ -90,7 +90,7 @@ async function runPptxBatch(toT){
       totalCostUsd+=((charsIn/CPT)/1e6)*PRICE_IN+((charsOut/CPT)/1e6)*PRICE_OUT;
       res.forEach(r=>{const seg=pptxSegs.find(s=>s.key===r.key);if(!seg)return;seg.target=r.translation;seg.status='done';const idx=pptxSegs.indexOf(seg);const ta=document.getElementById('pta-'+idx);if(ta)ta.value=r.translation;const b=document.getElementById('pbadge-'+idx);if(b){b.className='badge b-green';b.textContent='OK';}});
     }catch(err){chunk.forEach(s=>{s.status='error';const idx=pptxSegs.indexOf(s);const b=document.getElementById('pbadge-'+idx);if(b){b.className='badge b-red';b.textContent='Błąd';}});setPPS('Błąd: '+err.message);}
-    done+=chunk.length;document.getElementById('pptx-pf').style.width=Math.round(done/toT.length*100)+'%';updatePptxProgress();await sleep(150);
+    done+=chunk.length;document.getElementById('pptx-pf').style.width=Math.round(done/toT.length*100)+'%';updatePptxProgress();if(typeof quickMode!=='undefined'&&quickMode==='pptx')renderQuickTable();await sleep(150);
   }
   const finalDone=pptxSegs.filter(s=>s.status==='done').length;
   await pushTMBatch(pptxSegs.filter(s=>s.status==='done'&&s.target.trim()).map(s=>({src:s.source,tgt:s.target})),lang,'pptx');

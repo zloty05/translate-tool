@@ -86,7 +86,7 @@ async function runXliffBatch(toT){
       totalCostUsd+=((charsIn/CPT)/1e6)*PRICE_IN+((charsOut/CPT)/1e6)*PRICE_OUT;
       res.forEach(r=>{const item=chunk.find(it=>it.key===r.key);if(!item)return;const seg=xliffSegs[item.segIndex];if(!seg)return;if(seg.type==='plain'){seg.target=r.translation;seg.status='done';}else{const tn=seg.targets.find(t=>t.gId===item.gId);if(tn)tn.text=r.translation;if(seg.targets.every(t=>t.text.trim()))seg.status='done';}const ta=document.getElementById('xta-'+item.segIndex);if(ta)ta.value=xliffTgt(xliffSegs[item.segIndex]);const b=document.getElementById('xbadge-'+item.segIndex);if(b&&xliffSegs[item.segIndex].status==='done'){b.className='badge b-green';b.textContent='OK';}});
     }catch(err){chunk.forEach(it=>{xliffSegs[it.segIndex].status='error';const b=document.getElementById('xbadge-'+it.segIndex);if(b){b.className='badge b-red';b.textContent='Błąd';}});setXS('Błąd: '+err.message);}
-    done+=chunk.length;document.getElementById('xliff-pf').style.width=Math.round(done/items.length*100)+'%';updateXliffProgress();await sleep(150);
+    done+=chunk.length;document.getElementById('xliff-pf').style.width=Math.round(done/items.length*100)+'%';updateXliffProgress();if(typeof quickMode!=='undefined'&&quickMode==='xliff')renderQuickTable();await sleep(150);
   }
   const finalDone=xliffSegs.filter(s=>s.status==='done').length;
   await pushTMBatch(xliffSegs.filter(s=>s.status==='done').flatMap(s=>s.type==='plain'?[{src:s.source,tgt:s.target}]:s.textNodes.map((n,i)=>({src:n.text,tgt:s.targets[i]?.text||''}))),lang,'xliff');
