@@ -2,9 +2,6 @@
 // BOOT
 // ══════════════════════════════════════════════════════════
 (async()=>{
-  console.log('[BOOT] href:', window.location.href);
-  console.log('[BOOT] hash:', window.location.hash);
-  console.log('[BOOT] search:', window.location.search);
   const rawHash=window.location.hash;
   const urlParams=new URLSearchParams(window.location.search);
   const inviteToken=urlParams.get('invite');
@@ -32,17 +29,9 @@
   // Handle email confirmation callback (token in URL hash — Supabase implicit flow)
   const hash=rawHash;
   if(hash&&hash.includes('access_token')){
-    let session=null;
-    try{
-      const{data:d}=await supa.auth.exchangeCodeForSession(hash);
-      if(d&&d.session)session=d.session;
-    }catch(e){/* not a code — try getSession */}
-    if(!session){
-      const{data:d2}=await supa.auth.getSession();
-      if(d2&&d2.session)session=d2.session;
-    }
-    if(session){
-      currentSession=session;currentUser=session.user;
+    const{data:d2}=await supa.auth.getSession();
+    if(d2?.session){
+      currentSession=d2.session;currentUser=d2.session.user;
       window.history.replaceState(null,'',window.location.pathname);
       await afterLogin();
       return;
