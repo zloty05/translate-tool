@@ -105,6 +105,11 @@
     currentSession=session;
     if(event==='SIGNED_IN'&&session&&!currentOrg){
       currentUser=session.user;
+      // Restore invite token from pre-captured URL (works when SDK fires SIGNED_IN from hash)
+      if(!window._pendingInviteUrl){
+        const inv=new URLSearchParams(window._bootSearch||'').get('invite');
+        if(inv)window._pendingInviteUrl=inv;
+      }
       await afterLogin();
     }
     if(event==='SIGNED_OUT'){
