@@ -33,6 +33,19 @@
   // Handle email confirmation callback (token in URL hash — Supabase implicit flow)
   const hash=rawHash;
   if(hash&&hash.includes('access_token')){
+    const hashParams=new URLSearchParams(hash.replace(/^#/,''));
+    const accessToken=hashParams.get('access_token');
+    const refreshToken=hashParams.get('refresh_token');
+    if(accessToken&&refreshToken){
+      const{data,error}=await supa.auth.setSession({access_token:accessToken,refresh_token:refreshToken});
+      if(!error&&data?.session){
+        currentSession=data.session;currentUser=data.session.user;
+        window.history.replaceState(null,'',window.location.pathname);
+        await afterLogin();
+        return;
+      }
+    }
+    // fallback: try getSession
     const{data:d2}=await supa.auth.getSession();
     if(d2?.session){
       currentSession=d2.session;currentUser=d2.session.user;
