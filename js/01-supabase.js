@@ -6,7 +6,6 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 // Capture URL before Supabase SDK processes and clears the hash
 window._bootHash=window.location.hash;
 window._bootSearch=window.location.search;
-alert('DBG hash: '+window._bootHash.substring(0,80)+'\nsearch: '+window._bootSearch);
 const supa=supabase.createClient(SB_URL,SB_KEY);
 
 // REST helper (bypasses RLS issues with JS client in some cases)
