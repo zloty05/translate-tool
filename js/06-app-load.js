@@ -6,10 +6,9 @@ async function loadApp(){
   // Set header
   const profile=currentUser.user_metadata;
   const name=profile?.full_name||currentUser.email;
-  document.getElementById('hdr-org-name').textContent=currentOrg?.name||'—';
   document.getElementById('hdr-avatar').textContent=name.charAt(0).toUpperCase();
   document.getElementById('menu-name').textContent=name;
-  document.getElementById('menu-email').textContent=currentUser.email;
+  document.getElementById('menu-org').textContent=currentOrg?.name||'—';
   // Set role guard
   document.getElementById('app-shell').setAttribute('data-role',currentRole||'viewer');
   document.body.setAttribute('data-role',currentRole||'viewer');
@@ -53,7 +52,7 @@ async function loadOrgBalance(){
 
 function setDbStatus(ok){
   const dot=document.getElementById('db-dot');
-  dot.className='db-dot '+(ok?'ok':'err');
+  if(dot) dot.className='db-dot '+(ok?'ok':'err');
 }
 
 function toggleUserMenu(){

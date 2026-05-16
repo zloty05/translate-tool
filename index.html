@@ -466,9 +466,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     <img src="logoSmall.png" alt="" class="logo-img sidebar-logo-img">
     <span>TranslateScorm</span>
   </div>
-  <!-- Org name -->
-  <div class="sidebar-org" id="hdr-org-name">—</div>
-
   <!-- Navigation -->
   <nav class="sidebar-nav">
     <div class="sidebar-item" data-tab="projects" onclick="switchTab('projects')">
@@ -506,20 +503,23 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   <!-- Bottom section -->
   <div class="sidebar-bottom">
-    <!-- Credits -->
-    <div class="sidebar-credits hide-translator" onclick="switchTab('shop')" title="Kliknij aby kupić kredyty">
-      <div>
+
+    <!-- Toolbar: kredyty + dzwonek + dark mode w jednym wierszu -->
+    <div class="sidebar-toolbar">
+      <div class="sidebar-credits hide-translator" onclick="switchTab('shop')" title="Kliknij aby kupić kredyty">
         <div class="sidebar-credits-amount" id="hdr-token-amount">—</div>
         <div class="sidebar-credits-label">kredytów</div>
+        <span class="db-dot" id="db-dot"></span>
       </div>
-      <span class="db-dot" id="db-dot"></span>
-    </div>
-
-    <!-- Notifications + dark toggle row -->
-    <div class="sidebar-notif-row">
-      <div class="sidebar-notif-btn" onclick="toggleNotifications()" title="Powiadomienia">
+      <div class="sidebar-toolbar-sep hide-translator"></div>
+      <div class="sidebar-notif-btn" onclick="toggleNotifications()" title="Powiadomienia" style="position:relative;">
         <svg width="14" height="14" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <div id="notif-dot" style="display:none;width:7px;height:7px;border-radius:50%;background:#f87171;position:absolute;top:3px;right:3px;border:1.5px solid #1a1a1a;"></div>
+        <div id="notif-dot" style="display:none;width:7px;height:7px;border-radius:50%;background:#f87171;position:absolute;top:1px;right:1px;border:1.5px solid #1a1a1a;"></div>
+      </div>
+      <div class="sidebar-toolbar-sep"></div>
+      <div class="sidebar-dark-icon" onclick="toggleDarkMode()" title="Ciemny motyw">
+        <svg class="dark-icon-light" width="14" height="14" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="dark-icon-dark" width="14" height="14" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </div>
     </div>
 
@@ -532,18 +532,12 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="notif-list"><div class="notif-empty">Brak powiadomień</div></div>
     </div>
 
-    <!-- Dark mode toggle -->
-    <div class="sidebar-dark" onclick="toggleDarkMode()">
-      <span>Ciemny motyw</span>
-      <div class="toggle-track" id="dark-toggle-track"><div class="toggle-thumb"></div></div>
-    </div>
-
     <!-- User section -->
     <div class="sidebar-user" onclick="toggleUserMenu()">
       <div class="avatar" id="hdr-avatar">?</div>
       <div style="overflow:hidden;flex:1;min-width:0;">
         <div class="sidebar-user-name" id="menu-name">—</div>
-        <div class="sidebar-user-email" id="menu-email">—</div>
+        <div class="sidebar-user-email" id="menu-org">—</div>
       </div>
       <svg class="sidebar-user-chevron" id="user-chevron" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
       <!-- User menu (opens upward) -->
@@ -562,11 +556,19 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 </div>
 
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div id="top-bar-left">
+    <span id="top-bar-icon"></span>
+    <span id="top-bar-label">Projekty</span>
+  </div>
+</div>
+
 <!-- SETTINGS -->
 <div class="tab-content" id="tab-settings"><div class="container">
 
   <!-- Moje konto -->
-  <div class="card" id="account-card">
+  <div class="card card-accent" id="account-card">
     <p class="card-title">Moje konto</p>
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
       <div class="avatar" id="account-avatar" style="width:48px;height:48px;font-size:20px;font-weight:700;background:#2a2a2a;flex-shrink:0;">?</div>
@@ -624,7 +626,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div class="tab-content" id="tab-quick"><div class="container">
 
   <!-- Karta 1: Drop zone -->
-  <div class="card">
+  <div class="card card-accent">
     <div class="drop-zone" id="quick-drop"
          onclick="document.getElementById('quick-file').click()"
          ondragover="dzOver(event,'quick-drop')"
@@ -841,7 +843,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   <div id="stats-loading" class="loading" style="display:none;margin-bottom:16px;"><div class="spinner"></div> Ładowanie...</div>
 
   <!-- Finanse -->
-  <div class="card">
+  <div class="card card-accent">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <p class="card-title" style="margin:0;">Finanse</p>
       <button class="btn btn-sm" onclick="loadStats()">↺ Odśwież</button>
@@ -856,7 +858,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 
   <!-- Pamięć TM -->
-  <div class="card">
+  <div class="card card-accent">
     <p class="card-title" style="margin-bottom:16px;">Pamięć tłumaczeń (TM)</p>
     <div class="hist-stat-grid" style="grid-template-columns:repeat(3,1fr);">
       <div class="hist-stat"><div class="hist-stat-num" id="stats-tm-total">—</div><div class="hist-stat-lbl">Segmentów w TM</div></div>
@@ -867,7 +869,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 
   <!-- Jakość AI -->
-  <div class="card" id="stats-ai-section" style="display:none;">
+  <div class="card card-accent" id="stats-ai-section" style="display:none;">
     <p class="card-title" style="margin-bottom:16px;">Jakość AI — korekty tłumaczy</p>
     <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px;flex-wrap:wrap;">
       <div style="font-size:48px;font-weight:700;line-height:1;" id="stats-ai-pct">—</div>
@@ -950,7 +952,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <div class="tab-content" id="tab-team"><div class="container">
 
   <!-- Karta Zaproś -->
-  <div class="card hide-viewer" style="border-left:3px solid #4CDE80;margin-bottom:14px;">
+  <div class="card card-accent hide-viewer">
     <p class="card-title">Zaproś nowego członka</p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
       <div style="flex:1;min-width:200px;"><label>Email</label><input type="email" id="invite-email" placeholder="email@firma.pl" /></div>
@@ -967,7 +969,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 
   <!-- Karta Członkowie -->
-  <div class="card">
+  <div class="card card-accent">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <p class="card-title" style="margin:0;">Członkowie organizacji <span class="badge b-gray" id="team-member-count"></span></p>
       <p style="font-size:12px;color:#aaa;margin:0;" id="team-org-info"></p>
@@ -985,7 +987,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 
   <!-- Legenda ról -->
-  <div class="card card-muted">
+  <div class="card card-accent card-muted">
     <p class="card-title" style="margin-bottom:10px;">Role w organizacji</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;font-size:13px;">
       <div style="display:flex;gap:10px;align-items:flex-start;">
@@ -1078,26 +1080,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   <!-- Project LIST view -->
   <div id="proj-list-view">
-    <!-- Metrics (admin only) -->
-    <div id="proj-metrics" class="hide-viewer hist-stat-grid" style="margin-bottom:20px;">
-      <div class="hist-stat">
-        <div class="hist-stat-num" id="dash-active">—</div>
-        <div class="hist-stat-lbl">Aktywne projekty</div>
-      </div>
-      <div class="hist-stat">
-        <div class="hist-stat-num" style="color:#4CDE80;" id="dash-tokens">—</div>
-        <div class="hist-stat-lbl">Kredyty</div>
-      </div>
-      <div class="hist-stat">
-        <div class="hist-stat-num" id="dash-done">—</div>
-        <div class="hist-stat-lbl">Ukończone</div>
-      </div>
-      <div class="hist-stat">
-        <div class="hist-stat-num" id="dash-cost">—</div>
-        <div class="hist-stat-lbl">Koszt miesięczny</div>
-      </div>
-    </div>
-
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
       <div class="filter-tabs">
         <div class="ftab active" onclick="setProjFilter('active',this)">Aktywne</div>

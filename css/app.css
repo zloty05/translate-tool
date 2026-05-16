@@ -62,15 +62,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sidebar-item.active .sidebar-badge{background:#4CDE80;color:#000}
 .sidebar-sep{height:1px;background:#252525;margin:6px 10px}
 .sidebar-bottom{border-top:1px solid #222;padding:10px 8px;flex-shrink:0}
-.sidebar-credits{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;cursor:pointer;transition:background .15s;margin-bottom:4px}
-.sidebar-credits:hover{background:rgba(255,255,255,.05)}
-.sidebar-credits-amount{font-size:15px;font-weight:700;color:#4CDE80}
-.sidebar-credits-label{font-size:11px;color:#555}
-.sidebar-notif-row{display:flex;align-items:center;gap:8px;padding:2px 10px 6px;position:relative}
+.sidebar-toolbar{display:flex;align-items:center;gap:4px;padding:2px 2px 6px;margin-bottom:2px}
+.sidebar-toolbar-sep{width:1px;height:16px;background:#2a2a2a;flex-shrink:0;margin:0 2px}
+.sidebar-toolbar .sidebar-credits{display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:6px;cursor:pointer;transition:background .15s;flex:1;min-width:0;margin-bottom:0}
+.sidebar-toolbar .sidebar-credits:hover{background:rgba(255,255,255,.06)}
+.sidebar-toolbar .sidebar-credits-amount{font-size:35px;font-weight:700;color:#4CDE80;white-space:nowrap}
+.sidebar-toolbar .sidebar-credits-label{font-size:10px;color:#555;white-space:nowrap}
 .sidebar-notif-btn{width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;position:relative;flex-shrink:0}
 .sidebar-notif-btn:hover{background:rgba(255,255,255,.1)}
-.sidebar-dark{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:7px;cursor:pointer;transition:background .15s;font-size:12px;color:#555;margin-bottom:4px}
-.sidebar-dark:hover{background:rgba(255,255,255,.05);color:#ccc}
+.sidebar-dark-icon{width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;flex-shrink:0}
+.sidebar-dark-icon:hover{background:rgba(255,255,255,.1)}
 .sidebar-user{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:background .15s;position:relative}
 .sidebar-user:hover{background:rgba(255,255,255,.05)}
 .sidebar-user-name{font-size:13px;font-weight:500;color:#ccc;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -90,7 +91,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* Tab content layout */
 .tab-content{display:none}
 .tab-content.active{display:block}
-body.app-mode .tab-content.active{position:fixed;left:220px;top:0;right:0;bottom:0;overflow-y:auto;background:#f8f7f4}
+body.app-mode .tab-content.active{position:fixed;left:220px;top:44px;right:0;bottom:0;overflow-y:auto;background:#f8f7f4}
 body.dark.app-mode .tab-content.active{background:#0f0f0f}
 .hamburger{display:none;position:fixed;top:12px;left:12px;z-index:200;width:36px;height:36px;background:#1a1a1a;border:none;border-radius:8px;cursor:pointer;align-items:center;justify-content:center;color:#fff}
 .hamburger:hover{background:#333}
@@ -99,9 +100,9 @@ body.dark.app-mode .tab-content.active{background:#0f0f0f}
 @media(max-width:768px){
   #app-shell{left:-220px;transition:left .25s;display:flex !important;z-index:99}
   #app-shell.sidebar-open{left:0;z-index:100}
-  body.app-mode .tab-content.active{left:0;padding-top:56px}
+  body.app-mode .tab-content.active{left:0;top:44px;padding-top:0}
   .hamburger{display:flex}
-  .editor-header{margin:-56px -16px 16px !important}
+  .editor-header{margin:-44px -16px 16px !important}
   .hist-list{overflow-x:auto}
   .hist-thead,.hist-row{min-width:640px}
   .tm-list{overflow-x:auto}
@@ -119,6 +120,7 @@ body.dark.app-mode .tab-content.active{background:#0f0f0f}
 .pass-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:start}
 @media(max-width:600px){.pass-grid{grid-template-columns:1fr}}
 .card{background:#fff;border-radius:12px;border:1px solid #e8e6e0;padding:20px;margin-bottom:14px}
+.card-accent{border-left:3px solid #4CDE80}
 .card-title{font-size:14px;font-weight:600;margin-bottom:12px}
 .card-sub{font-size:12px;color:#888;margin-bottom:12px;line-height:1.6}
 label{font-size:12px;color:#666;display:block;margin-bottom:4px}
@@ -313,6 +315,7 @@ body.dark .tab-content{background:#0f0f0f}
 body.dark .container{background:#0f0f0f}
 /* Cards and surfaces */
 body.dark .card{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
+body.dark .card-accent{border-left-color:#4CDE80}
 body.dark .card-title{color:#fff}
 body.dark .card-sub{color:#888}
 body.dark .card p{color:#ccc}
@@ -522,6 +525,17 @@ body.dark .user-menu-item:hover{background:#222}
 body.dark .user-menu-item.danger{color:#f87171}
 body.dark .user-menu-sep{background:#2a2a2a}
 body.dark .hdr-org{background:#2a2a2a;color:#aaa}
+/* ── TOP BAR ── */
+#top-bar{display:none;position:fixed;top:0;left:220px;right:0;height:44px;background:#f8f7f4;border-bottom:1px solid #e8e6e0;align-items:center;justify-content:flex-start;padding:0 16px;z-index:90}
+body.app-mode #top-bar{display:flex}
+body.dark #top-bar{background:#111;border-color:#222}
+#top-bar-left{display:flex;align-items:center;gap:8px}
+#top-bar-icon{display:flex;align-items:center;color:#999}
+body.dark #top-bar-icon{color:#666}
+#top-bar-label{font-size:13px;font-weight:600;color:#1a1a1a}
+body.dark #top-bar-label{color:#ccc}
+@media(max-width:768px){#top-bar{left:0;z-index:99}
+body.app-mode .tab-content.active{top:44px}}
 .dict-add-form{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:12px;}
 body.dark .dict-add-form{background:#1a1a1a !important;border-color:#2a2a2a !important}
 body.dark .dict-add-form p{color:#fff}
@@ -598,8 +612,12 @@ body.dark .notif-text{color:#ccc}
 /* DASHBOARD PROJ CARDS */
 .dash-proj-card{background:#fff;border:1px solid #e8e6e0;border-radius:12px;padding:18px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .1s;border-left:3px solid transparent}
 body.dark .dash-proj-card{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .dash-proj-card.status-active{border-left-color:#4CDE80}
+body.dark .dash-proj-card.status-completed{border-left-color:#60a5fa}
 .dash-proj-card:hover{border-color:#d0cdc8;box-shadow:0 4px 16px rgba(0,0,0,.07);transform:translateY(-1px)}
+.dash-proj-card.status-active:hover{border-color:#4CDE80;box-shadow:0 4px 16px rgba(76,222,128,.15);transform:translateY(-1px)}
 body.dark .dash-proj-card:hover{border-color:#444;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+body.dark .dash-proj-card.status-active:hover{border-color:#4CDE80;box-shadow:0 4px 16px rgba(76,222,128,.12)}
 .dash-proj-card.status-active{border-left-color:#4CDE80}
 .dash-proj-card.status-completed{border-left-color:#60a5fa}
 .dash-proj-card.status-archived{border-left-color:#d1d5db}
