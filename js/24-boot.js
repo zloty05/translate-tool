@@ -32,21 +32,23 @@
   }
 
   // Handle email confirmation callback (token in URL hash — Supabase implicit flow)
+  // Bypass SDK entirely: Edge Tracking Prevention blocks CDN scripts from accessing localStorage
   const hash=rawHash;
   if(hash&&hash.includes('access_token')){
     const hashParams=new URLSearchParams(hash.replace(/^#/,''));
     const accessToken=hashParams.get('access_token');
     const refreshToken=hashParams.get('refresh_token');
-    if(accessToken&&refreshToken){
-      const{data,error}=await supa.auth.setSession({access_token:accessToken,refresh_token:refreshToken});
-      if(!error&&data?.session){
-        currentSession=data.session;currentUser=data.session.user;
+    if(accessToken){
+      try{
+        const payload=JSON.parse(atob(accessToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        currentSession={access_token:accessToken,refresh_token:refreshToken,user:{id:payload.sub,email:payload.email,user_metadata:payload.user_metadata}};
+        currentUser=currentSession.user;
         window.history.replaceState(null,'',window.location.pathname);
         await afterLogin();
         return;
-      }
+      }catch(e){/* malformed token — fall through */}
     }
-    // fallback: try getSession
+    // fallback: try SDK getSession
     const{data:d2}=await supa.auth.getSession();
     if(d2?.session){
       currentSession=d2.session;currentUser=d2.session.user;
