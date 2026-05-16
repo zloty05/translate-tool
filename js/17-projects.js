@@ -78,7 +78,7 @@ function renderProjectList(){
 }
 
 
-function statusLabel(s){ return {pending:'Oczekuje',in_progress:'W toku',ready:'Gotowe do pobrania',approved:'Zatwierdzone'}[s]||s; }
+function statusLabel(s){ return {pending:'Oczekuje',in_progress:'W toku',ready:'Gotowe do weryfikacji',approved:'Zatwierdzone'}[s]||s; }
 function getLangFlag(lang){ return LANGS.find(l=>l.code===lang)?.flag||'🌐'; }
 
 // ── NEW PROJECT MODAL ──
@@ -349,19 +349,20 @@ function switchEditorLang(lang){
   const submitBtn=document.getElementById('editor-submit-btn');
   if(submitBtn){
     if(assignment?.status==='approved'){
-      submitBtn.textContent='✓ Pobrano';submitBtn.disabled=true;
+      submitBtn.textContent='✓ Zatwierdzone';submitBtn.disabled=true;
+      submitBtn.className='btn btn-sm b-green';
     } else if(assignment?.status==='ready'){
       if(currentRole==='admin'){
-        submitBtn.textContent='✓ Pobrano XLIFF';submitBtn.disabled=false;
+        submitBtn.textContent='Zatwierdź';submitBtn.disabled=false;
         submitBtn.className='btn btn-dark btn-sm';
-        submitBtn.onclick=()=>{ exportProjectXliff(); approveLanguage(lang); };
+        submitBtn.onclick=()=>approveLanguage(lang);
       } else {
-        submitBtn.textContent='✓ Gotowe do pobrania';submitBtn.disabled=true;
+        submitBtn.textContent='✓ Gotowe do weryfikacji';submitBtn.disabled=true;
         submitBtn.className='btn btn-sm b-green';
       }
     } else {
       submitBtn.textContent='Oznacz jako gotowe';submitBtn.disabled=false;
-      submitBtn.className='btn btn-dark btn-sm';
+      submitBtn.className='btn btn-dark btn-sm hide-viewer';
       submitBtn.onclick=()=>submitForReview(lang);
     }
   }
@@ -665,7 +666,7 @@ async function submitForReview(lang){
 
 async function approveLanguage(lang){
   // "Approve" = admin marks as downloaded/done after getting XLIFF
-  if(!confirm(`Oznaczyć ${lang} jako pobrany?\n\nUżyj tego po pobraniu XLIFF i zaimportowaniu do Storyline.`)) return;
+  if(!confirm(`Zatwierdzić tłumaczenie dla języka ${lang}?\n\nStatus zmieni się na Zatwierdzone.`)) return;
   try{
     await dbPatch('project_language_assignments',{status:'approved',approved_at:new Date().toISOString(),approved_by:currentUser.id},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
     const asgn=currentAssignments.find(a=>a.lang===lang);
@@ -676,7 +677,7 @@ async function approveLanguage(lang){
       .map(s=>({src:s.source_text,tgt:s.translations[lang].text}));
     await pushTMBatch(pairs,lang,'xliff');
     switchEditorLang(lang);
-    setAutosaveIndicator(`✓ Oznaczono jako pobrany. Zapisano ${pairs.length} tłumaczeń do TM.`);
+    setAutosaveIndicator(`✓ Zatwierdzono. Zapisano ${pairs.length} tłumaczeń do TM.`);
   }catch(e){ alert('Błąd: '+e.message); }
 }
 

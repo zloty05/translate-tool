@@ -262,8 +262,8 @@ async function acceptInvitation(token){
     alert(`Dołączyłeś do organizacji ${currentOrg.name} jako ${inv.role}!`);
   }catch(e){
     console.error('acceptInvitation error:',e);
-    alert('Błąd akceptacji zaproszenia: '+e.message);
-    showScreen('screen-onboard');
+    alert('Błąd akceptacji zaproszenia: '+e.message+'\n\nSkontaktuj się z administratorem lub spróbuj ponownie.');
+    showScreen('screen-login');
   }
 }
 
@@ -278,7 +278,11 @@ async function doInviteRegister(){
   const btn=document.getElementById('invite-btn');
   const orig=btn.textContent;
   btn.classList.add('loading');btn.textContent='Tworzenie konta...';
-  const{data,error}=await supa.auth.signUp({email,password:pass,options:{data:{full_name:name}}});
+  const pendingToken=localStorage.getItem('pendingInvite')||sessionStorage.getItem('pendingInvite')||'';
+  const redirectUrl=pendingToken
+    ?`https://translatescorm.com?invite=${encodeURIComponent(pendingToken)}`
+    :'https://translatescorm.com';
+  const{data,error}=await supa.auth.signUp({email,password:pass,options:{data:{full_name:name},emailRedirectTo:redirectUrl}});
   btn.classList.remove('loading');btn.textContent=orig;
   if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
   if(data.session){

@@ -7,6 +7,7 @@
   const inviteToken=urlParams.get('invite');
   if(inviteToken){
     localStorage.setItem('pendingInvite',inviteToken);
+    sessionStorage.setItem('pendingInvite',inviteToken);
     window.history.replaceState(null,'',window.location.pathname);
     // Try to pre-fill invite screen with email (anon read — graceful degradation if RLS blocks)
     try{
@@ -31,10 +32,18 @@
   // Handle email confirmation callback (token in URL hash)
   const hash=window.location.hash;
   if(hash&&hash.includes('access_token')){
-    const{data,error}=await supa.auth.getSession();
-    if(!error&&data.session){
-      currentSession=data.session;currentUser=data.session.user;
-      // Clean URL
+    // Try exchangeCodeForSession first (Supabase v2 PKCE), fall back to getSession
+    let session=null;
+    try{
+      const{data:d}=await supa.auth.exchangeCodeForSession(hash);
+      if(d&&d.session)session=d.session;
+    }catch(e){/* not a code — try getSession */}
+    if(!session){
+      const{data:d2}=await supa.auth.getSession();
+      if(d2&&d2.session)session=d2.session;
+    }
+    if(session){
+      currentSession=session;currentUser=session.user;
       window.history.replaceState(null,'',window.location.pathname);
       await afterLogin();
       return;
