@@ -49,6 +49,18 @@
     }
   }
 
+  // Handle Supabase error in hash (e.g. otp_expired — link wygasł)
+  if(hash&&hash.includes('error=')){
+    const params=new URLSearchParams(hash.replace(/^#/,''));
+    const code=params.get('error_code')||params.get('error');
+    if(code==='otp_expired'||code==='access_denied'){
+      _showScreen('screen-invite');
+      const errEl=document.getElementById('invite-reg-error');
+      if(errEl){errEl.textContent='Link potwierdzający wygasł. Skontaktuj się z administratorem po nowe zaproszenie.';errEl.style.display='block';}
+      return;
+    }
+  }
+
   // Handle password reset callback
   if(hash&&hash.includes('type=recovery')){
     showScreen('screen-reset');
