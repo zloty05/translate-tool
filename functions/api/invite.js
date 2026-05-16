@@ -1,16 +1,10 @@
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  const auth = request.headers.get('Authorization') || '';
-  const token = auth.replace('Bearer ', '');
-  if (!token) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const userResp = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
-    headers: { Authorization: `Bearer ${token}`, apikey: env.SUPABASE_ANON_KEY }
-  });
-  if (!userResp.ok) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
   const { email, inviteUrl, orgName } = await request.json();
+  if (!email || !inviteUrl || !orgName) {
+    return Response.json({ error: 'Missing required fields' }, { status: 400 });
+  }
 
   const resendResp = await fetch('https://api.resend.com/emails', {
     method: 'POST',

@@ -147,7 +147,7 @@ async function sendInvite(){
       try{
         const r=await fetch('/api/invite',{
           method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':`Bearer ${currentSession.access_token}`},
+          headers:{'Content-Type':'application/json'},
           body:JSON.stringify({email,inviteUrl,orgName:currentOrg.name})
         });
         if(!r.ok)throw new Error(await r.text());
