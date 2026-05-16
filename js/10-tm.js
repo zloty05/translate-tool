@@ -38,7 +38,7 @@ async function pushTMBatch(pairs,lang,source){
   try{
     await dbUpsert('translation_memory',rows,'key,lang,organization_id');
     updateTMUI();
-  }catch(e){}
+  }catch(e){console.error('pushTMBatch error:',e.message);}
 }
 
 async function updateTMUI(){
