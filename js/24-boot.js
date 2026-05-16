@@ -2,10 +2,11 @@
 // BOOT
 // ══════════════════════════════════════════════════════════
 (async()=>{
-  console.log('[BOOT] href:', window.location.href);
-  console.log('[BOOT] hash:', window.location.hash);
-  console.log('[BOOT] search:', window.location.search);
-  console.log('[BOOT] pendingInvite in storage:', localStorage.getItem('pendingInvite'));
+  // DEBUG: show boot info on screen (remove after fix)
+  const _dbg=document.createElement('div');
+  _dbg.style='position:fixed;top:0;left:0;right:0;background:#000;color:#0f0;font:12px monospace;padding:8px;z-index:99999;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow:auto;';
+  _dbg.textContent='BOOT\nhref: '+window.location.href+'\nhash: '+window.location.hash+'\nsearch: '+window.location.search+'\npendingInvite: '+localStorage.getItem('pendingInvite');
+  document.body.appendChild(_dbg);
   const rawHash=window.location.hash;
   const urlParams=new URLSearchParams(window.location.search);
   const inviteToken=urlParams.get('invite');
