@@ -283,11 +283,15 @@ async function doInviteRegister(){
     ?`https://translatescorm.com?invite=${encodeURIComponent(pendingToken)}`
     :'https://translatescorm.com';
   const{data,error}=await supa.auth.signUp({email,password:pass,options:{data:{full_name:name},emailRedirectTo:redirectUrl}});
-  if(error){btn.classList.remove('loading');btn.textContent=orig;errEl.textContent=error.message;errEl.style.display='block';return;}
-  // signUp with email confirmation enabled doesn't return a session — log in immediately
-  const{data:loginData,error:loginErr}=await supa.auth.signInWithPassword({email,password:pass});
   btn.classList.remove('loading');btn.textContent=orig;
-  if(loginErr){errEl.textContent=loginErr.message;errEl.style.display='block';return;}
-  currentSession=loginData.session;currentUser=loginData.user;
-  await afterLogin();
+  if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
+  if(data.session){
+    currentSession=data.session;currentUser=data.user;
+    await afterLogin();
+  }else{
+    const ok=document.getElementById('invite-reg-success');
+    ok.textContent='Sprawdź skrzynkę '+email+' i kliknij link potwierdzający, aby dokończyć rejestrację.';
+    ok.style.display='block';
+    btn.disabled=true;
+  }
 }

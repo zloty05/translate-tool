@@ -2,6 +2,9 @@
 // BOOT
 // ══════════════════════════════════════════════════════════
 (async()=>{
+  // Capture hash before any replaceState calls (which clear window.location.hash)
+  const rawHash=window.location.hash;
+
   // Handle invitation link (?invite=TOKEN)
   const urlParams=new URLSearchParams(window.location.search);
   const inviteToken=urlParams.get('invite');
@@ -30,7 +33,7 @@
   }
 
   // Handle email confirmation callback (token in URL hash)
-  const hash=window.location.hash;
+  const hash=rawHash;
   if(hash&&hash.includes('access_token')){
     // Try exchangeCodeForSession first (Supabase v2 PKCE), fall back to getSession
     let session=null;
