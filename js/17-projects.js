@@ -1002,11 +1002,11 @@ async function saveProjectEdits(){
     const existing = await dbGet('project_language_assignments',`?project_id=eq.${editingProjectId}`);
     const existingLangs = existing.map(a=>a.lang);
     const newLangs = newAssignments.map(a=>a.lang);
-
     // Delete removed languages
     for(const a of existing){
       if(!newLangs.includes(a.lang)){
-        await dbDelete('project_language_assignments',`?id=eq.${a.id}`);
+        const { error } = await supa.rpc('delete_lang_assignment', {assignment_id: a.id});
+        if(error) throw new Error('Błąd usuwania języka: ' + error.message);
       }
     }
 
