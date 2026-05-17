@@ -10,8 +10,9 @@ TranslateScorm to wielotenantowa aplikacja SaaS do tłumaczenia materiałów e-l
 
 ```
 translate-tool/
-├── index.html   ← cała aplikacja (CSS + HTML + JS, ~5200 linii)
-└── logo.png     ← logo aplikacji (używane w nav, headerze, ekranach auth)
+├── index.html      ← cała aplikacja (CSS + HTML + JS, ~5200 linii)
+├── logo.png        ← oryginalne logo (duże marginesy, nieużywane)
+└── logoSmall.png   ← logo aplikacji (favicon + nav + auth + sidebar)
 ```
 
 Projekt jest **single-file SPA** — jeden plik `index.html` zawiera wszystko. Nie ma node_modules, bundlera ani kompilacji.
@@ -159,6 +160,7 @@ Bonus powitalny: 15 kredytów (`add_tokens` w onboardingu).
 | `lookup_tm_batch(org_id, source_keys, target_lang)` | Batch lookup w translation_memory |
 | `get_tm_stats(org_id)` | Statystyki TM (total, langs, langs_list) |
 | `notify_admins(org_id, notif_type, notif_title, notif_message, proj_id, lang)` | Powiadomienia dla adminów |
+| `delete_lang_assignment(assignment_id)` | Usuwa przypisanie języka z projektu (omija RLS); waliduje przynależność do org |
 
 ### Tabele Supabase
 
@@ -240,6 +242,7 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 - **`tokens_balance`** — kolumna przechowuje teraz kredyty (nie tokeny API); nie zmieniać nazwy w bazie
 - **Landing vs App tabs** — `showLanding()` czyści `tab-content.active`; `showApp()` przywraca `tab-projects.active`; nie pomijaj tych wywołań
 - **`showLanding()` vs `_showLanding()`** — publiczna wersja robi pushState (dodaje wpis do historii przeglądarki); wewnętrzna `_showLanding()` tylko manipuluje DOM. Użyj `_showLanding()` gdy **nie chcesz** dodawać wpisu do historii (np. w popstate handlerze). Analogicznie `showScreen()` vs `_showScreen()`
+- **`dbDelete` a RLS** — `dbDelete` (przez `sbRest`) zwraca HTTP 204 nawet gdy RLS zablokuje usunięcie (0 usuniętych wierszy, brak błędu). Do usuwania rekordów chronionych RLS używaj dedykowanej RPC z `SECURITY DEFINER` (przykład: `delete_lang_assignment`)
 
 ### Przy dodawaniu nowej zakładki w aplikacji
 
