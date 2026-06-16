@@ -25,7 +25,7 @@ Projekt jest **single-file SPA** — jeden plik `index.html` zawiera wszystko. N
 |---|---|
 | Frontend | Vanilla HTML/CSS/JavaScript (bez frameworka) |
 | Backend / DB | Supabase (PostgreSQL + Auth + Storage + RLS) |
-| AI | Anthropic Claude `claude-sonnet-4-20250514` — bezpośrednie wywołania z przeglądarki |
+| AI | Anthropic Claude `claude-sonnet-4-6` — bezpośrednie wywołania z przeglądarki |
 | PPTX | JSZip 3.10.1 (CDN) — rozpakowywanie i modyfikacja .pptx |
 | Excel | SheetJS xlsx 0.18.5 (CDN) — import/eksport .xlsx |
 | Formularz kontaktowy | Formspree (`https://formspree.io/f/meenlzod`) |
@@ -235,7 +235,7 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 
 - **Duplikat `buildDictPrompt`** — dwie deklaracje na końcu sekcji DICTIONARY (JS bierze ostatnią); nie dodawaj kolejnej
 - **`tmCache[]`** — rolling cache (max 1000 wpisów), nie pełna kopia bazy; do lookup używaj `lookupTMBatch` (RPC)
-- **Model AI** — `claude-sonnet-4-20250514`; przy zmianie upewnij się że model istnieje
+- **Model AI** — `claude-sonnet-4-6`; przy zmianie upewnij się że model istnieje
 - **Stripe checkout** — `startCheckout()` kończy się alertem; płatności niegotowe, admin ma ręczne doładowanie
 - **`orgParam()`** — zawsze używaj w zapytaniach REST do filtrowania po `organization_id`
 - **`PRIMARY` vs `LANGS`** — słownik i TM używają tylko `PRIMARY` (8 języków), dropdowny tłumaczeń mają pełne `LANGS` (25)
