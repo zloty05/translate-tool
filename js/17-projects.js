@@ -64,8 +64,8 @@ function renderProjectList(){
           <div class="dpc-meta">${p.file_type?.toUpperCase()||'—'} · ${getLangFlag(p.source_lang)} ${esc(p.source_lang)} · ${fmtDate(p.created_at)}</div>
         </div>
         <div class="dpc-actions" onclick="event.stopPropagation()">
-          ${!isDone?`<button class="btn btn-sm hide-viewer" onclick="editProject('${p.id}')" title="Edytuj">${svgEdit}</button>`:''}
-          <button class="btn btn-sm btn-red hide-viewer" onclick="deleteProject('${p.id}','${esc(p.name)}')" title="Usuń">${svgDel}</button>
+          ${currentRole==='admin'?`${!isDone?`<button class="btn btn-sm hide-viewer" onclick="editProject('${p.id}')" title="Edytuj">${svgEdit}</button>`:''}
+          <button class="btn btn-sm btn-red hide-viewer" onclick="deleteProject('${p.id}','${esc(p.name)}')" title="Usuń">${svgDel}</button>`:''}
         </div>
       </div>
       <div class="dpc-bar-wrap"><div class="dpc-bar" style="width:${pct}%;background:${barColor};"></div></div>
@@ -908,6 +908,7 @@ async function exportProjectPptx(){
 // ── EDIT PROJECT ──
 
 async function editProject(projectId){
+  if(currentRole!=='admin'){ alert('Tylko administrator może edytować projekty.'); return; }
   const proj = projectsCache.find(p=>p.id===projectId);
   if(!proj) return;
   editingProjectId = projectId;
@@ -1042,6 +1043,7 @@ function closeEditProjectModal(){
 }
 
 async function deleteProject(projectId, projectName){
+  if(currentRole!=='admin'){ alert('Tylko administrator może usuwać projekty.'); return; }
   if(!confirm(`Usunąć projekt "${projectName}"?\n\nTo działanie jest nieodwracalne — usuwa projekt, wszystkie segmenty i przypisania.`)) return;
   try{
     await dbDelete('projects',`?id=eq.${projectId}`);
