@@ -110,7 +110,7 @@ Otwórz URL
 | APP LOAD | `loadApp()`, `switchTab()`, helpery utils (`esc`, `download`, `readFile`, `sleep`, `fmtDate`) |
 | TEAM MANAGEMENT | `loadTeam`, `renderTeamList`, limity kredytów na tłumacza, języki członka |
 | TRANSLATION MEMORY | `lookupTMBatch` (RPC), `pushTMBatch` (upsert via `dbUpsert`), `applyTMToSegsAsync`, edycja wpisów TM |
-| DICTIONARY | `dictCache[]`, CRUD, `buildDictPromptForChunk()`, `fillDictWithAI()`, stemming |
+| DICTIONARY | `dictCache[]`, CRUD, `buildDictPromptForChunk()`, `fillDictWithAI()`, stemming, przepływ akceptacji per język (status `ai`/`accepted`), tryb tłumacza (`renderDictTranslator`), mapa źródeł (`dictSourceLang`/`buildDictSourceMap`), masowe wklejanie (`addDictBulk`), zapis przez RPC (`saveDictTranslation`) |
 | STATYSTYKI | `loadStats`, `renderStats` — finanse (saldo, wydatki), TM (liczba wpisów, języki), jakość AI (% poprawek per projekt) |
 | COST | `renderCostBox()` — 3 kafelki: Znaków / Koszt (kredytów) / Saldo |
 | API CALL | `apiCall(apiKey, prompt, maxTokens)` — POST do `https://api.anthropic.com/v1/messages` |
@@ -160,11 +160,15 @@ Bonus powitalny: 15 kredytów (`add_tokens` w onboardingu).
 | `lookup_tm_batch(org_id, source_keys, target_lang)` | Batch lookup w translation_memory |
 | `get_tm_stats(org_id)` | Statystyki TM (total, langs, langs_list) |
 | `notify_admins(org_id, notif_type, notif_title, notif_message, proj_id, lang)` | Powiadomienia dla adminów |
+| `notify_translators(org_id, target_lang, notif_type, notif_title, notif_message)` | Powiadomienia dla tłumaczy z przypisanym `target_lang` (po AI-fill słownika) |
+| `save_dict_translation(dict_id, lang, new_text, mark_accepted)` | Zapis 1 tłumaczenia słownika; waliduje rolę i przypisanie języka (translator tylko swój); ustawia `status[lang]` = `accepted`/`ai`; zapisuje tylko klucz `[lang]` |
 | `delete_lang_assignment(assignment_id)` | Usuwa przypisanie języka z projektu (omija RLS); waliduje przynależność do org |
+
+**Definicje SQL:** `sql/dict_approval_workflow.sql` (kolumny + RPC + backfill do jednorazowego uruchomienia w Supabase).
 
 ### Tabele Supabase
 
-`organizations`, `organization_members`, `invitations`, `projects`, `project_segments`, `project_language_assignments`, `translation_memory`, `dictionary`, `translation_history`, `token_transactions`, `notifications`, `profiles`, widok `member_emails`
+`organizations` (m.in. `dict_source_map` JSONB — mapa źródeł słownika per język docelowy), `organization_members` (m.in. `languages` **`text[]`** — przypisane języki słownika tłumacza; w RPC używaj `lang = ANY(languages)`, nie operatorów jsonb), `invitations`, `projects`, `project_segments`, `project_language_assignments`, `translation_memory`, `dictionary` (m.in. `translations` JSONB + `status` JSONB per język: `ai`/`accepted`), `translation_history`, `token_transactions`, `notifications`, `profiles`, widok `member_emails`
 
 ### Role i system uprawnień
 
@@ -239,6 +243,10 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 - **Stripe checkout** — `startCheckout()` kończy się alertem; płatności niegotowe, admin ma ręczne doładowanie
 - **`orgParam()`** — zawsze używaj w zapytaniach REST do filtrowania po `organization_id`
 - **`PRIMARY` vs `LANGS`** — słownik i TM używają tylko `PRIMARY` (8 języków), dropdowny tłumaczeń mają pełne `LANGS` (25)
+- **Słownik: status per język** — kolumna `dictionary.status` (JSONB) trzyma per język `ai`/`accepted`. Do tłumaczenia kursów/prezentacji (`buildDictPromptForChunk`) trafiają **tylko** terminy `accepted`. AI-fill oznacza wyniki jako `ai`; ręczne wpisy admina i importy = `accepted`
+- **Słownik: tryb tłumacza** — `renderDict()` dla `currentRole==='translator'` deleguje do `renderDictTranslator()` (tylko przypisane języki z `organization_members.languages`, kolumna źródłowa wg `dict_source_map`, akceptacja). Zapis tłumacza **wyłącznie** przez RPC `save_dict_translation` (nie przez REST `dbPatch` — RLS + walidacja języka)
+- **Słownik: mapa źródeł** — `dict_source_map` (per język docelowy: `Polish`/`English`); EN zawsze z PL. Fallback gdy brak wpisu: EN jeśli termin ma EN, inaczej PL. Edycja tylko admin (panel `admin-only` w tab-dict)
+- **Zakładka Słownik dostępna dla tłumacza** — sidebar-item `data-tab="dict"` NIE ma `hide-translator` (usunięte); tłumacz potrzebuje słownika. `loadNotifications()` ładuje się też dla translatora
 - **`tokens_balance`** — kolumna przechowuje teraz kredyty (nie tokeny API); nie zmieniać nazwy w bazie
 - **Landing vs App tabs** — `showLanding()` czyści `tab-content.active`; `showApp()` przywraca `tab-projects.active`; nie pomijaj tych wywołań
 - **`showLanding()` vs `_showLanding()`** — publiczna wersja robi pushState (dodaje wpis do historii przeglądarki); wewnętrzna `_showLanding()` tylko manipuluje DOM. Użyj `_showLanding()` gdy **nie chcesz** dodawać wpisu do historii (np. w popstate handlerze). Analogicznie `showScreen()` vs `_showScreen()`

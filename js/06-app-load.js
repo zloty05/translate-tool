@@ -30,8 +30,8 @@ async function loadApp(){
   initDarkMode();
   // Load projects (default tab)
   await loadProjects();
-  // Load notifications for admins
-  if(currentRole==='admin') loadNotifications();
+  // Load notifications for admins and translators (dict review)
+  if(currentRole==='admin'||currentRole==='translator') loadNotifications();
   // Prefill account form
   const accName=currentUser?.user_metadata?.full_name||'';
   const accEmail=currentUser?.email||'';
@@ -45,7 +45,10 @@ async function loadOrgBalance(){
   if(!currentOrg) return;
   try{
     const orgs = await dbGet('organizations', `?id=eq.${currentOrg.id}`);
-    if(orgs.length){ currentOrg.tokens_balance = orgs[0].tokens_balance || 0; }
+    if(orgs.length){
+      currentOrg.tokens_balance = orgs[0].tokens_balance || 0;
+      currentOrg.dict_source_map = orgs[0].dict_source_map || {};
+    }
   }catch(e){ console.error('Balance load error:', e); }
   updateTokenBadge();
 }

@@ -483,7 +483,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Statystyki
     </div>
-    <div class="sidebar-item hide-translator" data-tab="dict" onclick="switchTab('dict')">
+    <div class="sidebar-item" data-tab="dict" onclick="switchTab('dict')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       Słownik <span class="sidebar-badge" id="dict-count">0</span>
     </div>
@@ -895,23 +895,58 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="toolbar" style="margin-bottom:14px;">
       <div>
         <p class="card-title" style="margin:0;">Słownik terminologii</p>
-        <p style="font-size:12px;color:#aaa;margin-top:2px;">Stosowany automatycznie przy każdym tłumaczeniu AI</p>
+        <p style="font-size:12px;color:#aaa;margin-top:2px;">Do tłumaczenia kursów stosowane są tylko zaakceptowane terminy</p>
       </div>
       <div class="row">
-        <button class="btn btn-dark btn-sm hide-viewer" onclick="openDictModal()">+ Dodaj termin</button>
+        <button class="btn btn-dark btn-sm admin-only" onclick="openDictModal()">+ Dodaj termin</button>
         <button class="btn btn-sm admin-only" onclick="fillDictWithAI()">✦ AI</button>
         <button class="btn btn-sm" onclick="exportDictExcel()">↓ Excel</button>
-        <button class="btn btn-sm" onclick="exportDictJSON()">↓ JSON</button>
-        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('dict-xl-imp').click()">↑ Excel</button>
+        <button class="btn btn-sm admin-only" onclick="exportDictJSON()">↓ JSON</button>
+        <button class="btn btn-sm admin-only" onclick="document.getElementById('dict-xl-imp').click()">↑ Excel</button>
         <input type="file" id="dict-xl-imp" accept=".xlsx" style="display:none;" onchange="importDictExcel(event)" />
-        <button class="btn btn-sm hide-viewer" onclick="document.getElementById('dict-json-imp').click()">↑ JSON</button>
+        <button class="btn btn-sm admin-only" onclick="document.getElementById('dict-json-imp').click()">↑ JSON</button>
         <input type="file" id="dict-json-imp" accept=".json" style="display:none;" onchange="importDictJSON(event)" />
-        <button class="btn btn-red btn-sm hide-viewer" onclick="clearDict()">Wyczyść</button>
+        <button class="btn btn-red btn-sm admin-only" onclick="clearDict()">Wyczyść</button>
       </div>
     </div>
+
+    <!-- Panel mapy źródeł (admin) -->
+    <details class="dict-srcmap admin-only" id="dict-srcmap-panel">
+      <summary>Ustawienia źródeł tłumaczenia (z jakiego języka tłumaczyć dany cel)</summary>
+      <div class="dict-srcmap-body" id="dict-srcmap-body"></div>
+    </details>
+
+    <!-- Masowe wklejanie listy PL (admin) -->
+    <details class="dict-bulk admin-only" id="dict-bulk-panel">
+      <summary>Dodaj wiele terminów naraz (wklej listę PL)</summary>
+      <div class="dict-bulk-body">
+        <textarea id="dict-bulk-input" placeholder="Wklej terminy — jeden na wiersz&#10;np.&#10;pasta stykowa&#10;złącze&#10;moment dokręcania"></textarea>
+        <div style="margin-top:8px;"><button class="btn btn-dark btn-sm" onclick="addDictBulk()">Dodaj terminy</button></div>
+      </div>
+    </details>
+
+    <!-- Info dla tłumacza (widoczne tylko w trybie tłumacza — sterowane w JS) -->
+    <div class="dict-translator-info" id="dict-translator-info" style="display:none;"></div>
+
+    <!-- Legenda statusów -->
+    <div class="dict-legend">
+      <span class="dict-legend-item"><span class="dict-legend-dot ok"></span> Zaakceptowane</span>
+      <span class="dict-legend-item"><span class="dict-legend-dot ai"></span> Do sprawdzenia (AI)</span>
+      <span class="dict-legend-item"><span class="dict-legend-dot none"></span> Brak tłumaczenia</span>
+    </div>
+
     <div class="filter-row">
       <input type="search" id="dict-filter" placeholder="Szukaj..." oninput="renderDict()" style="max-width:240px;" />
-      <select id="dict-filter-lang" onchange="renderDict()" style="width:180px;"></select>
+      <select id="dict-filter-lang" onchange="renderDict()" style="width:180px;" class="hide-translator"></select>
+      <select id="dict-filter-status" onchange="renderDict()" style="width:170px;">
+        <option value="all">Wszystkie statusy</option>
+        <option value="ai">⚠ Do sprawdzenia</option>
+        <option value="accepted">✓ Zaakceptowane</option>
+      </select>
+      <select id="dict-tr-lang" onchange="renderDict()" style="width:180px;display:none;"></select>
+      <label id="dict-show-both-wrap" style="display:none;font-size:12px;color:#666;align-items:center;gap:5px;">
+        <input type="checkbox" id="dict-show-both" onchange="renderDict()" /> Pokaż też PL/EN
+      </label>
     </div>
     <div id="dict-loading" class="loading" style="display:none;"><div class="spinner"></div> Ładowanie...</div>
     <div class="dict-wrap"><table class="dict-grid"><thead id="dict-thead"></thead><tbody id="dict-tbody"></tbody></table></div>

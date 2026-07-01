@@ -67,14 +67,24 @@ function renderTeamList(members){
     const email=m.email||m.display_name||'';
     const canRemove=isAdmin&&!isMe;
     const initials=name.charAt(0).toUpperCase();
+    // Przypisanie języków słownika — tylko admin, tylko dla tłumaczy
+    const showLangs=isAdmin&&m.role==='translator';
+    const memberLangs=m.languages||[];
+    const langPills=showLangs?`<div class="member-langs">
+      <div class="member-langs-label">Języki słownika:</div>
+      <div class="member-lang-pills">${PRIMARY.map(l=>`<span class="dict-lang-pill${memberLangs.includes(l.code)?' selected':''}" onclick="toggleMemberLang('${m.id}','${l.code}',this)">${l.flag} ${l.code}</span>`).join('')}</div>
+    </div>`:'';
     return`<div class="member-card">
-      <div class="member-avatar">${esc(initials)}</div>
-      <div class="member-info">
-        <div class="member-name">${esc(name)}${isMe?' <span style="font-size:10px;color:#aaa;font-weight:400;">(Ty)</span>':''}</div>
-        ${email&&email!==name?`<div class="member-email">${esc(email)}</div>`:''}
+      <div class="member-card-main">
+        <div class="member-avatar">${esc(initials)}</div>
+        <div class="member-info">
+          <div class="member-name">${esc(name)}${isMe?' <span style="font-size:10px;color:#aaa;font-weight:400;">(Ty)</span>':''}</div>
+          ${email&&email!==name?`<div class="member-email">${esc(email)}</div>`:''}
+        </div>
+        <span class="role-badge ${roleClass[m.role]||''}">${roleLabel[m.role]||m.role}</span>
+        ${canRemove?`<button class="btn btn-red btn-sm" style="flex-shrink:0;" onclick="removeMember('${m.id}')">Usuń</button>`:'<div style="width:52px;"></div>'}
       </div>
-      <span class="role-badge ${roleClass[m.role]||''}">${roleLabel[m.role]||m.role}</span>
-      ${canRemove?`<button class="btn btn-red btn-sm" style="flex-shrink:0;" onclick="removeMember('${m.id}')">Usuń</button>`:'<div style="width:52px;"></div>'}
+      ${langPills}
     </div>`;
   }).join('');
 }
@@ -87,8 +97,9 @@ async function toggleMemberLang(memberId, langCode, el){
   if(idx>=0) langs.splice(idx,1); else langs.push(langCode);
   el.classList.toggle('selected', langs.includes(langCode));
   await saveMemberLanguages(memberId, langs);
-  // Update cache
-  teamMembersCache = teamMembersCache||[];
+  // Sync cache (używany przez słownik tłumacza)
+  const cached = (teamMembersCache||[]).find(m=>m.id===memberId);
+  if(cached) cached.languages = langs;
 }
 
 function renderPendingInvites(pending){

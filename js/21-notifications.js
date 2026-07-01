@@ -31,6 +31,7 @@ function renderNotifications(){
     tokens_low: {icon:'🪙', cls:'ni-yellow'},
     project_created: {icon:'📁', cls:'ni-blue'},
     project_done: {icon:'✓', cls:'ni-green'},
+    dict_review: {icon:'📖', cls:'ni-blue'},
   };
   list.innerHTML = notificationsCache.map(n => {
     const ic = icons[n.type] || {icon:'●', cls:'ni-blue'};

@@ -5,6 +5,56 @@ async function loadDictCache(){
   if(!currentOrg)return;
   const data=await dbGet('dictionary',`?${orgParam()}&order=created_at.asc`);
   dictCache=data;document.getElementById('dict-count').textContent=dictCache.length;
+  // Potrzebne do myDictLangs() (przypisania języków tłumacza)
+  if(!teamMembersCache.length){
+    try{ teamMembersCache=await dbGet('organization_members',`?${orgParam()}`); }catch(e){}
+  }
+}
+
+// Język źródłowy dla danego celu (mapa org lub fallback).
+// English tłumaczymy zawsze z PL (src). Dla reszty: mapa dict_source_map,
+// a gdy brak wpisu — EN jeśli dostępne w danym terminie, inaczej PL.
+function dictSourceLang(targetLang, entry){
+  if(targetLang==='English') return 'Polish';
+  const mapped=currentOrg?.dict_source_map?.[targetLang];
+  if(mapped==='Polish'||mapped==='English') return mapped;
+  if(entry) return entry.translations?.English ? 'English' : 'Polish';
+  return 'English';
+}
+// Tekst źródłowy wpisu w danym języku źródłowym.
+function dictSourceText(entry, srcLang){
+  return srcLang==='Polish' ? (entry.src||'') : (entry.translations?.[srcLang]||'');
+}
+// Języki PRIMARY przypisane zalogowanemu tłumaczowi.
+function myDictLangs(){
+  const langs=teamMembersCache.find(m=>m.user_id===currentUser?.id)?.languages||[];
+  return PRIMARY.filter(l=>langs.includes(l.code));
+}
+
+// Panel mapy źródeł (admin): dla każdego celu ≠ EN wybór PL/EN.
+function buildDictSourceMap(){
+  const body=document.getElementById('dict-srcmap-body');
+  if(!body||currentRole!=='admin')return;
+  const map=currentOrg?.dict_source_map||{};
+  body.innerHTML=PRIMARY.filter(l=>l.code!=='English').map(l=>{
+    const cur=map[l.code]||dictSourceLang(l.code); // domyślne wg fallbacku
+    return`<div class="dict-srcmap-row">
+      <span>${l.flag} ${l.label}</span>
+      <select onchange="saveDictSourceMap('${l.code}',this.value)">
+        <option value="Polish"${cur==='Polish'?' selected':''}>🇵🇱 z PL</option>
+        <option value="English"${cur==='English'?' selected':''}>🇬🇧 z EN</option>
+      </select>
+    </div>`;
+  }).join('');
+}
+async function saveDictSourceMap(targetLang, srcLang){
+  if(!currentOrg)return;
+  const map={...(currentOrg.dict_source_map||{}),[targetLang]:srcLang};
+  try{
+    await dbPatch('organizations',{dict_source_map:map},`?id=eq.${currentOrg.id}`);
+    currentOrg.dict_source_map=map;
+    renderDict();
+  }catch(e){alert('Błąd zapisu mapy źródeł: '+e.message);}
 }
 function buildDictNewRow(){document.getElementById('dict-new-langs').innerHTML=PRIMARY.map(l=>`<div><label>${l.flag} ${l.label}</label><input type="text" class="dict-new-lang" data-lang="${l.code}" placeholder="Tłumaczenie..." /></div>`).join('');}
 function buildDictLangFilter(){const sel=document.getElementById('dict-filter-lang');sel.innerHTML='<option value="all">Wszystkie</option>'+PRIMARY.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('')+'<option value="missing">⚠ Brakujące</option>';}
@@ -14,11 +64,34 @@ async function addDictEntry(){
   const src=document.getElementById('dict-src').value.trim();const note=document.getElementById('dict-note').value.trim();
   if(!src){alert('Wpisz termin.');return;}
   if(dictCache.find(e=>e.src.toLowerCase()===src.toLowerCase())){alert('Termin już istnieje.');return;}
-  const translations={};document.querySelectorAll('.dict-new-lang').forEach(inp=>{const v=inp.value.trim();if(v)translations[inp.dataset.lang]=v;});
-  const[row]=await dbPost('dictionary',{src,note,translations,organization_id:currentOrg.id});
+  const translations={},status={};document.querySelectorAll('.dict-new-lang').forEach(inp=>{const v=inp.value.trim();if(v){translations[inp.dataset.lang]=v;status[inp.dataset.lang]='accepted';}});
+  const[row]=await dbPost('dictionary',{src,note,translations,status,organization_id:currentOrg.id});
   dictCache.push(row);document.getElementById('dict-src').value='';document.getElementById('dict-note').value='';
   document.querySelectorAll('.dict-new-lang').forEach(inp=>inp.value='');
   document.getElementById('dict-count').textContent=dictCache.length;renderDict();
+}
+// Masowe wklejanie listy terminów PL (jeden termin na wiersz).
+async function addDictBulk(){
+  if(!currentOrg)return;
+  const ta=document.getElementById('dict-bulk-input');
+  const raw=(ta?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!raw.length){alert('Wklej listę terminów (jeden na wiersz).');return;}
+  const seen=new Set();
+  const toAdd=[];
+  raw.forEach(src=>{
+    const key=src.toLowerCase();
+    if(seen.has(key))return;
+    if(dictCache.find(e=>e.src.toLowerCase()===key))return;
+    seen.add(key);
+    toAdd.push({src,note:'',translations:{},status:{},organization_id:currentOrg.id});
+  });
+  if(!toAdd.length){alert('Wszystkie terminy już istnieją.');return;}
+  const res=await dbPost('dictionary',toAdd);
+  dictCache.push(...res);
+  document.getElementById('dict-count').textContent=dictCache.length;
+  if(ta)ta.value='';
+  renderDict();
+  alert(`Dodano ${toAdd.length} terminów. Kliknij ✦ AI, aby je przetłumaczyć.`);
 }
 let _dictModalEditId=null;
 function openDictModal(entryId=null){
@@ -49,10 +122,11 @@ async function saveDictModal(){
     if(_dictModalEditId){
       const src=document.getElementById('dict-src').value.trim();
       const note=document.getElementById('dict-note').value.trim();
-      const translations={};document.querySelectorAll('.dict-new-lang').forEach(inp=>{const v=inp.value.trim();if(v)translations[inp.dataset.lang]=v;});
       const e=dictCache.find(x=>x.id===_dictModalEditId);
-      if(e){e.src=src;e.note=note;e.translations=translations;}
-      await dbPatch('dictionary',{src,note,translations},`?id=eq.${_dictModalEditId}`);
+      const translations={},status={...(e?.status||{})};
+      document.querySelectorAll('.dict-new-lang').forEach(inp=>{const v=inp.value.trim();if(v){translations[inp.dataset.lang]=v;status[inp.dataset.lang]='accepted';}else{delete status[inp.dataset.lang];}});
+      if(e){e.src=src;e.note=note;e.translations=translations;e.status=status;}
+      await dbPatch('dictionary',{src,note,translations,status},`?id=eq.${_dictModalEditId}`);
       renderDict();
       closeDictModal();
     } else {
@@ -67,14 +141,27 @@ async function updateDictCell(id,lang,val){const e=dictCache.find(e=>e.id===id);
 async function updateDictNote(id,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.note=val;await dbPatch('dictionary',{note:val},`?id=eq.${id}`);}
 async function updateDictSrc(id,val){const e=dictCache.find(e=>e.id===id);if(!e||!val.trim())return;e.src=val.trim();await dbPatch('dictionary',{src:val.trim()},`?id=eq.${id}`);}
 
+// Klasa CSS komórki wg statusu tłumaczenia (kolor tła).
+function dictCellClass(status){
+  if(status==='accepted')return'dict-cell-ok';
+  if(status==='ai')return'dict-cell-ai';
+  return'';
+}
 function renderDict(){
   document.getElementById('dict-count').textContent=dictCache.length;
+  if(currentRole==='translator'){ renderDictTranslator(); return; }
+  // Tryb admin/viewer — ukryj elementy tłumacza
+  const trInfo=document.getElementById('dict-translator-info');if(trInfo)trInfo.style.display='none';
+  const trLang=document.getElementById('dict-tr-lang');if(trLang)trLang.style.display='none';
+  const bothWrap=document.getElementById('dict-show-both-wrap');if(bothWrap)bothWrap.style.display='none';
   const ft=(document.getElementById('dict-filter')?.value||'').toLowerCase();
   const fl=document.getElementById('dict-filter-lang')?.value||'all';
+  const fs=document.getElementById('dict-filter-status')?.value||'all'; // all|ai|accepted
   let filtered=dictCache.filter(e=>{
     if(ft&&!e.src.toLowerCase().includes(ft)&&!Object.values(e.translations||{}).some(v=>v.toLowerCase().includes(ft)))return false;
-    if(fl==='missing')return PRIMARY.some(l=>!e.translations?.[l.code]);
-    if(fl!=='all')return!e.translations?.[fl];
+    if(fl==='missing'&&!PRIMARY.some(l=>!e.translations?.[l.code]))return false;
+    if(fl!=='all'&&fl!=='missing'&&e.translations?.[fl])return false; // brakujący dany język
+    if(fs!=='all'){const langs=fl!=='all'&&fl!=='missing'?[fl]:PRIMARY.map(l=>l.code);if(!langs.some(c=>e.status?.[c]===fs))return false;}
     return true;
   });
   const canEdit=currentRole!=='viewer';
@@ -82,7 +169,7 @@ function renderDict(){
   const tbody=document.getElementById('dict-tbody');
   if(!filtered.length){tbody.innerHTML=`<tr><td colspan="${PRIMARY.length+(canEdit?3:2)}" style="padding:18px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów w słowniku</td></tr>`;return;}
   tbody.innerHTML=filtered.map(e=>{
-    const cells=PRIMARY.map(l=>{const v=e.translations?.[l.code]||'';return`<td style="padding:4px 5px;"><span style="font-size:12px;color:${v?'inherit':'#ddd'}">${v?esc(v):'—'}</span></td>`;}).join('');
+    const cells=PRIMARY.map(l=>{const v=e.translations?.[l.code]||'';const cls=dictCellClass(e.status?.[l.code]);return`<td class="${cls}" style="padding:4px 5px;"><span style="font-size:12px;color:${v?'inherit':'#ddd'}">${v?esc(v):'—'}</span></td>`;}).join('');
     const noteTxt=e.note?`<span style="font-size:11px;color:#aaa;">${esc(e.note)}</span>`:'';
     return`<tr>
       <td style="padding:4px 8px;font-weight:600;font-size:13px;">${esc(e.src)}</td>
@@ -96,8 +183,106 @@ function renderDict(){
   }).join('');
 }
 
+// Widok tłumacza: tylko przypisane języki, kolumna źródłowa + akceptacja.
+function renderDictTranslator(){
+  const myLangs=myDictLangs();
+  const info=document.getElementById('dict-translator-info');
+  const thead=document.getElementById('dict-thead');
+  const tbody=document.getElementById('dict-tbody');
+  if(info)info.style.display='';
+  const bothWrap=document.getElementById('dict-show-both-wrap');if(bothWrap)bothWrap.style.display='inline-flex';
+  if(!myLangs.length){
+    if(info)info.innerHTML='<span style="color:#b32424;">Nie masz przypisanego żadnego języka słownika. Skontaktuj się z adminem.</span>';
+    const trLang=document.getElementById('dict-tr-lang');if(trLang)trLang.style.display='none';
+    if(bothWrap)bothWrap.style.display='none';
+    thead.innerHTML='';tbody.innerHTML='';return;
+  }
+  // Aktualnie edytowany język (pierwszy z przypisanych lub z selecta)
+  const sel=document.getElementById('dict-tr-lang');
+  if(sel&&sel.dataset.built!=='1'){
+    sel.innerHTML=myLangs.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('');
+    sel.dataset.built='1';
+    sel.style.display=myLangs.length>1?'':'none';
+  }
+  const myLang=(sel&&sel.value)||myLangs[0].code;
+  const myLangObj=PRIMARY.find(l=>l.code===myLang);
+  const srcLang=dictSourceLang(myLang);
+  const srcObj=LANGS.find(l=>l.code===srcLang);
+  // Drugie źródło (podgląd) — inny język niż oficjalne źródło
+  const showBoth=document.getElementById('dict-show-both')?.checked;
+  const otherSrc=srcLang==='Polish'?'English':'Polish';
+  const otherObj=LANGS.find(l=>l.code===otherSrc);
+  const withPreview=showBoth&&otherSrc!==srcLang;
+
+  if(info)info.innerHTML=`Tłumaczysz: <b>${myLangObj.flag} ${myLangObj.label}</b> &nbsp;·&nbsp; źródło: <b>${srcObj?.flag||''} ${srcObj?.label||srcLang}</b>`;
+
+  const ft=(document.getElementById('dict-filter')?.value||'').toLowerCase();
+  const fs=document.getElementById('dict-filter-status')?.value||'all';
+  let filtered=dictCache.filter(e=>{
+    const srcTxt=dictSourceText(e,srcLang).toLowerCase();
+    const myTxt=(e.translations?.[myLang]||'').toLowerCase();
+    if(ft&&!srcTxt.includes(ft)&&!myTxt.includes(ft)&&!e.src.toLowerCase().includes(ft))return false;
+    if(fs==='ai'&&e.status?.[myLang]!=='ai')return false;
+    if(fs==='accepted'&&e.status?.[myLang]!=='accepted')return false;
+    // pokazuj tylko wpisy, które mają tekst źródłowy do tłumaczenia
+    if(!dictSourceText(e,srcLang))return false;
+    return true;
+  });
+  thead.innerHTML='<tr>'+
+    `<th style="min-width:160px;">${srcObj?.flag||''} Źródło (${srcObj?.label||srcLang})</th>`+
+    (withPreview?`<th style="min-width:140px;color:#999;">${otherObj?.flag||''} Podgląd (${otherObj?.label||otherSrc})</th>`:'')+
+    `<th style="min-width:180px;">${myLangObj.flag} Twoje tłumaczenie</th>`+
+    '<th style="min-width:90px;">Uwaga</th>'+
+    '<th style="width:120px;">Status</th>'+
+    '</tr>';
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="${withPreview?5:4}" style="padding:18px;text-align:center;color:#ccc;font-size:12px;">Brak terminów do sprawdzenia</td></tr>`;return;}
+  tbody.innerHTML=filtered.map(e=>{
+    const srcTxt=dictSourceText(e,srcLang);
+    const prevTxt=withPreview?dictSourceText(e,otherSrc):'';
+    const myVal=e.translations?.[myLang]||'';
+    const st=e.status?.[myLang];
+    const cls=dictCellClass(st);
+    const badge=st==='accepted'?'<span class="dict-badge dict-badge-ok">Zaakceptowane</span>':(st==='ai'?'<span class="dict-badge dict-badge-ai">Do sprawdzenia</span>':'<span class="dict-badge">—</span>');
+    const noteTxt=e.note?`<span style="font-size:11px;color:#aaa;">${esc(e.note)}</span>`:'';
+    return`<tr>
+      <td style="padding:6px 8px;font-weight:600;font-size:13px;">${esc(srcTxt)}</td>
+      ${withPreview?`<td style="padding:6px 8px;font-size:12px;color:#999;">${prevTxt?esc(prevTxt):'—'}</td>`:''}
+      <td class="${cls}" style="padding:4px 6px;">
+        <input type="text" value="${esc(myVal)}" class="dict-tr-input" style="width:100%;font-size:13px;padding:5px 7px;border:1px solid #e5e5e5;border-radius:5px;"
+          onchange="saveDictTranslation('${e.id}','${myLang}',this.value,false)" placeholder="Tłumaczenie..." />
+      </td>
+      <td style="padding:4px 6px;">${noteTxt}</td>
+      <td style="padding:4px 6px;white-space:nowrap;">
+        ${badge}
+        <button class="btn btn-sm" style="padding:2px 8px;font-size:11px;margin-top:3px;${st==='accepted'?'opacity:.5;':''}" onclick="acceptDictTranslation('${e.id}','${myLang}',this)">✓ Akceptuj</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// Zapis tłumaczenia (przez RPC z walidacją uprawnień). accepted=true → oznacz jako zaakceptowane.
+async function saveDictTranslation(id,lang,text,accepted){
+  const val=(text||'').trim();
+  const e=dictCache.find(x=>x.id===id);
+  if(!e)return;
+  try{
+    const{data,error}=await supa.rpc('save_dict_translation',{dict_id:id,lang,new_text:val,mark_accepted:!!accepted});
+    if(error)throw new Error(error.message);
+    if(data){e.translations=data.translations||e.translations;e.status=data.status||e.status;}
+    renderDict();
+  }catch(err){alert('Błąd zapisu: '+err.message);}
+}
+async function acceptDictTranslation(id,lang,btn){
+  const e=dictCache.find(x=>x.id===id);
+  const val=e?.translations?.[lang]||'';
+  if(!val.trim()){alert('Najpierw wpisz tłumaczenie.');return;}
+  if(btn){btn.disabled=true;btn.textContent='...';}
+  await saveDictTranslation(id,lang,val,true);
+}
+
 function buildDictPromptForChunk(lang, chunkTexts, sourceLang){
-  const d=dictCache.filter(e=>e.translations?.[lang]);
+  // Do tłumaczenia kursów/prezentacji używamy TYLKO zaakceptowanych terminów.
+  const d=dictCache.filter(e=>e.translations?.[lang]&&e.status?.[lang]==='accepted');
   if(!d.length)return'';
   const combined=chunkTexts.length?chunkTexts.join(' ').toLowerCase():'';
 
@@ -143,31 +328,25 @@ async function importDictExcel(e){
   const buf=await readFile(f,'array');const wb=XLSX.read(buf,{type:'array'});
   const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
   const hdr=rows[0]||[];const colMap={};PRIMARY.forEach(l=>{const i=hdr.findIndex(h=>String(h).includes(l.label));if(i>=0)colMap[l.code]=i;});
-  const toAdd=[];rows.slice(1).forEach(row=>{const src=String(row[0]||'').trim();if(!src||dictCache.find(e=>e.src.toLowerCase()===src.toLowerCase()))return;const tr={};Object.entries(colMap).forEach(([lang,i])=>{const v=String(row[i]||'').trim();if(v)tr[lang]=v;});toAdd.push({src,note:String(row[hdr.length-1]||'').trim(),translations:tr,organization_id:currentOrg.id});});
+  const toAdd=[];rows.slice(1).forEach(row=>{const src=String(row[0]||'').trim();if(!src||dictCache.find(e=>e.src.toLowerCase()===src.toLowerCase()))return;const tr={},st={};Object.entries(colMap).forEach(([lang,i])=>{const v=String(row[i]||'').trim();if(v){tr[lang]=v;st[lang]='accepted';}});toAdd.push({src,note:String(row[hdr.length-1]||'').trim(),translations:tr,status:st,organization_id:currentOrg.id});});
   if(toAdd.length){const res=await dbPost('dictionary',toAdd);dictCache.push(...res);}
   renderDict();alert('Zaimportowano '+toAdd.length+' wpisów.');e.target.value='';
 }
 function exportDictJSON(){download(JSON.stringify(dictCache,null,2),'slownik.json','application/json');}
-async function importDictJSON(e){const f=e.target.files[0];if(!f)return;const data=JSON.parse(await readFile(f));const toAdd=data.filter(x=>!dictCache.find(y=>y.src.toLowerCase()===x.src.toLowerCase())).map(x=>({src:x.src,note:x.note||'',translations:x.translations||{},organization_id:currentOrg.id}));if(toAdd.length){const res=await dbPost('dictionary',toAdd);dictCache.push(...res);}renderDict();alert('Zaimportowano.');e.target.value='';}
+async function importDictJSON(e){const f=e.target.files[0];if(!f)return;const data=JSON.parse(await readFile(f));const toAdd=data.filter(x=>!dictCache.find(y=>y.src.toLowerCase()===x.src.toLowerCase())).map(x=>{const tr=x.translations||{};const st=x.status||Object.fromEntries(Object.keys(tr).map(k=>[k,'accepted']));return{src:x.src,note:x.note||'',translations:tr,status:st,organization_id:currentOrg.id};});if(toAdd.length){const res=await dbPost('dictionary',toAdd);dictCache.push(...res);}renderDict();alert('Zaimportowano.');e.target.value='';}
 async function clearDict(){if(!confirm('Wyczyścić słownik?'))return;await dbDelete('dictionary',`?${orgParam()}`);dictCache=[];renderDict();}
 async function fillDictWithAI(){
   const toFill=[];
-  const enKey='English'; // Use EN as source for non-PL languages
-  dictCache.forEach(entry=>PRIMARY.forEach(l=>{
-    if(l.code===enKey) {
-      // EN: translate from PL source
-      if(!entry.translations?.[l.code]) toFill.push({id:entry.id,src:entry.src,lang:l.code,note:entry.note||'',srcLang:'Polish'});
-    } else {
-      // Other languages: translate from EN if available, fallback to PL
-      const enTerm=entry.translations?.[enKey];
-      if(!entry.translations?.[l.code]) toFill.push({
-        id:entry.id,
-        src:enTerm||entry.src,
-        lang:l.code,
-        note:entry.note||'',
-        srcLang:enTerm?'English':'Polish'
-      });
-    }
+  // EN najpierw (część języków tłumaczymy z EN — musi być gotowe wcześniej)
+  const ordered=[...PRIMARY].sort((a,b)=>(a.code==='English'?-1:0)-(b.code==='English'?-1:0));
+  dictCache.forEach(entry=>ordered.forEach(l=>{
+    if(entry.translations?.[l.code]) return;
+    // źródło wg mapy org; jeśli mapa wskazuje EN, a termin nie ma EN → fallback PL
+    let srcLang=dictSourceLang(l.code,entry);
+    if(srcLang==='English' && !entry.translations?.English) srcLang='Polish';
+    const src=dictSourceText(entry,srcLang);
+    if(!src) return; // brak tekstu źródłowego — pomiń
+    toFill.push({id:entry.id,src,lang:l.code,note:entry.note||'',srcLang});
   }));
   if(!toFill.length){alert('Brak brakujących tłumaczeń.');return;}
   if(!confirm(`Uzupełnić ${toFill.length} brakujących tłumaczeń AI?\n\nTo może chwilę potrwać.`)) return;
@@ -191,6 +370,7 @@ async function fillDictWithAI(){
 
   const CHUNK=15; // smaller chunks = fewer missing
   const failed=[];
+  const filledLangs=new Set(); // języki, w których dodano nowe tłumaczenia (do powiadomień)
   let done=0;
 
   for(let i=0;i<toFill.length;i+=CHUNK){
@@ -211,7 +391,9 @@ async function fillDictWithAI(){
         const entry=dictCache.find(e=>e.id===r.id);
         if(!entry) continue;
         entry.translations={...entry.translations,[r.lang]:r.translation};
-        await dbPatch('dictionary',{translations:entry.translations},`?id=eq.${r.id}`);
+        entry.status={...entry.status,[r.lang]:'ai'};
+        await dbPatch('dictionary',{translations:entry.translations,status:entry.status},`?id=eq.${r.id}`);
+        filledLangs.add(r.lang);
       }
     }catch(err){
       console.error('Dict AI chunk error:',err);
@@ -234,10 +416,26 @@ async function fillDictWithAI(){
         const entry=dictCache.find(e=>e.id===t.id);
         if(!entry) continue;
         entry.translations={...entry.translations,[t.lang]:tText};
-        await dbPatch('dictionary',{translations:entry.translations},`?id=eq.${t.id}`);
+        entry.status={...entry.status,[t.lang]:'ai'};
+        await dbPatch('dictionary',{translations:entry.translations,status:entry.status},`?id=eq.${t.id}`);
+        filledLangs.add(t.lang);
       }catch(err){console.error('Dict retry error:',err);}
       await sleep(150);
     }
+  }
+
+  // Powiadom tłumaczy o nowych terminach do sprawdzenia (per język)
+  for(const langCode of filledLangs){
+    const l=PRIMARY.find(x=>x.code===langCode);
+    try{
+      await supa.rpc('notify_translators',{
+        org_id:currentOrg.id,
+        target_lang:langCode,
+        notif_type:'dict_review',
+        notif_title:'Nowe terminy do sprawdzenia',
+        notif_message:`Słownik: nowe tłumaczenia AI (${l?.label||langCode}) czekają na akceptację`
+      });
+    }catch(e){console.error('notify_translators error:',e);}
   }
 
   // Cleanup progress UI

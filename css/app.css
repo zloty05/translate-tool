@@ -216,6 +216,46 @@ a{color:#2451b3}
 .dict-inp.missing{background:#fef9e6;border-color:#f0d080}
 .del-btn{cursor:pointer;background:none;border:none;color:#ddd;font-size:14px;padding:2px 5px;border-radius:3px}
 .del-btn:hover{color:#b32424;background:#fde8e8}
+/* Dictionary — status komórek (kolory) */
+.dict-cell-ai{background:#fef9e6}
+.dict-cell-ok{background:#f0fdf4}
+.dict-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:#f0f0f0;color:#999}
+.dict-badge-ai{background:#fef3c7;color:#92600a}
+.dict-badge-ok{background:rgba(76,222,128,.18);color:#16a34a}
+.dict-tr-input:focus{outline:none;border-color:#4CDE80}
+/* Legenda statusów */
+.dict-legend{display:flex;gap:16px;align-items:center;font-size:11px;color:#888;margin-bottom:8px;flex-wrap:wrap}
+.dict-legend-item{display:inline-flex;align-items:center;gap:5px}
+.dict-legend-dot{width:11px;height:11px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.08)}
+.dict-legend-dot.ai{background:#fef9e6}
+.dict-legend-dot.ok{background:#f0fdf4}
+.dict-legend-dot.none{background:#fff}
+.dict-translator-info{font-size:13px;color:#555;margin-bottom:10px;padding:8px 12px;background:#fafaf8;border:1px solid #eee;border-radius:8px}
+/* Panel mapy źródeł */
+.dict-srcmap{margin-bottom:14px;border:1px solid #eee;border-radius:8px;background:#fafaf8}
+.dict-srcmap>summary{cursor:pointer;padding:10px 14px;font-size:13px;font-weight:600;color:#444;list-style:none}
+.dict-srcmap>summary::-webkit-details-marker{display:none}
+.dict-srcmap>summary::before{content:'▸ ';color:#aaa}
+.dict-srcmap[open]>summary::before{content:'▾ '}
+.dict-srcmap-body{padding:6px 14px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.dict-srcmap-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.dict-srcmap-row select{font-size:12px;padding:3px 6px;border:1px solid #e5e5e5;border-radius:5px}
+/* Masowe wklejanie */
+.dict-bulk{margin-bottom:14px;border:1px solid #eee;border-radius:8px;background:#fafaf8}
+.dict-bulk>summary{cursor:pointer;padding:10px 14px;font-size:13px;font-weight:600;color:#444;list-style:none}
+.dict-bulk>summary::-webkit-details-marker{display:none}
+.dict-bulk>summary::before{content:'▸ ';color:#aaa}
+.dict-bulk[open]>summary::before{content:'▾ '}
+.dict-bulk-body{padding:6px 14px 14px}
+.dict-bulk-body textarea{width:100%;min-height:100px;font-size:13px;padding:8px 10px;border:1px solid #e5e5e5;border-radius:6px;font-family:inherit;resize:vertical}
+/* Pigułki języków w karcie członka */
+.member-card-main{display:flex;align-items:center;gap:14px;width:100%}
+.member-langs{margin-top:10px;padding-left:50px}
+.member-langs-label{font-size:11px;color:#aaa;margin-bottom:5px}
+.member-lang-pills{display:flex;flex-wrap:wrap;gap:6px}
+.dict-lang-pill{cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#f5f5f5;color:#888;border:1px solid #eee;user-select:none}
+.dict-lang-pill:hover{border-color:#4CDE80}
+.dict-lang-pill.selected{background:#f0fdf4;color:#166534;border-color:#4CDE80}
 .tm-stats,.hist-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px}
 .stat-box{background:#fafaf8;border:1px solid #eee;border-radius:8px;padding:10px;text-align:center}
 .stat-num{font-size:20px;font-weight:600}
@@ -257,7 +297,7 @@ a{color:#2451b3}
 .modal-body{padding:20px;overflow-y:auto;flex:1}
 .modal-footer{padding:14px 20px;border-top:1px solid #e8e6e0;display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
 /* Team member cards */
-.member-card{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid #f0ede8}
+.member-card{display:flex;flex-direction:column;align-items:stretch;padding:12px 16px;border-bottom:1px solid #f0ede8}
 .member-card:last-child{border-bottom:none}
 .member-card:hover{background:#fdfcfa}
 .member-avatar{width:36px;height:36px;border-radius:50%;background:#e8e6e0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;color:#666}
@@ -403,6 +443,24 @@ body.dark .dict-grid th{background:#1a1a1a;color:#666;border-color:#2a2a2a}
 body.dark .dict-grid td{border-color:#1a1a1a}
 body.dark .dict-inp{background:#111;border-color:#2a2a2a;color:#ccc}
 body.dark .dict-inp.missing{background:#1a1500;border-color:#3a3000}
+/* Dictionary — status/kolory (dark) */
+body.dark .dict-cell-ai{background:#2a2100}
+body.dark .dict-cell-ok{background:#0d2818}
+body.dark .dict-badge{background:#2a2a2a;color:#888}
+body.dark .dict-badge-ai{background:#3a2e00;color:#e0b64d}
+body.dark .dict-badge-ok{background:#0d3a22;color:#4CDE80}
+body.dark .dict-tr-input{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .dict-legend{color:#888}
+body.dark .dict-legend-dot.ai{background:#2a2100}
+body.dark .dict-legend-dot.ok{background:#0d2818}
+body.dark .dict-legend-dot.none{background:#111}
+body.dark .dict-translator-info{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
+body.dark .dict-srcmap,body.dark .dict-bulk{background:#1a1a1a;border-color:#2a2a2a}
+body.dark .dict-srcmap>summary,body.dark .dict-bulk>summary{color:#ccc}
+body.dark .dict-srcmap-row select,body.dark .dict-bulk-body textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .dict-lang-pill{background:#1a1a1a;color:#888;border-color:#2a2a2a}
+body.dark .dict-lang-pill.selected{background:#0d3a22;color:#4CDE80;border-color:#4CDE80}
+body.dark .member-langs-label{color:#666}
 /* TM */
 body.dark .tm-list{border-color:#2a2a2a;background:#111}
 body.dark .tm-row{border-color:#1a1a1a}

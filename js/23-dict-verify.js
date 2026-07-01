@@ -67,7 +67,8 @@ function getMatchingTerms(source, targetLang, sourceLang){
     sourceLang.toLowerCase()==='pl';
 
   return dictCache.filter(e=>{
-    if(!e.translations?.[targetLang]) return false;
+    // Tylko zaakceptowane terminy (spójnie z buildDictPromptForChunk)
+    if(!e.translations?.[targetLang] || e.status?.[targetLang]!=='accepted') return false;
     // Get the term in source language
     const termSrc = isPLSource ? e.src : (e.translations[sourceLang]||'');
     if(!termSrc) return false;
