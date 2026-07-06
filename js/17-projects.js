@@ -177,19 +177,24 @@ async function createProject(){
       original_filename:npFile.name, organization_id:currentOrg.id, created_by:currentUser.id
     });
 
-    // Upload original file to Supabase Storage
-    const filePath=`${currentOrg.id}/${proj.id}/${npFile.name}`;
+    // Upload original file to Supabase Storage.
+    // Klucz Storage z OCZYSZCZONEJ nazwy — surowa nazwa z em-dash/spacjami/znakami spoza ASCII
+    // daje 400 "Invalid key". Oryginalna nazwa zostaje w original_filename (do wyświetlania).
+    const safeName=npFile.name.replace(/[^a-z0-9_.-]/gi,'_');
+    const filePath=`${currentOrg.id}/${proj.id}/${safeName}`;
     const fileContent = fileType==='xliff' ? await readFile(npFile) : await readFile(npFile,'array');
     const{error:uploadErr}=await supa.storage.from('project-files').upload(
       filePath,
       fileType==='xliff' ? new Blob([fileContent],{type:'application/xml'}) : new Blob([fileContent]),
       {upsert:true}
     );
-    if(uploadErr) console.warn('File upload warning:',uploadErr.message);
-    else {
-      // Save file path to project
-      await dbPatch('projects',{original_file_path:filePath},`?id=eq.${proj.id}`);
+    if(uploadErr){
+      // Nie zostawiamy sieroty bez pliku — usuwamy utworzony projekt i zgłaszamy błąd.
+      try{ await dbDelete('projects',`?id=eq.${proj.id}`); }catch(_){}
+      throw new Error('Nie udało się wgrać pliku źródłowego: '+uploadErr.message);
     }
+    // Save file path to project
+    await dbPatch('projects',{original_file_path:filePath},`?id=eq.${proj.id}`);
 
     // Parse file and create segments
     let segments=[];

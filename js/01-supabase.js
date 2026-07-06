@@ -16,7 +16,26 @@ async function sbRest(method,table,body=null,params=''){
   if(!r.ok){const e=await r.text();throw new Error(`${method} ${table}: ${e}`);}
   const t=await r.text();return t?JSON.parse(t):[];
 }
-const dbGet=(t,p='')=>sbRest('GET',t,null,p);
+// GET z paginacją przez nagłówek Range — obchodzi domyślny limit PostgREST (db-max-rows=1000).
+// Gdy caller sam podał limit= w params, respektujemy go i NIE paginujemy.
+const PAGE=1000;
+async function dbGet(table,params=''){
+  if(/[?&]limit=/.test(params)) return sbRest('GET',table,null,params);
+  const url=`${SB_URL}/rest/v1/${table}${params}`;
+  let out=[],from=0;
+  while(true){
+    const to=from+PAGE-1;
+    const h={'apikey':SB_KEY,'Authorization':`Bearer ${currentSession?.access_token||SB_KEY}`,'Content-Type':'application/json','Range-Unit':'items','Range':`${from}-${to}`};
+    const r=await fetch(url,{headers:h});
+    if(!r.ok){const e=await r.text();throw new Error(`GET ${table}: ${e}`);}
+    const t=await r.text();
+    const page=t?JSON.parse(t):[];
+    out=out.concat(page);
+    if(page.length<PAGE) break;
+    from+=PAGE;
+  }
+  return out;
+}
 const dbPost=(t,b)=>sbRest('POST',t,b);
 const dbPatch=(t,b,p)=>sbRest('PATCH',t,b,p);
 const dbDelete=(t,p)=>sbRest('DELETE',t,null,p);
