@@ -107,23 +107,31 @@ function npFileSelected(file){
   else document.getElementById('np-file-type').value='xliff';
 }
 
+// Ładuje członków org do teamMembersCache i wzbogaca o email/nazwę (member_emails + profiles).
+// Wzbogaca gdy cache pusty LUB gdy istniejące wpisy nie mają email/display_name
+// (np. gdy loadDictCache() wypełnił cache surowymi wierszami organization_members).
+async function ensureTeamMembersLoaded(){
+  if(!currentOrg) return;
+  const needsEnrich = !teamMembersCache.length || teamMembersCache.some(m=>!m.email && !m.display_name && !m.profile);
+  if(!needsEnrich) return;
+  const members = await dbGet('organization_members',`?organization_id=eq.${currentOrg.id}`);
+  const profiles = await dbGet('profiles',`?id=in.(${members.map(m=>m.user_id).join(',')})`);
+  let emailMap={};
+  try{
+    const ed=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
+    ed.forEach(e=>{ emailMap[e.user_id]={email:e.email,display_name:e.display_name}; });
+  }catch(e){}
+  teamMembersCache = members.map(m=>({
+    ...m,
+    profile:profiles.find(p=>p.id===m.user_id),
+    email:emailMap[m.user_id]?.email||null,
+    display_name:emailMap[m.user_id]?.display_name||null
+  }));
+}
+
 async function addLangAssignment(){
   // Load team members for dropdown
-  if(!teamMembersCache.length && currentOrg){
-    teamMembersCache = await dbGet('organization_members',`?organization_id=eq.${currentOrg.id}`);
-    const profiles = await dbGet('profiles',`?id=in.(${teamMembersCache.map(m=>m.user_id).join(',')})`);
-    let emailMap2={};
-    try{
-      const ed=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
-      ed.forEach(e=>{ emailMap2[e.user_id]={email:e.email,display_name:e.display_name}; });
-    }catch(e){}
-    teamMembersCache = teamMembersCache.map(m=>({
-      ...m,
-      profile:profiles.find(p=>p.id===m.user_id),
-      email:emailMap2[m.user_id]?.email||null,
-      display_name:emailMap2[m.user_id]?.display_name||null
-    }));
-  }
+  await ensureTeamMembersLoaded();
   const rowId = 'la-'+Date.now();
   npLangRows.push(rowId);
   const memberOptions = teamMembersCache
@@ -914,21 +922,7 @@ async function editProject(projectId){
   editingProjectId = projectId;
 
   // Load team members if not cached
-  if(!teamMembersCache.length && currentOrg){
-    teamMembersCache = await dbGet('organization_members',`?organization_id=eq.${currentOrg.id}`);
-    const profiles = await dbGet('profiles',`?id=in.(${teamMembersCache.map(m=>m.user_id).join(',')})`);
-    let emailMap2={};
-    try{
-      const ed=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
-      ed.forEach(e=>{ emailMap2[e.user_id]={email:e.email,display_name:e.display_name}; });
-    }catch(e){}
-    teamMembersCache = teamMembersCache.map(m=>({
-      ...m,
-      profile:profiles.find(p=>p.id===m.user_id),
-      email:emailMap2[m.user_id]?.email||null,
-      display_name:emailMap2[m.user_id]?.display_name||null
-    }));
-  }
+  await ensureTeamMembersLoaded();
 
   // Fill form
   document.getElementById('ep-name').value = proj.name;
