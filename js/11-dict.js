@@ -30,6 +30,9 @@ function myDictLangs(){
   const langs=teamMembersCache.find(m=>m.user_id===currentUser?.id)?.languages||[];
   return PRIMARY.filter(l=>langs.includes(l.code));
 }
+// Tryb edycji całego słownika (admin) — przełącznik inline.
+let dictEditMode=false;
+function toggleDictEditMode(){ dictEditMode=document.getElementById('dict-edit-mode')?.checked||false; renderDict(); }
 
 // Panel mapy źródeł (admin): dla każdego celu ≠ EN wybór PL/EN.
 function buildDictSourceMap(){
@@ -137,7 +140,7 @@ async function saveDictModal(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('dict-modal')?.style.display!=='none')closeDictModal();});
 async function deleteDict(id){await dbDelete('dictionary',`?id=eq.${id}`);dictCache=dictCache.filter(e=>e.id!==id);document.getElementById('dict-count').textContent=dictCache.length;renderDict();}
-async function updateDictCell(id,lang,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.translations={...e.translations,[lang]:val};await dbPatch('dictionary',{translations:e.translations},`?id=eq.${id}`);}
+async function updateDictCell(id,lang,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.translations={...e.translations,[lang]:val};const patch={translations:e.translations};if(val.trim()){e.status={...e.status,[lang]:'accepted'};patch.status=e.status;}await dbPatch('dictionary',patch,`?id=eq.${id}`);}
 async function updateDictNote(id,val){const e=dictCache.find(e=>e.id===id);if(!e)return;e.note=val;await dbPatch('dictionary',{note:val},`?id=eq.${id}`);}
 async function updateDictSrc(id,val){const e=dictCache.find(e=>e.id===id);if(!e||!val.trim())return;e.src=val.trim();await dbPatch('dictionary',{src:val.trim()},`?id=eq.${id}`);}
 
@@ -168,13 +171,16 @@ function renderDict(){
   document.getElementById('dict-thead').innerHTML='<tr><th style="min-width:150px;">Termin PL</th>'+PRIMARY.map(l=>`<th style="min-width:110px;">${l.flag} ${l.label}</th>`).join('')+'<th style="min-width:100px;">Uwaga</th>'+(canEdit?'<th style="width:70px;"></th>':'')+'</tr>';
   const tbody=document.getElementById('dict-tbody');
   if(!filtered.length){tbody.innerHTML=`<tr><td colspan="${PRIMARY.length+(canEdit?3:2)}" style="padding:18px;text-align:center;color:#ccc;font-size:12px;">Brak wpisów w słowniku</td></tr>`;return;}
+  const editing=canEdit&&dictEditMode;
   tbody.innerHTML=filtered.map(e=>{
-    const cells=PRIMARY.map(l=>{const v=e.translations?.[l.code]||'';const cls=dictCellClass(e.status?.[l.code]);return`<td class="${cls}" style="padding:4px 5px;"><span style="font-size:12px;color:${v?'inherit':'#ddd'}">${v?esc(v):'—'}</span></td>`;}).join('');
+    const cells=PRIMARY.map(l=>{const v=e.translations?.[l.code]||'';const cls=dictCellClass(e.status?.[l.code]);
+      if(editing)return`<td class="${cls}" style="padding:4px 5px;"><input class="dict-inp ${v?'':'missing'}" value="${esc(v)}" onchange="updateDictCell('${e.id}','${l.code}',this.value)" placeholder="—" /></td>`;
+      return`<td class="${cls}" style="padding:4px 5px;"><span style="font-size:12px;color:${v?'inherit':'#ddd'}">${v?esc(v):'—'}</span></td>`;}).join('');
     const noteTxt=e.note?`<span style="font-size:11px;color:#aaa;">${esc(e.note)}</span>`:'';
     return`<tr>
-      <td style="padding:4px 8px;font-weight:600;font-size:13px;">${esc(e.src)}</td>
+      <td style="padding:4px 8px;font-weight:600;font-size:13px;">${editing?`<input class="dict-inp" value="${esc(e.src)}" onchange="updateDictSrc('${e.id}',this.value)" />`:esc(e.src)}</td>
       ${cells}
-      <td style="padding:4px 5px;">${noteTxt}</td>
+      <td style="padding:4px 5px;">${editing?`<input class="dict-inp" value="${esc(e.note||'')}" onchange="updateDictNote('${e.id}',this.value)" placeholder="Uwaga..." />`:noteTxt}</td>
       ${canEdit?`<td style="padding:2px 5px;white-space:nowrap;">
         <button class="btn btn-sm" style="padding:2px 7px;font-size:11px;" onclick="openDictModal('${e.id}')">✏️</button>
         <button class="del-btn" onclick="deleteDict('${e.id}')">×</button>
