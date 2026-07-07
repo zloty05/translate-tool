@@ -25,12 +25,17 @@ Projekt jest **single-file SPA** — jeden plik `index.html` zawiera wszystko. N
 |---|---|
 | Frontend | Vanilla HTML/CSS/JavaScript (bez frameworka) |
 | Backend / DB | Supabase (PostgreSQL + Auth + Storage + RLS) |
-| AI | Anthropic Claude `claude-sonnet-4-6` — bezpośrednie wywołania z przeglądarki |
+| AI | Anthropic Claude `claude-sonnet-4-6` — przez backend-proxy `/api/translate` (Cloudflare Function); klucz `ANTHROPIC_API_KEY` w env po stronie serwera, nigdy w kliencie |
 | PPTX | JSZip 3.10.1 (CDN) — rozpakowywanie i modyfikacja .pptx |
 | Excel | SheetJS xlsx 0.18.5 (CDN) — import/eksport .xlsx |
 | Formularz kontaktowy | Formspree (`https://formspree.io/f/meenlzod`) |
 | Płatności | Stripe (klucz testowy `pk_test_...` — checkout niegotowy, admin ma ręczne doładowanie) |
 | Hosting | Cloudflare Pages (https://translatescorm.com) |
+
+**Backend (Cloudflare Pages Functions, katalog `functions/api/`):**
+- `functions/api/translate.js` — proxy do Anthropic: weryfikuje token Supabase → woła `https://api.anthropic.com/v1/messages` z `env.ANTHROPIC_API_KEY`
+- `functions/api/invite.js` — proxy do Resend (`https://api.resend.com/emails`), wołane z `js/09-team.js`
+- Konfiguracja: `wrangler.jsonc` (`nodejs_compat`); sekrety lokalnie w `.dev.vars` (w `.gitignore`)
 
 **Zewnętrzne biblioteki ładowane z CDN:**
 ```html
@@ -113,7 +118,7 @@ Otwórz URL
 | DICTIONARY | `dictCache[]`, CRUD, `buildDictPromptForChunk()`, `fillDictWithAI()`, stemming, przepływ akceptacji per język (status `ai`/`accepted`), tryb tłumacza (`renderDictTranslator`), mapa źródeł (`dictSourceLang`/`buildDictSourceMap`), masowe wklejanie (`addDictBulk`), zapis przez RPC (`saveDictTranslation`) |
 | STATYSTYKI | `loadStats`, `renderStats` — finanse (saldo, wydatki), TM (liczba wpisów, języki), jakość AI (% poprawek per projekt) |
 | COST | `renderCostBox()` — 3 kafelki: Znaków / Koszt (kredytów) / Saldo |
-| API CALL | `apiCall(apiKey, prompt, maxTokens)` — POST do `https://api.anthropic.com/v1/messages` |
+| API CALL | `apiCall(prompt, maxTokens=2000)` — POST do własnego endpointu `/api/translate` z tokenem sesji Supabase w `Authorization: Bearer`; faktyczne wywołanie Anthropic dopiero po stronie serwera w `functions/api/translate.js` |
 | XLIFF | `loadXliff`, `runXliffBatch`, `exportXliff`, import/eksport Excel |
 | PPTX | `loadPptx`, `runPptxBatch`, `exportPptx`, `applyPptxTranslations`, `applyRunText` |
 | PROJECTS SYSTEM | `loadProjects`, `createProject`, `openProject`, `renderEditorTable`, `saveSegment` (autosave), `runAITranslation`, `exportProjectXliff`, `applyTMToProject` |
@@ -229,7 +234,7 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 ### Czego nie ruszać
 
 - **Supabase credentials** (`SB_URL`, `SB_KEY`) — anon key w kliencie jest normalny dla Supabase z RLS
-- **`anthropic-dangerous-direct-browser-access: true`** — wymagany header przy wywołaniach Anthropic API z przeglądarki
+- **Wywołanie Anthropic w Cloudflare Function** — musi zostać w `functions/api/translate.js` (backend-proxy). NIE przenosić do przeglądarki: klucz `env.ANTHROPIC_API_KEY` nigdy w kliencie, header `x-api-key` + `anthropic-version: 2023-06-01` ustawiane po stronie serwera. Frontend woła tylko `/api/translate` z tokenem Supabase
 - **`XLIFF_NS`** — przestrzeń nazw XLIFF 1.2: `'urn:oasis:names:tc:xliff:document:1.2'`
 - **`applyRunText`** — skomplikowana logika podziału tekstu między `<r>` runy w PPTX; zmiana psuje formatowanie
 - **CSS reguły dark mode** — obszerne, często z `!important`; przy nowych elementach zawsze dodaj parę `body.dark .klasa`
