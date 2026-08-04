@@ -1,0 +1,21 @@
+{
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=process.env.CLAUDE_TOOL_INPUT_FILE_PATH||''; if(f.endsWith('index.html')) process.stderr.write('UWAGA: Edytujesz index.html — upewnij sie ze to wlasciwy plik (nie js/*.js)\\n');\"",
+            "blocking": false
+          }
+        ]
+      }
+    ]
+  }
+}
