@@ -19,15 +19,18 @@ async function loadTeam(){
   try{
     const members=await dbGet('organization_members',`?${orgParam()}`);
     // Use member_emails view which bypasses profiles RLS issues
+    // Bierzemy też email — bez niego fallback w getMemberName() pokazuje skrócone UUID
+    // dla userów bez full_name (np. zaproszonych z panelu Supabase).
     let nameMap={};
     try{
       const nameData=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
-      nameData.forEach(e=>{ nameMap[e.user_id]=e.display_name; });
+      nameData.forEach(e=>{ nameMap[e.user_id]={email:e.email,display_name:e.display_name}; });
     }catch(e){ console.warn('member_emails error:',e); }
     const membersWithProfiles=members.map(m=>({
       ...m,
       profiles:null,
-      display_name:nameMap[m.user_id]||null
+      email:nameMap[m.user_id]?.email||null,
+      display_name:nameMap[m.user_id]?.display_name||null
     }));
     const pending=await dbGet('invitations',`?${orgParam()}&accepted_at=is.null&order=created_at.desc`);
     renderTeamList(membersWithProfiles);

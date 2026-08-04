@@ -401,22 +401,35 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div class="auth-left-logo"><img src="logoSmall.png" alt="" class="logo-img logo-auth"> TranslateScorm</div>
     <div class="auth-left-tag">Prawie gotowe!</div>
     <ul class="auth-left-bullets">
-      <li class="auth-left-bullet">Krok 1: Skonfiguruj organizację</li>
+      <li class="auth-left-bullet">Krok 1: Uzupełnij dane i skonfiguruj organizację</li>
       <li class="auth-left-bullet">Krok 2: Zaproś zespół (opcjonalnie)</li>
       <li class="auth-left-bullet">Gotowe — zacznij tłumaczyć z AI</li>
     </ul>
   </div>
   <div class="auth-split-right">
     <div class="auth-box" style="max-width:480px;">
-      <div class="auth-title" id="onboard-subtitle">Skonfiguruj organizację</div>
+      <div class="auth-title" id="onboard-subtitle">Skonfiguruj konto i organizację</div>
       <div class="onboard-progress" style="margin-top:8px;margin-bottom:28px;">
         <div class="onboard-dot done" id="od1"></div>
         <div class="onboard-dot" id="od2"></div>
       </div>
       <div class="auth-error" id="onboard-error"></div>
 
-      <!-- Krok 1: nazwa org -->
+      <!-- Krok 1: dane konta + nazwa org -->
       <div class="onboard-step active" id="onboard-step1">
+        <div class="auth-field">
+          <label>Imię i nazwisko</label>
+          <input type="text" id="onboard-fullname" placeholder="Jan Kowalski" />
+        </div>
+        <div class="auth-field">
+          <label>Hasło (min. 8 znaków)</label>
+          <input type="password" id="onboard-pass1" placeholder="••••••••" />
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Ustaw hasło, aby móc logować się przy kolejnych wizytach.</div>
+        </div>
+        <div class="auth-field">
+          <label>Powtórz hasło</label>
+          <input type="password" id="onboard-pass2" placeholder="••••••••" />
+        </div>
         <div class="auth-field">
           <label>Nazwa organizacji / firmy</label>
           <input type="text" id="org-name" placeholder="np. Acme Corp" oninput="updateSlug()" />
