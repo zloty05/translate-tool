@@ -20,10 +20,21 @@
 --   - email bierzemy z auth.users
 --   - display_name: profiles.full_name → user_metadata.full_name → NULL
 --     (NULL zamiast UUID — pozwala getMemberName() zejść na email)
+--
+-- UWAGA — security_invoker NIE działa tutaj:
+--   auth.users jest niedostępna dla roli `authenticated`, więc widok
+--   z security_invoker zwraca NULL w email i display_name dla WSZYSTKICH
+--   (regresja: nawet konta, które wcześniej miały nazwy z profiles).
+--   Dlatego widok jest SECURITY DEFINER (domyślne dla widoków w PG),
+--   a izolację między organizacjami wymusza filtr WHERE poniżej —
+--   ten sam wzorzec co RPC w dict_approval_workflow.sql.
 -- ══════════════════════════════════════════════════════════════════
 
-CREATE OR REPLACE VIEW public.member_emails
-WITH (security_invoker = true) AS
+-- DROP jest konieczny: CREATE OR REPLACE VIEW nie zmienia opcji
+-- security_invoker ustawionej przy poprzednim uruchomieniu.
+DROP VIEW IF EXISTS public.member_emails;
+
+CREATE VIEW public.member_emails AS
 SELECT
   om.organization_id,
   om.user_id,
@@ -34,13 +45,26 @@ SELECT
   u.email::text AS email
 FROM public.organization_members om
 LEFT JOIN public.profiles p ON p.id = om.user_id
-LEFT JOIN auth.users u      ON u.id = om.user_id;
+LEFT JOIN auth.users u      ON u.id = om.user_id
+-- Izolacja tenantów: widać wyłącznie członków własnych organizacji.
+WHERE om.organization_id IN (
+  SELECT organization_id
+  FROM public.organization_members
+  WHERE user_id = auth.uid()
+);
 
--- Uprawnienia dla zalogowanych użytkowników aplikacji.
 GRANT SELECT ON public.member_emails TO authenticated;
 
 -- ── Weryfikacja ────────────────────────────────────────────────────
--- Powinno zwrócić prawdziwe adresy e-mail w kolumnie email
--- oraz display_name = NULL (a nie UUID) dla kont bez imienia.
+-- Uruchom jako zalogowany użytkownik aplikacji (nie w SQL Editorze —
+-- tam auth.uid() jest NULL, więc wynik będzie pusty; to poprawne).
 --
--- SELECT * FROM member_emails ORDER BY organization_id;
+-- W SQL Editorze sprawdź same dane źródłowe:
+--   SELECT om.organization_id, u.email,
+--          u.raw_user_meta_data->>'full_name' AS meta_name,
+--          p.full_name AS profile_name
+--   FROM organization_members om
+--   LEFT JOIN auth.users u ON u.id = om.user_id
+--   LEFT JOIN profiles p   ON p.id = om.user_id;
+--
+-- W aplikacji: zakładka Zespół pokazuje e-mail (lub imię, jeśli ustawione).
