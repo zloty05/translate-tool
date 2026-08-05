@@ -1,0 +1,24 @@
+# Zmienne dla Cloudflare Pages Functions przy lokalnym uruchomieniu
+# (npx wrangler pages dev .). Skopiuj do .dev.vars i uzupełnij wartości.
+#
+#   cp .dev.vars.example .dev.vars
+#
+# .dev.vars jest w .gitignore — nie trafi do repo.
+# Na produkcji te same zmienne ustawia się w panelu Cloudflare Pages
+# (Settings → Environment variables), NIE w tym pliku.
+
+# ── Anthropic (functions/api/translate.js) ─────────────────────────
+# Jedyny sekret bez lokalnego zamiennika — bez niego /api/translate nie zadziała.
+# Klucz z https://console.anthropic.com → API Keys
+ANTHROPIC_API_KEY=
+
+# ── Resend (functions/api/invite.js) ───────────────────────────────
+# Wysyłka zaproszeń. Lokalnie maile i tak przechwytuje Mailpit
+# (http://127.0.0.1:54324), więc do testów wystarczy dowolna wartość.
+RESEND_API_KEY=
+
+# ── Supabase (weryfikacja tokenu w functions/api/translate.js) ──────
+# LOKALNIE: wartości z `supabase status`. Poniższe to domyślne z Supabase CLI —
+# identyczne na każdej instalacji, więc nie są sekretem.
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0

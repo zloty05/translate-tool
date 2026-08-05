@@ -33,10 +33,46 @@ const LANGS=[
   {code:'Chinese (Simplified)',label:'ZH — Chiński',flag:'🇨🇳'},
   {code:'Arabic',label:'AR — Arabski',flag:'🇸🇦'},
 ];
-const PRIMARY=LANGS.filter(l=>l.primary);
+// Domyślny zestaw języków słownika — używany, dopóki organizacja
+// nie ma własnej konfiguracji (organizations.dict_langs).
+const PRIMARY_FALLBACK=LANGS.filter(l=>l.primary);
+// Alias zachowany dla kodu spoza słownika (np. getFavLangs).
+const PRIMARY=PRIMARY_FALLBACK;
+
+// ── Konfiguracja słownika per organizacja ──────────────────────────
+// Język bazowy — ten, w którym zapisany jest termin w dictionary.src.
+function dictBaseLang(){ return currentOrg?.dict_base_lang||'Polish'; }
+// Języki docelowe słownika tego tenanta (obiekty z LANGS).
+// Nieznany kod (np. z backfillu starych danych) dostaje obiekt zastępczy,
+// żeby renderowanie nie wywróciło się na undefined.
+function dictLangs(){
+  const codes=currentOrg?.dict_langs;
+  if(!codes||!codes.length)return PRIMARY_FALLBACK;
+  const base=dictBaseLang();
+  return codes.filter(c=>c!==base).map(c=>LANGS.find(l=>l.code===c)||{code:c,label:c,flag:'🌐'});
+}
+// Kolejność przetwarzania języków wg grafu źródeł: język idzie dopiero
+// po swoim źródle (żeby np. EN było gotowe, zanim ruszy CZ tłumaczone z EN).
+function dictLangOrder(){
+  const langs=dictLangs();
+  const base=dictBaseLang();
+  const byCode=new Map(langs.map(l=>[l.code,l]));
+  const out=[],done=new Set();
+  const visit=(code,depth)=>{
+    if(done.has(code)||!byCode.has(code))return true;
+    if(depth>langs.length){console.warn('dictLangOrder: cykl w mapie źródeł przy',code);return false;}
+    const src=currentOrg?.dict_source_map?.[code];
+    if(src&&src!==base&&src!==code&&!visit(src,depth+1))return false;
+    if(done.has(code))return true;
+    done.add(code);out.push(byCode.get(code));
+    return true;
+  };
+  for(const l of langs){ if(!visit(l.code,0)) return langs; } // cykl → kolejność domyślna
+  return out;
+}
 function getFavLangs(){
   try{const s=localStorage.getItem('favLangs_'+(currentOrg?.id||'default'));if(s)return JSON.parse(s);}catch(e){}
-  return PRIMARY.map(l=>l.code);
+  return dictLangs().map(l=>l.code); // domyślnie języki słownika tej organizacji
 }
 function setFavLangs(codes){localStorage.setItem('favLangs_'+(currentOrg?.id||'default'),JSON.stringify(codes));}
 function langOptionsHTML(selectedLang){

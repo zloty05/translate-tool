@@ -106,7 +106,7 @@ async function doRegister(){
   btn.classList.add('loading');btn.textContent='Tworzenie konta...';
   const{data,error}=await supa.auth.signUp({email,password:pass,options:{
     data:{full_name:name},
-    emailRedirectTo:'https://translatescorm.com'
+    emailRedirectTo:location.origin  // działa też lokalnie (localhost)
   }});
   btn.classList.remove('loading');btn.textContent=orig;
   if(error){authErr('reg-error',error.message);return;}

@@ -1,6 +1,11 @@
 -- ══════════════════════════════════════════════════════════════════
+-- ARCHIWUM — migracja sprzed wprowadzenia Supabase CLI.
+-- Została już zastosowana na produkcji, a jej efekt jest zawarty
+-- w zrzucie schematu supabase/migrations/*_remote_schema.sql.
+-- NIE uruchamiaj ponownie. Nowe migracje: supabase migration new <nazwa>
+-- ══════════════════════════════════════════════════════════════════
+--
 -- Naprawa widoku member_emails — nazwy członków zespołu
--- Uruchom JEDNORAZOWO w Supabase → SQL Editor.
 -- ══════════════════════════════════════════════════════════════════
 --
 -- PROBLEM (stara definicja):

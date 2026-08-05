@@ -10,12 +10,20 @@ TranslateScorm to wielotenantowa aplikacja SaaS do tłumaczenia materiałów e-l
 
 ```
 translate-tool/
-├── index.html      ← cała aplikacja (CSS + HTML + JS, ~5200 linii)
-├── logo.png        ← oryginalne logo (duże marginesy, nieużywane)
-└── logoSmall.png   ← logo aplikacji (favicon + nav + auth + sidebar)
+├── index.html              ← markup (landing, ekrany auth, app-shell, zakładki, modale)
+├── css/app.css             ← wszystkie style (w tym dark mode)
+├── js/01-24*.js            ← kod aplikacji, ładowany po kolei jako skrypty globalne
+├── functions/api/          ← Cloudflare Pages Functions (translate.js, invite.js)
+├── supabase/               ← config.toml + migrations/ (Supabase CLI)
+├── sql/                    ← archiwum migracji sprzed CLI (nie dodawaj tu nowych)
+├── .assetsignore           ← czego NIE publikować na Cloudflare Pages
+├── .dev.vars.example       ← wzorzec zmiennych dla lokalnych Functions
+└── logoSmall.png           ← logo aplikacji (favicon + nav + auth + sidebar)
 ```
 
-Projekt jest **single-file SPA** — jeden plik `index.html` zawiera wszystko. Nie ma node_modules, bundlera ani kompilacji.
+**Numeracja `js/*.js` jest znacząca** — pliki ładują się w kolejności z `index.html`, wszystko trafia do globalnego scope (brak modułów ES, brak bundlera). Stałe i funkcje muszą być zdefiniowane w pliku o niższym numerze niż ten, który ich używa.
+
+Nie ma node_modules ani kompilacji — edytujesz plik i odświeżasz przeglądarkę.
 
 ---
 
@@ -109,7 +117,7 @@ Otwórz URL
 |---|---|
 | SUPABASE | Init klienta, `sbRest()`, helpery `dbGet/dbPost/dbPatch/dbDelete/dbUpsert` |
 | STATE | Globalne zmienne stanu: `xliffSegs`, `pptxSegs`, `dictCache`, `tmCache`, `currentOrg`, `currentRole` itd. |
-| LANGUAGES | Tablica `LANGS[]` (25 języków), `PRIMARY` (8 głównych), `langOptionsHTML()` |
+| LANGUAGES | Tablica `LANGS[]` (30 języków), `PRIMARY_FALLBACK` (8 domyślnych dla słownika), `langOptionsHTML()`; konfiguracja słownika per org: `dictLangs()`, `dictBaseLang()`, `dictLangOrder()` |
 | AUTH | `doLogin`, `doRegister`, `doReset`, `doLogout`, `afterLogin`, `acceptInvitation`; walidacja: `setFieldState`, `validateEmail`, `validatePass`, `validatePass2` |
 | ONBOARDING | Tworzenie org via RPC (`create_org_record`, `add_org_admin`), 15 kredytów powitalnych |
 | APP LOAD | `loadApp()`, `switchTab()`, helpery utils (`esc`, `download`, `readFile`, `sleep`, `fmtDate`) |
@@ -168,12 +176,17 @@ Bonus powitalny: 15 kredytów (`add_tokens` w onboardingu).
 | `notify_translators(org_id, target_lang, notif_type, notif_title, notif_message)` | Powiadomienia dla tłumaczy z przypisanym `target_lang` (po AI-fill słownika) |
 | `save_dict_translation(dict_id, lang, new_text, mark_accepted)` | Zapis 1 tłumaczenia słownika; waliduje rolę i przypisanie języka (translator tylko swój); ustawia `status[lang]` = `accepted`/`ai`; zapisuje tylko klucz `[lang]` |
 | `delete_lang_assignment(assignment_id)` | Usuwa przypisanie języka z projektu (omija RLS); waliduje przynależność do org |
+| `save_org_dict_config(org_id, langs, base_lang, source_map)` | Atomowy zapis konfiguracji słownika org; tylko admin. Odrzuca: usunięcie języka z tłumaczeniami, bazę w zbiorze celów, mapę spoza `langs ∪ {base_lang}`, samoodniesienia i cykle |
 
-**Definicje SQL:** `sql/dict_approval_workflow.sql` (kolumny + RPC + backfill do jednorazowego uruchomienia w Supabase).
+**Definicje SQL:**
+- `sql/dict_approval_workflow.sql` — status per język + `save_dict_translation` + `notify_translators`
+- `sql/dict_multitenant.sql` — konfiguracja słownika per org: kolumny, backfill z realnych danych, materializacja mapy źródeł, `save_org_dict_config`, rozszerzona `save_dict_translation`, zapytania kontrolne (sekcja 7 — po migracji 7a i 7b muszą zwrócić 0 wierszy)
+
+Oba pliki uruchamia się jednorazowo w Supabase → SQL Editor.
 
 ### Tabele Supabase
 
-`organizations` (m.in. `dict_source_map` JSONB — mapa źródeł słownika per język docelowy), `organization_members` (m.in. `languages` **`text[]`** — przypisane języki słownika tłumacza; w RPC używaj `lang = ANY(languages)`, nie operatorów jsonb), `invitations`, `projects`, `project_segments`, `project_language_assignments`, `translation_memory`, `dictionary` (m.in. `translations` JSONB + `status` JSONB per język: `ai`/`accepted`), `translation_history`, `token_transactions`, `notifications`, `profiles`, widok `member_emails`
+`organizations` (m.in. `dict_langs` **`text[]`** — języki słownika tenanta; `dict_base_lang` `text` — język terminu w `dictionary.src`; `dict_source_map` JSONB — mapa źródeł per język docelowy), `organization_members` (m.in. `languages` **`text[]`** — przypisane języki słownika tłumacza; w RPC używaj `lang = ANY(languages)`, nie operatorów jsonb), `invitations`, `projects`, `project_segments`, `project_language_assignments`, `translation_memory`, `dictionary` (m.in. `translations` JSONB + `status` JSONB per język: `ai`/`accepted`), `translation_history`, `token_transactions`, `notifications`, `profiles`, widok `member_emails`
 
 ### Role i system uprawnień
 
@@ -242,15 +255,18 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 
 ### Na co uważać
 
-- **Duplikat `buildDictPrompt`** — dwie deklaracje na końcu sekcji DICTIONARY (JS bierze ostatnią); nie dodawaj kolejnej
+- **`buildDictPrompt`** — cienki wrapper na `buildDictPromptForChunk` (bez chunku, źródłem język bazowy org). Nie ma dziś wywołań; wszystkie 4 ścieżki AI wołają `buildDictPromptForChunk` bezpośrednio. Wcześniejszy duplikat deklaracji został usunięty — nie dodawaj kolejnej
 - **`tmCache[]`** — rolling cache (max 1000 wpisów), nie pełna kopia bazy; do lookup używaj `lookupTMBatch` (RPC)
 - **Model AI** — `claude-sonnet-4-6`; przy zmianie upewnij się że model istnieje
 - **Stripe checkout** — `startCheckout()` kończy się alertem; płatności niegotowe, admin ma ręczne doładowanie
 - **`orgParam()`** — zawsze używaj w zapytaniach REST do filtrowania po `organization_id`
-- **`PRIMARY` vs `LANGS`** — słownik i TM używają tylko `PRIMARY` (8 języków), dropdowny tłumaczeń mają pełne `LANGS` (25)
+- **`dictLangs()` vs `LANGS`** — słownik używa `dictLangs()` (konfiguracja per org, patrz niżej); dropdowny tłumaczeń i TM mają pełne `LANGS` (30). TM jest całkowicie language-agnostyczny — filtr języków buduje z danych (RPC `get_tm_stats`), nie ze stałej listy
+- **Słownik: języki per tenant** — zestaw języków słownika trzyma `organizations.dict_langs` (`text[]`), a język terminu źródłowego (kolumna `dictionary.src`) — `organizations.dict_base_lang`. W kodzie **nigdy nie iteruj po `PRIMARY`** w kontekście słownika — używaj `dictLangs()`. `PRIMARY_FALLBACK` (8 języków) służy wyłącznie jako domyślna lista, gdy org nie ma jeszcze konfiguracji
+- **Słownik: graf źródeł** — `dict_source_map` mapuje cel → źródło i dopuszcza **dowolny** język tenanta (nie tylko PL/EN). Pozwala mieć np. `Ukrainian z Polish` obok `Czech z English` w jednej org. Trzy niezmienniki pilnowane przez RPC `save_org_dict_config` i UI: brak cykli, brak samoodniesień, każda ścieżka kończy się w języku bazowym. Brak wpisu = źródłem język bazowy
+- **AI-fill kolejność** — `fillDictWithAI()` iteruje `dictLangOrder()` (sort topologiczny wg grafu źródeł) **po językach z zewnątrz**, dopiero wewnątrz po terminach. Odwrotne zagnieżdżenie zepsułoby zależności: tłumaczenie z EN startowałoby, zanim EN zostanie zapisane. Tekst źródłowy rozwiązywany jest tuż przed wysłaniem chunka (`resolveSrc`), bo źródło mogło powstać we wcześniejszym chunku tego samego przebiegu
 - **Słownik: status per język** — kolumna `dictionary.status` (JSONB) trzyma per język `ai`/`accepted`. Do tłumaczenia kursów/prezentacji (`buildDictPromptForChunk`) trafiają **tylko** terminy `accepted`. AI-fill oznacza wyniki jako `ai`; ręczne wpisy admina i importy = `accepted`
 - **Słownik: tryb tłumacza** — `renderDict()` dla `currentRole==='translator'` deleguje do `renderDictTranslator()` (tylko przypisane języki z `organization_members.languages`, kolumna źródłowa wg `dict_source_map`, akceptacja). Zapis tłumacza **wyłącznie** przez RPC `save_dict_translation` (nie przez REST `dbPatch` — RLS + walidacja języka)
-- **Słownik: mapa źródeł** — `dict_source_map` (per język docelowy: `Polish`/`English`); EN zawsze z PL. Fallback gdy brak wpisu: EN jeśli termin ma EN, inaczej PL. Edycja tylko admin (panel `admin-only` w tab-dict)
+- **Słownik: mapa źródeł** — `dict_source_map` (per język docelowy → dowolny język tenanta lub bazowy). Fallback gdy brak wpisu: język bazowy org. Edycja tylko admin, w panelu `#dict-srcmap-panel` (`admin-only`) w tab-dict, razem z językami i językiem bazowym. Zmiany trzymane są w stanie roboczym `_dictCfg` i zapisywane jednym RPC `save_org_dict_config` — nie zapisuj przez `dbPatch` na `organizations`
 - **Zakładka Słownik dostępna dla tłumacza** — sidebar-item `data-tab="dict"` NIE ma `hide-translator` (usunięte); tłumacz potrzebuje słownika. `loadNotifications()` ładuje się też dla translatora
 - **`tokens_balance`** — kolumna przechowuje teraz kredyty (nie tokeny API); nie zmieniać nazwy w bazie
 - **Landing vs App tabs** — `showLanding()` czyści `tab-content.active`; `showApp()` przywraca `tab-projects.active`; nie pomijaj tych wywołań
@@ -301,8 +317,48 @@ zmiana logo z emoji na plik graficzny
 
 ## Środowisko i deployment
 
-- Aplikacja uruchamiana przez otwarcie `index.html` w przeglądarce lub przez Cloudflare Pages
-- Brak procesu build — edytuj `index.html` bezpośrednio
+### Dwa środowiska
+
+| | Produkcja | Lokalne |
+|---|---|---|
+| Adres | https://translatescorm.com | http://localhost:8788 |
+| Supabase | `lzklxvdzyslpwugjvvtj.supabase.co` | `127.0.0.1:54321` (Docker) |
+| Studio | panel supabase.com | http://127.0.0.1:54323 |
+| Maile | Resend → realna skrzynka | Mailpit http://127.0.0.1:54324 |
+
+Wybór środowiska jest **automatyczny**, po `location.hostname` ([js/01-supabase.js](js/01-supabase.js)): produkcja **wyłącznie** na `translatescorm.com`, wszystko inne (localhost, `*.pages.dev`) → baza lokalna. Domyślnie local, żeby pomyłka nie trafiła w produkcję. W środowisku nieprodukcyjnym w rogu ekranu widnieje pomarańczowy znacznik `#env-badge`.
+
+**Nie zaszywaj domeny w kodzie** — używaj `location.origin` (rejestracja, linki zaproszeń). Inaczej lokalne testy przekierują użytkownika na produkcję.
+
+### Uruchomienie lokalne
+
+```bash
+supabase start                 # Postgres+Auth+Storage w Dockerze
+npx wrangler pages dev . --port 8788
+```
+
+Oba są potrzebne. **Otwarcie `index.html` przez `file://` nie zadziała** — `/api/translate` to ścieżka absolutna, a Supabase Auth odrzuca origin `null`. Zwykły serwer HTTP też nie wystarczy: nie wykona Pages Functions, więc `/api/*` zwróci 404.
+
+Przed pierwszym uruchomieniem: `cp .dev.vars.example .dev.vars` i uzupełnij `ANTHROPIC_API_KEY` (jedyny sekret bez lokalnego zamiennika). Potwierdzenia email są lokalnie wyłączone (`enable_confirmations = false`), więc rejestracja od razu daje sesję.
+
+### Migracje bazy
+
+Katalog `supabase/migrations/` — pliki stosowane **w kolejności leksykalnej nazw**, więc prefiks czasowy `YYYYMMDDHHMMSS_` jest obowiązkowy.
+
+```bash
+supabase migration new nazwa_zmiany   # nowy plik z prefiksem
+supabase db reset                     # odtworzenie bazy lokalnej od zera
+supabase db push                      # wdrożenie na produkcję (świadoma decyzja!)
+```
+
+Kolejność ma znaczenie merytoryczne: `dict_multitenant` nadpisuje `save_dict_translation` z `dict_approval_workflow`, dokładając walidację `dict_langs`. Odwrotna kolejność cofnęłaby tę zmianę.
+
+Katalog `sql/` to **archiwum** migracji wklejanych ręcznie do SQL Editora przed wprowadzeniem CLI. Nowych plików tam nie dodawaj.
+
+### Pozostałe
+
+- Brak procesu build — edytuj pliki bezpośrednio (`index.html`, `js/*.js`, `css/app.css`)
 - Testy manualne w przeglądarce (brak testów automatycznych)
 - Git branch: `main` (jedyna gałąź)
 - Formularz kontaktowy: Formspree `meenlzod` → `zloty05@gmail.com`
+- [.assetsignore](.assetsignore) — lista plików **nie** publikowanych przez Cloudflare Pages. `wrangler.jsonc` ma `assets.directory: "."`, więc bez tego pliku całe repo (w tym `sql/` i `supabase/`) trafia do internetu. Dodając katalog z danymi wrażliwymi, dopisz go tam

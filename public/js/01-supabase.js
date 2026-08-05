@@ -1,12 +1,61 @@
 ﻿// ══════════════════════════════════════════════════════════
 // SUPABASE
 // ══════════════════════════════════════════════════════════
-const SB_URL='https://lzklxvdzyslpwugjvvtj.supabase.co';
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a2x4dmR6eXNscHd1Z2p2dnRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjI5NjcsImV4cCI6MjA5MzAzODk2N30.5ddnoP1rO-FsQ73lcMfOxz02G8MDPXHHHsBrZJKxTFE';
+// Trzy środowiska. Klucz anon jest publiczny z założenia (barierą jest RLS),
+// więc wszystkie mogą leżeć w kodzie — to ta sama klasa sekretu co dotychczas.
+const ENVS={
+  prod:{
+    name:'prod',
+    url:'https://lzklxvdzyslpwugjvvtj.supabase.co',
+    key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6a2x4dmR6eXNscHd1Z2p2dnRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NjI5NjcsImV4cCI6MjA5MzAzODk2N30.5ddnoP1rO-FsQ73lcMfOxz02G8MDPXHHHsBrZJKxTFE'
+  },
+  test:{
+    name:'test',
+    // TODO: uzupełnić po założeniu projektu "translatescorm-test" w Supabase
+    url:'',
+    key:''
+  },
+  local:{
+    name:'local',
+    url:'http://127.0.0.1:54321',
+    // Domyślny klucz Supabase CLI — identyczny na każdej instalacji, nie jest sekretem
+    key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+  }
+};
+// Dopasowanie DOKŁADNE, nie po sufiksie: test.translatescorm.com nie może
+// wpaść w gałąź produkcyjną. Nieznany host → local (pomyłka nie trafia w prod).
+function pickEnv(host){
+  const h=(host||'').toLowerCase();
+  if(h==='translatescorm.com'||h==='www.translatescorm.com') return ENVS.prod;
+  if(h==='test.translatescorm.com'||h.endsWith('.pages.dev')) return ENVS.test;
+  return ENVS.local;
+}
+let SB_ENV=pickEnv(location.hostname);
+// Zabezpieczenie: gdyby środowisko testowe nie było jeszcze skonfigurowane,
+// NIE schodzimy po cichu na produkcję — lepiej głośny błąd niż zapis do prod.
+if(!SB_ENV.url){
+  console.error(`[env] Środowisko "${SB_ENV.name}" nie ma skonfigurowanego Supabase (js/01-supabase.js).`);
+  SB_ENV={...SB_ENV,name:SB_ENV.name+' (NIESKONFIGUROWANE)',url:ENVS.local.url,key:ENVS.local.key};
+}
+const IS_PROD=SB_ENV.name==='prod';
+const SB_URL=SB_ENV.url;
+const SB_KEY=SB_ENV.key;
 // Capture URL before Supabase SDK processes and clears the hash
 window._bootHash=window.location.hash;
 window._bootSearch=window.location.search;
 const supa=supabase.createClient(SB_URL,SB_KEY);
+
+// Znacznik środowiska — żeby nie pomylić okna lokalnego z produkcyjnym.
+if(!IS_PROD){
+  console.info(`[env] ${SB_ENV.name} — Supabase: ${SB_URL}`);
+  document.addEventListener('DOMContentLoaded',()=>{
+    const el=document.getElementById('env-badge');
+    if(!el)return;
+    el.textContent=`⚠ ŚRODOWISKO ${SB_ENV.name.toUpperCase()} — ${SB_URL}`;
+    el.style.display='';
+    document.body.classList.add('env-nonprod');
+  });
+}
 
 // REST helper (bypasses RLS issues with JS client in some cases)
 async function sbRest(method,table,body=null,params=''){

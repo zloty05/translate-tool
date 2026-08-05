@@ -2,6 +2,12 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
 
 /* ── AUTH SCREENS ── */
+/* Znacznik środowiska nieprodukcyjnego — róg ekranu, poza layoutem (fixed) */
+#env-badge{position:fixed;right:0;bottom:0;z-index:9999;background:#c2410c;color:#fff;
+  font-size:10px;font-weight:700;letter-spacing:.04em;padding:4px 10px;border-radius:6px 0 0 0;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;pointer-events:none;
+  box-shadow:0 -1px 6px rgba(0,0,0,.25);opacity:.92}
+@media(max-width:700px){#env-badge{font-size:9px;padding:3px 7px}}
 .auth-screen{display:none;position:fixed;inset:0;z-index:999}
 .auth-screen.active{display:flex}
 .auth-split-left{width:42%;background:#1a1a1a;color:#fff;display:flex;flex-direction:column;justify-content:center;padding:60px 50px;gap:32px;overflow-y:auto}
@@ -237,9 +243,21 @@ a{color:#2451b3}
 .dict-srcmap>summary::-webkit-details-marker{display:none}
 .dict-srcmap>summary::before{content:'▸ ';color:#aaa}
 .dict-srcmap[open]>summary::before{content:'▾ '}
-.dict-srcmap-body{padding:6px 14px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.dict-srcmap-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
 .dict-srcmap-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
-.dict-srcmap-row select{font-size:12px;padding:3px 6px;border:1px solid #e5e5e5;border-radius:5px}
+.dict-srcmap-row select{font-size:12px;padding:3px 6px;border:1px solid #e5e5e5;border-radius:5px;max-width:120px}
+/* Konfiguracja słownika organizacji */
+.dict-cfg-body{padding:6px 14px 14px}
+.dict-cfg-section{padding:10px 0;border-top:1px solid #eee}
+.dict-cfg-section:first-child{border-top:none;padding-top:2px}
+.dict-cfg-label{font-size:12px;font-weight:600;color:#444;margin-bottom:3px}
+.dict-cfg-hint{font-size:11px;color:#999;margin:0 0 8px}
+.dict-cfg-body select#dict-cfg-base{font-size:12px;padding:4px 8px;border:1px solid #e5e5e5;border-radius:5px;min-width:200px}
+.dict-cfg-actions{display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #eee;flex-wrap:wrap}
+.dict-cfg-msg{font-size:11px;color:#999}
+.dict-cfg-msg.error{color:#b32424}
+.dict-cfg-msg.ok{color:#166534}
+.dict-lang-pill.locked{cursor:not-allowed;opacity:.75}
 /* Masowe wklejanie */
 .dict-bulk{margin-bottom:14px;border:1px solid #eee;border-radius:8px;background:#fafaf8}
 .dict-bulk>summary{cursor:pointer;padding:10px 14px;font-size:13px;font-weight:600;color:#444;list-style:none}
@@ -344,6 +362,7 @@ body[data-role=translator] .hide-translator{display:none}
 .token-label{font-size:10px;color:#666}
 /* DARK MODE */
 body.dark{color-scheme:dark;background:#0f0f0f;color:#ccc}
+body.dark #env-badge{background:#ea580c;color:#000}
 body.dark #app-shell{background:#111}
 body.dark .sidebar-sep{background:#1e1e1e}
 body.dark .sidebar-bottom{border-color:#1e1e1e}
@@ -457,7 +476,12 @@ body.dark .dict-legend-dot.none{background:#111}
 body.dark .dict-translator-info{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
 body.dark .dict-srcmap,body.dark .dict-bulk{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .dict-srcmap>summary,body.dark .dict-bulk>summary{color:#ccc}
-body.dark .dict-srcmap-row select,body.dark .dict-bulk-body textarea{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .dict-srcmap-row select,body.dark .dict-bulk-body textarea,body.dark .dict-cfg-body select#dict-cfg-base{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .dict-cfg-section,body.dark .dict-cfg-actions{border-color:#2a2a2a}
+body.dark .dict-cfg-label{color:#ccc}
+body.dark .dict-cfg-hint,body.dark .dict-cfg-msg{color:#777}
+body.dark .dict-cfg-msg.error{color:#ff6b6b}
+body.dark .dict-cfg-msg.ok{color:#4CDE80}
 body.dark .dict-lang-pill{background:#1a1a1a;color:#888;border-color:#2a2a2a}
 body.dark .dict-lang-pill.selected{background:#0d3a22;color:#4CDE80;border-color:#4CDE80}
 body.dark .member-langs-label{color:#666}

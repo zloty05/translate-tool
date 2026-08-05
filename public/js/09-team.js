@@ -75,7 +75,7 @@ function renderTeamList(members){
     const memberLangs=m.languages||[];
     const langPills=showLangs?`<div class="member-langs">
       <div class="member-langs-label">Języki słownika:</div>
-      <div class="member-lang-pills">${PRIMARY.map(l=>`<span class="dict-lang-pill${memberLangs.includes(l.code)?' selected':''}" onclick="toggleMemberLang('${m.id}','${l.code}',this)">${l.flag} ${l.code}</span>`).join('')}</div>
+      <div class="member-lang-pills">${dictLangs().map(l=>`<span class="dict-lang-pill${memberLangs.includes(l.code)?' selected':''}" onclick="toggleMemberLang('${m.id}','${l.code}',this)">${l.flag} ${l.code}</span>`).join('')}</div>
     </div>`:'';
     return`<div class="member-card">
       <div class="member-card-main">
@@ -110,7 +110,7 @@ function renderPendingInvites(pending){
   const list=document.getElementById('pending-list');
   if(!pending||!pending.length){if(title)title.style.display='none';if(list)list.innerHTML='';return;}
   if(title)title.style.display='block';
-  const baseUrl='https://translatescorm.com';
+  const baseUrl=location.origin;
   list.innerHTML=`<div style="border:1px solid #eee;border-radius:8px;overflow:hidden;">`+
     pending.map(inv=>{
       const expired=new Date(inv.expires_at)<new Date();
@@ -157,7 +157,7 @@ async function sendInvite(){
     document.getElementById('invite-email').value='';
     const inv=Array.isArray(result)?result[0]:result;
     if(inv?.token){
-      const inviteUrl=`https://translatescorm.com?invite=${inv.token}`;
+      const inviteUrl=`${location.origin}?invite=${inv.token}`;
       try{
         const r=await fetch('/api/invite',{
           method:'POST',

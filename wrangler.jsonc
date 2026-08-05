@@ -5,8 +5,11 @@
   "observability": {
     "enabled": true
   },
+  // Publikowane są WYŁĄCZNIE pliki z public/. Wcześniej było tu ".", przez co
+  // całe repo (sql/, CLAUDE.md, wrangler.jsonc) trafiało do internetu, a watcher
+  // `wrangler pages dev` wpadał w pętlę reloadów, widząc własne zapisy w .wrangler/tmp/.
   "assets": {
-    "directory": "."
+    "directory": "public"
   },
   "compatibility_flags": [
     "nodejs_compat"

@@ -472,6 +472,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   </svg>
 </button>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+<!-- Znacznik środowiska nieprodukcyjnego (wstawiany przez js/01-supabase.js) -->
+<div id="env-badge" style="display:none;"></div>
+
 <div id="app-shell">
   <!-- Logo -->
   <div class="sidebar-logo">
@@ -922,10 +925,31 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
     </div>
 
-    <!-- Panel mapy źródeł (admin) -->
+    <!-- Konfiguracja słownika organizacji (admin) -->
     <details class="dict-srcmap admin-only" id="dict-srcmap-panel">
-      <summary>Ustawienia źródeł tłumaczenia (z jakiego języka tłumaczyć dany cel)</summary>
-      <div class="dict-srcmap-body" id="dict-srcmap-body"></div>
+      <summary>Konfiguracja słownika — języki i źródła tłumaczenia</summary>
+      <div class="dict-cfg-body">
+        <div class="dict-cfg-section">
+          <div class="dict-cfg-label">Język bazowy</div>
+          <p class="dict-cfg-hint">Język, w którym wpisujesz terminy źródłowe. Zmiana nie przenosi istniejących wpisów.</p>
+          <select id="dict-cfg-base" onchange="onDictCfgBaseChange()"></select>
+        </div>
+        <div class="dict-cfg-section">
+          <div class="dict-cfg-label">Języki docelowe słownika</div>
+          <p class="dict-cfg-hint">Kliknij, aby dodać lub usunąć. Języka z istniejącymi tłumaczeniami nie można usunąć.</p>
+          <div class="member-lang-pills" id="dict-cfg-langs"></div>
+        </div>
+        <div class="dict-cfg-section">
+          <div class="dict-cfg-label">Źródła tłumaczenia</div>
+          <p class="dict-cfg-hint">Z jakiego języka tłumaczyć dany cel — np. ukraiński z polskiego, a czeski z angielskiego.</p>
+          <div class="dict-srcmap-body" id="dict-srcmap-body"></div>
+        </div>
+        <div class="dict-cfg-actions">
+          <button class="btn btn-dark btn-sm" id="dict-cfg-save" onclick="saveDictConfig()">Zapisz konfigurację</button>
+          <button class="btn btn-sm" onclick="buildDictConfigPanel()">Anuluj zmiany</button>
+          <span class="dict-cfg-msg" id="dict-cfg-msg"></span>
+        </div>
+      </div>
     </details>
 
     <!-- Masowe wklejanie listy PL (admin) -->

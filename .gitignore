@@ -5,5 +5,9 @@
 .env*
 !.env.example
 
+# Supabase CLI — stan lokalny (supabase/ ma też własny .gitignore)
+supabase/.temp/
+supabase/.branches/
+
 # Claude Code — lokalna lista uprawnień (per maszyna)
 .claude/settings.local.json

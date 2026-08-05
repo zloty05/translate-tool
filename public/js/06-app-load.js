@@ -18,14 +18,19 @@ async function loadApp(){
   document.getElementById('sub-target-lang').innerHTML=langOptionsHTML();
   document.getElementById('q-target-lang').innerHTML=langOptionsHTML();
   const npSrc=document.getElementById('np-src-lang');if(npSrc)npSrc.innerHTML=langOptionsHTML();
-  buildDictNewRow();buildDictLangFilter();
   // Load data
   try{
     await Promise.all([loadDictCache(),loadOrgBalance()]);
+    // Dopiero teraz znamy konfigurację słownika org (dict_langs / dict_base_lang)
+    buildDictNewRow();buildDictLangFilter();
     await migrateTokensToCredits();
     updateTMUI();
     setDbStatus(true);
-  }catch(e){setDbStatus(false);console.error(e);}
+  }catch(e){
+    setDbStatus(false);console.error(e);
+    // Awaria ładowania — zbuduj UI słownika z domyślnej listy języków
+    try{buildDictNewRow();buildDictLangFilter();}catch(e2){console.error(e2);}
+  }
   // Init dark mode
   initDarkMode();
   // Load projects (default tab)
@@ -48,6 +53,8 @@ async function loadOrgBalance(){
     if(orgs.length){
       currentOrg.tokens_balance = orgs[0].tokens_balance || 0;
       currentOrg.dict_source_map = orgs[0].dict_source_map || {};
+      currentOrg.dict_langs = orgs[0].dict_langs || [];
+      currentOrg.dict_base_lang = orgs[0].dict_base_lang || 'Polish';
     }
   }catch(e){ console.error('Balance load error:', e); }
   updateTokenBadge();
