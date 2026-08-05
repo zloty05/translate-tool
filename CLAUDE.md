@@ -349,7 +349,7 @@ Jedno repo, dwie gałęzie. Cloudflare Pages buduje każdą osobno; środowiska 
 
 ```bash
 supabase start                 # Postgres+Auth+Storage w Dockerze
-npx wrangler pages dev . --port 8788
+npx wrangler pages dev public --port 8788   # katalog jawnie, bo brak assets w wrangler.jsonc
 ```
 
 Oba są potrzebne. **Otwarcie `index.html` przez `file://` nie zadziała** — `/api/translate` to ścieżka absolutna, a Supabase Auth odrzuca origin `null`. Zwykły serwer HTTP też nie wystarczy: nie wykona Pages Functions, więc `/api/*` zwróci 404.
@@ -372,11 +372,11 @@ Katalog `sql/` to **archiwum** migracji wklejanych ręcznie do SQL Editora przed
 
 ### Co jest publikowane
 
-`wrangler.jsonc` ma `assets.directory: "public"` — **publikowany jest wyłącznie katalog `public/`**. Wszystko poza nim (`sql/`, `supabase/`, `CLAUDE.md`, `functions/` jako źródła) zostaje prywatne.
+**Publikowany jest wyłącznie katalog `public/`.** Wszystko poza nim (`sql/`, `supabase/`, `CLAUDE.md`, źródła `functions/`) zostaje prywatne. Nowe pliki statyczne umieszczaj w `public/`.
 
-Wcześniej było tam `"."`, przez co całe repo trafiało do internetu — `translatescorm.com/sql/*.sql` zwracało HTTP 200 wraz z pełnymi definicjami RPC i schematu. Dodając nowy plik statyczny, umieść go w `public/`; nie zmieniaj `assets.directory` z powrotem na katalog główny.
+Sterowanie jest **w panelu Cloudflare**: Settings → Build → **Build output directory = `public`**, ustawione osobno dla Production i Preview. W `wrangler.jsonc` **nie ma** sekcji `assets` — i nie dodawaj jej: przy deployu z gita Cloudflare wchodzi najpierw do katalogu wyjściowego, więc `assets.directory` liczyłoby się względem niego i rozjeżdżało ścieżki.
 
-W panelu Cloudflare **Build output directory** musi być ustawione na `public` — inaczej build kończy się sukcesem, ale serwuje pustą stronę.
+Historia: pierwotnie było `assets.directory: "."`, przez co całe repo trafiało do internetu — `translatescorm.com/sql/*.sql` zwracało HTTP 200 z pełnymi definicjami RPC i schematu.
 
 ### Pozostałe
 

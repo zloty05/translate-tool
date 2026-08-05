@@ -5,12 +5,13 @@
   "observability": {
     "enabled": true
   },
-  // Publikowane są WYŁĄCZNIE pliki z public/. Wcześniej było tu ".", przez co
-  // całe repo (sql/, CLAUDE.md, wrangler.jsonc) trafiało do internetu, a watcher
-  // `wrangler pages dev` wpadał w pętlę reloadów, widząc własne zapisy w .wrangler/tmp/.
-  "assets": {
-    "directory": "public"
-  },
+  // UWAGA: katalog publikowanych zasobów ustawia panel Cloudflare
+  // (Settings → Build → Build output directory = "public"), NIE ten plik.
+  // Przy deployu z gita Cloudflare wchodzi najpierw do katalogu wyjściowego,
+  // więc "assets.directory" byłoby liczone względem niego i rozjeżdżało ścieżki.
+  //
+  // Do lokalnego `wrangler pages dev` podawaj katalog jawnie:
+  //   npx wrangler pages dev public --port 8788
   "compatibility_flags": [
     "nodejs_compat"
   ]
