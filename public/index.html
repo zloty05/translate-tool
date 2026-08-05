@@ -930,20 +930,32 @@ document.addEventListener('DOMContentLoaded',()=>{
       <summary>Konfiguracja słownika — języki i źródła tłumaczenia</summary>
       <div class="dict-cfg-body">
         <div class="dict-cfg-section">
-          <div class="dict-cfg-label">Język bazowy</div>
-          <p class="dict-cfg-hint">Język, w którym wpisujesz terminy źródłowe. Zmiana nie przenosi istniejących wpisów.</p>
+          <div class="dict-cfg-label">1. W jakim języku wpisujesz terminy?</div>
+          <p class="dict-cfg-hint">To kolumna „Termin" w słowniku — język, w którym dodajesz nowe hasła.</p>
           <select id="dict-cfg-base" onchange="onDictCfgBaseChange()"></select>
         </div>
+
         <div class="dict-cfg-section">
-          <div class="dict-cfg-label">Języki docelowe słownika</div>
-          <p class="dict-cfg-hint">Kliknij, aby dodać lub usunąć. Języka z istniejącymi tłumaczeniami nie można usunąć.</p>
-          <div class="member-lang-pills" id="dict-cfg-langs"></div>
+          <div class="dict-cfg-label">2. Na jakie języki tłumaczysz?</div>
+          <p class="dict-cfg-hint">Każdy język to jedna kolumna w słowniku. Wybierz, z czego ma być tłumaczony — zwykle z języka bazowego, ale np. czeski bywa lepszy z angielskiego niż z polskiego.</p>
+
+          <div class="dict-cfg-add">
+            <select id="dict-cfg-add-lang"></select>
+            <button class="btn btn-sm" onclick="addDictCfgLang()">+ Dodaj język</button>
+          </div>
+
+          <table class="dict-cfg-table" id="dict-cfg-table">
+            <thead>
+              <tr>
+                <th>Język docelowy</th>
+                <th>Tłumaczony z</th>
+                <th style="width:40px;"></th>
+              </tr>
+            </thead>
+            <tbody id="dict-cfg-tbody"></tbody>
+          </table>
         </div>
-        <div class="dict-cfg-section">
-          <div class="dict-cfg-label">Źródła tłumaczenia</div>
-          <p class="dict-cfg-hint">Z jakiego języka tłumaczyć dany cel — np. ukraiński z polskiego, a czeski z angielskiego.</p>
-          <div class="dict-srcmap-body" id="dict-srcmap-body"></div>
-        </div>
+
         <div class="dict-cfg-actions">
           <button class="btn btn-dark btn-sm" id="dict-cfg-save" onclick="saveDictConfig()">Zapisz konfigurację</button>
           <button class="btn btn-sm" onclick="buildDictConfigPanel()">Anuluj zmiany</button>

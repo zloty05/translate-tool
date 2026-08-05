@@ -66,10 +66,14 @@ function dictCfgFindCycle(langs, base, map){
   }
   return null;
 }
+// Obiekt języka z LANGS; zastępczy, gdy kod spoza listy (np. ze starych danych).
+function langObj(code){
+  return LANGS.find(l=>l.code===code)||{code,label:code,flag:'🌐'};
+}
 function buildDictConfigPanel(){
-  const body=document.getElementById('dict-srcmap-body');
-  if(!body||currentRole!=='admin')return;
-  // Kopia robocza z aktualnej konfiguracji org
+  const tbody=document.getElementById('dict-cfg-tbody');
+  if(!tbody||currentRole!=='admin')return;
+  // Kopia robocza — zapis do bazy dopiero po „Zapisz konfigurację"
   _dictCfg={
     base:dictBaseLang(),
     langs:dictLangs().map(l=>l.code),
@@ -78,43 +82,72 @@ function buildDictConfigPanel(){
   const baseSel=document.getElementById('dict-cfg-base');
   if(baseSel)baseSel.innerHTML=LANGS.map(l=>`<option value="${l.code}"${l.code===_dictCfg.base?' selected':''}>${l.flag} ${l.label}</option>`).join('');
   dictCfgMsg('');
-  renderDictCfgLangs();
-  buildDictSourceMap();
+  renderDictCfgTable();
 }
-// Pigułki języków docelowych — z blokadą na językach mających tłumaczenia.
-function renderDictCfgLangs(){
-  const box=document.getElementById('dict-cfg-langs');
-  if(!box||!_dictCfg)return;
-  box.innerHTML=LANGS.filter(l=>l.code!==_dictCfg.base).map(l=>{
-    const on=_dictCfg.langs.includes(l.code);
-    const used=on?dictLangUsage(l.code):0;
-    const title=used?`Nie można usunąć — ${used} tłumaczeń w słowniku`:'';
-    return`<span class="dict-lang-pill${on?' selected':''}${used?' locked':''}" title="${esc(title)}" onclick="toggleDictCfgLang('${l.code}')">${l.flag} ${l.code}${used?' 🔒':''}</span>`;
-  }).join('');
-}
-function toggleDictCfgLang(code){
-  if(!_dictCfg)return;
-  const i=_dictCfg.langs.indexOf(code);
-  if(i>=0){
-    const used=dictLangUsage(code);
-    if(used){dictCfgMsg(`Nie można usunąć „${code}" — ma ${used} tłumaczeń w słowniku.`,'error');return;}
-    _dictCfg.langs.splice(i,1);
-    delete _dictCfg.map[code];
-    // usuń wpisy wskazujące na zdjęty język jako źródło
-    Object.keys(_dictCfg.map).forEach(k=>{if(_dictCfg.map[k]===code)delete _dictCfg.map[k];});
+// Tabela: wiersz = język docelowy + z czego jest tłumaczony.
+function renderDictCfgTable(){
+  const tbody=document.getElementById('dict-cfg-tbody');
+  if(!tbody||!_dictCfg)return;
+  const base=_dictCfg.base, baseO=langObj(base);
+
+  if(!_dictCfg.langs.length){
+    tbody.innerHTML='<tr><td colspan="3" class="dict-cfg-empty">Brak języków docelowych — dodaj pierwszy z listy powyżej.</td></tr>';
   }else{
-    _dictCfg.langs.push(code);
+    tbody.innerHTML=_dictCfg.langs.map(code=>{
+      const l=langObj(code);
+      const cur=_dictCfg.map[code]||base;
+      const used=dictLangUsage(code);
+      // Źródłem może być język bazowy albo inny język docelowy (nie on sam)
+      const opts=[base,..._dictCfg.langs.filter(c=>c!==code)]
+        .map(c=>{const o=langObj(c);return`<option value="${c}"${cur===c?' selected':''}>${o.flag} ${esc(o.label)}${c===base?' — bazowy':''}</option>`;}).join('');
+      const del=used
+        ? `<span class="dict-cfg-lock" title="${used} tłumaczeń w słowniku — usuń je najpierw">🔒</span>`
+        : `<button class="del-btn" title="Usuń język" onclick="removeDictCfgLang('${code}')">×</button>`;
+      return`<tr>
+        <td><b>${l.flag} ${esc(l.label)}</b>${used?`<span class="dict-cfg-count">${used} tłum.</span>`:''}</td>
+        <td><select onchange="setDictCfgSource('${code}',this.value)">${opts}</select></td>
+        <td style="text-align:center;">${del}</td>
+      </tr>`;
+    }).join('');
   }
+
+  // Lista do dodania — języki jeszcze nieużyte i różne od bazowego
+  const add=document.getElementById('dict-cfg-add-lang');
+  if(add){
+    const free=LANGS.filter(l=>l.code!==base&&!_dictCfg.langs.includes(l.code));
+    add.innerHTML=free.length
+      ? free.map(l=>`<option value="${l.code}">${l.flag} ${l.label}</option>`).join('')
+      : '<option value="">— wszystkie języki już dodane —</option>';
+    add.disabled=!free.length;
+  }
+  const hint=document.getElementById('dict-cfg-base-hint');
+  if(hint)hint.textContent=`${baseO.flag} ${baseO.label}`;
+}
+function addDictCfgLang(){
+  if(!_dictCfg)return;
+  const code=document.getElementById('dict-cfg-add-lang')?.value;
+  if(!code)return;
+  if(!_dictCfg.langs.includes(code))_dictCfg.langs.push(code);
   dictCfgMsg('');
-  renderDictCfgLangs();
-  buildDictSourceMap();
+  renderDictCfgTable();
+}
+function removeDictCfgLang(code){
+  if(!_dictCfg)return;
+  const used=dictLangUsage(code);
+  if(used){dictCfgMsg(`Nie można usunąć „${langObj(code).label}" — ma ${used} tłumaczeń w słowniku.`,'error');return;}
+  _dictCfg.langs=_dictCfg.langs.filter(c=>c!==code);
+  delete _dictCfg.map[code];
+  // wyczyść wpisy, które brały z usuniętego języka
+  Object.keys(_dictCfg.map).forEach(k=>{if(_dictCfg.map[k]===code)delete _dictCfg.map[k];});
+  dictCfgMsg('');
+  renderDictCfgTable();
 }
 function onDictCfgBaseChange(){
   if(!_dictCfg)return;
   const val=document.getElementById('dict-cfg-base')?.value;
   if(!val)return;
   const used=dictLangUsage(val);
-  if(used&&!confirm(`Język „${val}" ma ${used} tłumaczeń jako język docelowy.\n\nUstawienie go jako bazowego usunie go z kolumn docelowych, ale tłumaczenia zostaną w bazie.\n\nKontynuować?`)){
+  if(used&&!confirm(`Język „${langObj(val).label}" ma ${used} tłumaczeń jako język docelowy.\n\nUstawienie go jako bazowego usunie go z kolumn docelowych, ale tłumaczenia zostaną w bazie.\n\nKontynuować?`)){
     document.getElementById('dict-cfg-base').value=_dictCfg.base;return;
   }
   _dictCfg.base=val;
@@ -122,31 +155,7 @@ function onDictCfgBaseChange(){
   delete _dictCfg.map[val];
   Object.keys(_dictCfg.map).forEach(k=>{if(_dictCfg.map[k]===val)delete _dictCfg.map[k];});
   dictCfgMsg('');
-  renderDictCfgLangs();
-  buildDictSourceMap();
-}
-// Mapa źródeł: dla każdego celu wybór spośród bazy i pozostałych języków.
-function buildDictSourceMap(){
-  const body=document.getElementById('dict-srcmap-body');
-  if(!body||currentRole!=='admin')return;
-  if(!_dictCfg){buildDictConfigPanel();return;}
-  const base=_dictCfg.base;
-  const baseObj=LANGS.find(l=>l.code===base)||{code:base,label:base,flag:'🌐'};
-  const opt=(code,cur)=>{
-    const o=LANGS.find(l=>l.code===code)||{code,label:code,flag:'🌐'};
-    return`<option value="${code}"${cur===code?' selected':''}>${o.flag} ${o.label}</option>`;
-  };
-  body.innerHTML=_dictCfg.langs.map(code=>{
-    const l=LANGS.find(x=>x.code===code)||{code,label:code,flag:'🌐'};
-    const cur=_dictCfg.map[code]||base;
-    const others=_dictCfg.langs.filter(c=>c!==code);
-    return`<div class="dict-srcmap-row">
-      <span>${l.flag} ${l.label}</span>
-      <select onchange="setDictCfgSource('${code}',this.value)">
-        ${opt(base,cur)}${others.map(c=>opt(c,cur)).join('')}
-      </select>
-    </div>`;
-  }).join('')||'<span class="dict-cfg-hint">Brak języków docelowych.</span>';
+  renderDictCfgTable();
 }
 function setDictCfgSource(targetLang, srcLang){
   if(!_dictCfg)return;
@@ -156,11 +165,13 @@ function setDictCfgSource(targetLang, srcLang){
   const cyc=dictCfgFindCycle(_dictCfg.langs,_dictCfg.base,_dictCfg.map);
   if(cyc){
     if(prev===undefined) delete _dictCfg.map[targetLang]; else _dictCfg.map[targetLang]=prev;
-    dictCfgMsg(`„${targetLang}" nie może brać z „${srcLang}" — powstałby cykl źródeł.`,'error');
-    buildDictSourceMap();return;
+    dictCfgMsg(`„${langObj(targetLang).label}" nie może być tłumaczony z „${langObj(srcLang).label}" — powstałoby błędne koło.`,'error');
+    renderDictCfgTable();return;
   }
   dictCfgMsg('');
 }
+// Zachowane dla switchTab i starszych wywołań
+function buildDictSourceMap(){ buildDictConfigPanel(); }
 // Zapis całej konfiguracji jednym wywołaniem RPC (atomowo, z walidacją w bazie).
 async function saveDictConfig(){
   if(!currentOrg||!_dictCfg)return;

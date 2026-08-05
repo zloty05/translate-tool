@@ -248,16 +248,28 @@ a{color:#2451b3}
 .dict-srcmap-row select{font-size:12px;padding:3px 6px;border:1px solid #e5e5e5;border-radius:5px;max-width:120px}
 /* Konfiguracja słownika organizacji */
 .dict-cfg-body{padding:6px 14px 14px}
-.dict-cfg-section{padding:10px 0;border-top:1px solid #eee}
+.dict-cfg-section{padding:12px 0;border-top:1px solid #eee}
 .dict-cfg-section:first-child{border-top:none;padding-top:2px}
-.dict-cfg-label{font-size:12px;font-weight:600;color:#444;margin-bottom:3px}
-.dict-cfg-hint{font-size:11px;color:#999;margin:0 0 8px}
-.dict-cfg-body select#dict-cfg-base{font-size:12px;padding:4px 8px;border:1px solid #e5e5e5;border-radius:5px;min-width:200px}
+.dict-cfg-label{font-size:13px;font-weight:600;color:#333;margin-bottom:3px}
+.dict-cfg-hint{font-size:11px;color:#999;margin:0 0 10px;line-height:1.5;max-width:640px}
+.dict-cfg-body select{font-size:12px;padding:5px 8px;border:1px solid #e5e5e5;border-radius:5px;background:#fff;color:#1a1a1a}
+.dict-cfg-body select#dict-cfg-base{min-width:220px}
+/* Wiersz dodawania języka */
+.dict-cfg-add{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.dict-cfg-add select{min-width:220px}
+/* Tabela języków docelowych */
+.dict-cfg-table{width:100%;max-width:620px;border-collapse:collapse;font-size:12px}
+.dict-cfg-table th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:5px 8px;border-bottom:1px solid #eee}
+.dict-cfg-table td{padding:5px 8px;border-bottom:1px solid #f3f3f3;vertical-align:middle}
+.dict-cfg-table tr:last-child td{border-bottom:none}
+.dict-cfg-table select{width:100%;max-width:230px}
+.dict-cfg-count{font-size:10px;color:#aaa;margin-left:6px;font-weight:400}
+.dict-cfg-lock{font-size:12px;opacity:.5;cursor:help}
+.dict-cfg-empty{padding:14px 8px;text-align:center;color:#bbb;font-size:12px}
 .dict-cfg-actions{display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #eee;flex-wrap:wrap}
 .dict-cfg-msg{font-size:11px;color:#999}
 .dict-cfg-msg.error{color:#b32424}
 .dict-cfg-msg.ok{color:#166534}
-.dict-lang-pill.locked{cursor:not-allowed;opacity:.75}
 /* Masowe wklejanie */
 .dict-bulk{margin-bottom:14px;border:1px solid #eee;border-radius:8px;background:#fafaf8}
 .dict-bulk>summary{cursor:pointer;padding:10px 14px;font-size:13px;font-weight:600;color:#444;list-style:none}
@@ -476,12 +488,15 @@ body.dark .dict-legend-dot.none{background:#111}
 body.dark .dict-translator-info{background:#1a1a1a;border-color:#2a2a2a;color:#ccc}
 body.dark .dict-srcmap,body.dark .dict-bulk{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .dict-srcmap>summary,body.dark .dict-bulk>summary{color:#ccc}
-body.dark .dict-srcmap-row select,body.dark .dict-bulk-body textarea,body.dark .dict-cfg-body select#dict-cfg-base{background:#111;border-color:#2a2a2a;color:#ccc}
+body.dark .dict-srcmap-row select,body.dark .dict-bulk-body textarea,body.dark .dict-cfg-body select{background:#111;border-color:#2a2a2a;color:#ccc}
 body.dark .dict-cfg-section,body.dark .dict-cfg-actions{border-color:#2a2a2a}
 body.dark .dict-cfg-label{color:#ccc}
 body.dark .dict-cfg-hint,body.dark .dict-cfg-msg{color:#777}
 body.dark .dict-cfg-msg.error{color:#ff6b6b}
 body.dark .dict-cfg-msg.ok{color:#4CDE80}
+body.dark .dict-cfg-table th{color:#777;border-color:#2a2a2a}
+body.dark .dict-cfg-table td{border-color:#1f1f1f}
+body.dark .dict-cfg-count,body.dark .dict-cfg-empty{color:#666}
 body.dark .dict-lang-pill{background:#1a1a1a;color:#888;border-color:#2a2a2a}
 body.dark .dict-lang-pill.selected{background:#0d3a22;color:#4CDE80;border-color:#4CDE80}
 body.dark .member-langs-label{color:#666}
