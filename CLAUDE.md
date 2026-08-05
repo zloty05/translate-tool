@@ -317,18 +317,33 @@ zmiana logo z emoji na plik graficzny
 
 ## Środowisko i deployment
 
-### Dwa środowiska
+### Trzy środowiska
 
-| | Produkcja | Lokalne |
-|---|---|---|
-| Adres | https://translatescorm.com | http://localhost:8788 |
-| Supabase | `lzklxvdzyslpwugjvvtj.supabase.co` | `127.0.0.1:54321` (Docker) |
-| Studio | panel supabase.com | http://127.0.0.1:54323 |
-| Maile | Resend → realna skrzynka | Mailpit http://127.0.0.1:54324 |
+| | Produkcja | Test | Lokalne |
+|---|---|---|---|
+| Adres | translatescorm.com | test.translatescorm.com | localhost:8788 |
+| Gałąź git | `main` | `test` | — |
+| Supabase | `lzklxvdzyslpwugjvvtj` | `ejtorsngzodkxrbvmybc` | `127.0.0.1:54321` (Docker) |
+| Studio | panel supabase.com | panel supabase.com | http://127.0.0.1:54323 |
+| Maile | Resend → realna skrzynka | Resend → realna skrzynka | Mailpit :54324 |
 
-Wybór środowiska jest **automatyczny**, po `location.hostname` ([js/01-supabase.js](js/01-supabase.js)): produkcja **wyłącznie** na `translatescorm.com`, wszystko inne (localhost, `*.pages.dev`) → baza lokalna. Domyślnie local, żeby pomyłka nie trafiła w produkcję. W środowisku nieprodukcyjnym w rogu ekranu widnieje pomarańczowy znacznik `#env-badge`.
+Wybór jest **automatyczny**, po `location.hostname` — funkcja `pickEnv()` w [public/js/01-supabase.js](public/js/01-supabase.js). Dopasowanie jest **dokładne, nie po sufiksie**: gdyby użyć wzorca `/\.translatescorm\.com$/`, subdomena testowa wpadłaby w gałąź produkcyjną i pisała do bazy produkcyjnej.
 
-**Nie zaszywaj domeny w kodzie** — używaj `location.origin` (rejestracja, linki zaproszeń). Inaczej lokalne testy przekierują użytkownika na produkcję.
+Nieznany host → **local**, nigdy prod: pomyłka w konfiguracji kieruje do bazy lokalnej. Gdy środowisko nie ma skonfigurowanego URL-a, kod loguje błąd i schodzi na local zamiast po cichu użyć produkcji.
+
+W środowisku nieprodukcyjnym w rogu ekranu widnieje pomarańczowy znacznik `#env-badge` z nazwą środowiska i adresem bazy.
+
+**Nie zaszywaj domeny w kodzie** — używaj `location.origin` (rejestracja, linki zaproszeń). Inaczej testy przekierują użytkownika na produkcję.
+
+### Model pracy z gałęziami
+
+```
+zmiana → gałąź test → weryfikacja na test.translatescorm.com → merge do main → produkcja
+```
+
+Jedno repo, dwie gałęzie. Cloudflare Pages buduje każdą osobno; środowiska rozdziela konfiguracja (baza, adres, zmienne), a nie osobne repozytoria — dzięki temu wdrażasz dokładnie ten commit, który przetestowałeś.
+
+**Zmienne środowiskowe w Cloudflare Pages są osobne dla Production i Preview.** W Preview `SUPABASE_URL`/`SUPABASE_ANON_KEY` muszą wskazywać projekt testowy. Przeglądarka wybiera bazę po hostname, ale [functions/api/translate.js](functions/api/translate.js#L8-L9) czyta `env.*` — rozjazd między nimi daje **ciche 401** z `/api/translate` przy pozornie działającej aplikacji.
 
 ### Uruchomienie lokalne
 
@@ -355,10 +370,17 @@ Kolejność ma znaczenie merytoryczne: `dict_multitenant` nadpisuje `save_dict_t
 
 Katalog `sql/` to **archiwum** migracji wklejanych ręcznie do SQL Editora przed wprowadzeniem CLI. Nowych plików tam nie dodawaj.
 
+### Co jest publikowane
+
+`wrangler.jsonc` ma `assets.directory: "public"` — **publikowany jest wyłącznie katalog `public/`**. Wszystko poza nim (`sql/`, `supabase/`, `CLAUDE.md`, `functions/` jako źródła) zostaje prywatne.
+
+Wcześniej było tam `"."`, przez co całe repo trafiało do internetu — `translatescorm.com/sql/*.sql` zwracało HTTP 200 wraz z pełnymi definicjami RPC i schematu. Dodając nowy plik statyczny, umieść go w `public/`; nie zmieniaj `assets.directory` z powrotem na katalog główny.
+
+W panelu Cloudflare **Build output directory** musi być ustawione na `public` — inaczej build kończy się sukcesem, ale serwuje pustą stronę.
+
 ### Pozostałe
 
-- Brak procesu build — edytuj pliki bezpośrednio (`index.html`, `js/*.js`, `css/app.css`)
+- Brak procesu build — edytuj pliki bezpośrednio (`public/index.html`, `public/js/*.js`, `public/css/app.css`)
 - Testy manualne w przeglądarce (brak testów automatycznych)
-- Git branch: `main` (jedyna gałąź)
+- Gałęzie: `main` (produkcja) i `test` (środowisko testowe)
 - Formularz kontaktowy: Formspree `meenlzod` → `zloty05@gmail.com`
-- [.assetsignore](.assetsignore) — lista plików **nie** publikowanych przez Cloudflare Pages. `wrangler.jsonc` ma `assets.directory: "."`, więc bez tego pliku całe repo (w tym `sql/` i `supabase/`) trafia do internetu. Dodając katalog z danymi wrażliwymi, dopisz go tam
