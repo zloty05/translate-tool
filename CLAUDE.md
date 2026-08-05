@@ -10,16 +10,21 @@ TranslateScorm to wielotenantowa aplikacja SaaS do tłumaczenia materiałów e-l
 
 ```
 translate-tool/
-├── index.html              ← markup (landing, ekrany auth, app-shell, zakładki, modale)
-├── css/app.css             ← wszystkie style (w tym dark mode)
-├── js/01-24*.js            ← kod aplikacji, ładowany po kolei jako skrypty globalne
+├── public/                 ← WSZYSTKO, co trafia do internetu (i tylko to)
+│   ├── index.html          ← markup (landing, ekrany auth, app-shell, zakładki, modale)
+│   ├── css/app.css         ← wszystkie style (w tym dark mode)
+│   ├── js/01-24*.js        ← kod aplikacji, ładowany po kolei jako skrypty globalne
+│   ├── _headers            ← nagłówki HTTP (wyłączenie cache dla js/css)
+│   └── logoSmall.png       ← logo (favicon + nav + auth + sidebar)
 ├── functions/api/          ← Cloudflare Pages Functions (translate.js, invite.js)
 ├── supabase/               ← config.toml + migrations/ (Supabase CLI)
 ├── sql/                    ← archiwum migracji sprzed CLI (nie dodawaj tu nowych)
-├── .assetsignore           ← czego NIE publikować na Cloudflare Pages
 ├── .dev.vars.example       ← wzorzec zmiennych dla lokalnych Functions
-└── logoSmall.png           ← logo aplikacji (favicon + nav + auth + sidebar)
+├── CLAUDE.md               ← ten plik
+└── DEPLOYMENT.md           ← instrukcja wprowadzania zmian i wdrożeń
 ```
+
+**Podział `public/` vs reszta jest granicą bezpieczeństwa**, nie tylko porządkiem. Publikowany jest wyłącznie `public/` — nowy plik statyczny umieszczaj tam, a wszystko inne (migracje, dokumentacja, konfiguracja) zostaw poza nim. Szczegóły w sekcji „Co jest publikowane".
 
 **Numeracja `js/*.js` jest znacząca** — pliki ładują się w kolejności z `index.html`, wszystko trafia do globalnego scope (brak modułów ES, brak bundlera). Stałe i funkcje muszą być zdefiniowane w pliku o niższym numerze niż ten, który ich używa.
 
@@ -273,6 +278,16 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 - **`showLanding()` vs `_showLanding()`** — publiczna wersja robi pushState (dodaje wpis do historii przeglądarki); wewnętrzna `_showLanding()` tylko manipuluje DOM. Użyj `_showLanding()` gdy **nie chcesz** dodawać wpisu do historii (np. w popstate handlerze). Analogicznie `showScreen()` vs `_showScreen()`
 - **`dbDelete` a RLS** — `dbDelete` (przez `sbRest`) zwraca HTTP 204 nawet gdy RLS zablokuje usunięcie (0 usuniętych wierszy, brak błędu). Do usuwania rekordów chronionych RLS używaj dedykowanej RPC z `SECURITY DEFINER` (przykład: `delete_lang_assignment`)
 
+### Pułapki diagnostyczne
+
+Rzeczy, które w tej sesji doprowadziły do błędnych wniosków — warto znać, zanim się na nie natknie ponownie:
+
+- **Test RPC przez `curl` wymaga kompletu argumentów.** Wysłanie pustego `{}` daje `Could not find the function public.<nazwa>(...)` — komunikat brzmi jak brak funkcji, a w rzeczywistości oznacza niedopasowanie sygnatury. Na tej podstawie postawiłem raz błędną diagnozę „RPC nie istnieje", choć istniała. Wysyłaj wszystkie parametry; funkcja obecna odpowie `Unauthorized` (P0001), nie `PGRST202`.
+- **HTTP 200 na dowolnej ścieżce to często fallback SPA, nie realny plik.** `/public/js/cokolwiek` zwracało 200, bo Cloudflare serwuje `index.html` przy nieznanym adresie. Rozstrzyga dopiero porównanie treści: plik SQL zaczyna się od `--`, fallback od `<!DOCTYPE html>`.
+- **`wrangler pages dev` zostawia drzewa procesów** bash→node→cmd→node→workerd. Samo `taskkill //F //IM workerd.exe` nie wystarcza — potomkowie odradzają się z żywego rodzica, a port zostaje zajęty (połączenia wiszą w CLOSE_WAIT). Znajdź korzeń przez `Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'wrangler' }` i zabij z `/T /PID <korzeń>`.
+- **Watcher wranglera potrafi wpaść w pętlę reloadów**, jeśli katalogiem zasobów jest root repo — widzi wtedy własne zapisy w `.wrangler/tmp/`. Po przejściu na `public/` problem zniknął.
+- **Po wdrożeniu weryfikuj build, nie domenę.** Domena bywa opóźniona o cache CDN; adres konkretnego deploymentu (`<hash>.translate-tool.pages.dev`) pokazuje prawdę od razu.
+
 ### Przy dodawaniu nowej zakładki w aplikacji
 
 1. Dodaj `<div class="tab-content" id="tab-X">` w HTML
@@ -343,7 +358,22 @@ zmiana → gałąź test → weryfikacja na test.translatescorm.com → merge do
 
 Jedno repo, dwie gałęzie. Cloudflare Pages buduje każdą osobno; środowiska rozdziela konfiguracja (baza, adres, zmienne), a nie osobne repozytoria — dzięki temu wdrażasz dokładnie ten commit, który przetestowałeś.
 
-**Zmienne środowiskowe w Cloudflare Pages są osobne dla Production i Preview.** W Preview `SUPABASE_URL`/`SUPABASE_ANON_KEY` muszą wskazywać projekt testowy. Przeglądarka wybiera bazę po hostname, ale [functions/api/translate.js](functions/api/translate.js#L8-L9) czyta `env.*` — rozjazd między nimi daje **ciche 401** z `/api/translate` przy pozornie działającej aplikacji.
+**Zmienne środowiskowe w Cloudflare Pages są osobne dla Production i Preview.** Przełącznik „Choose Environment" jest u góry ekranu Settings. W Preview `SUPABASE_URL`/`SUPABASE_ANON_KEY` muszą wskazywać projekt testowy. Przeglądarka wybiera bazę po hostname, ale [functions/api/translate.js](functions/api/translate.js#L8-L9) czyta `env.*` — rozjazd między nimi daje **ciche 401** z `/api/translate` przy pozornie działającej aplikacji.
+
+### Jak subdomena jest związana z gałęzią
+
+To powiązanie **nie istnieje nigdzie w panelu Cloudflare** — żyje wyłącznie w rekordzie DNS:
+
+```
+CNAME  test  →  test.translate-tool.pages.dev
+                ^^^^ nazwa gałęzi
+```
+
+Pages nadaje każdej gałęzi **nieprodukcyjnej** alias `<gałąź>.<projekt>.pages.dev`. Nazwa gałęzi jest zaszyta w celu CNAME i to jest całe wiązanie. Trzy konsekwencje:
+
+- **Kreator „Set up a custom domain" nigdy nie pyta o gałąź** — zawsze proponuje CNAME na produkcję (`translate-tool.pages.dev`). Trzeba go kliknąć (rejestruje domenę w projekcie), a potem **ręcznie podmienić cel w DNS** na alias gałęzi. Tak działa [oficjalna procedura Cloudflare](https://developers.cloudflare.com/pages/how-to/custom-branch-aliases/).
+- **Proxy musi być włączone** (pomarańczowa chmurka). Przy wyłączonym Cloudflare i tak przekieruje na produkcję.
+- **Alias powstaje tylko dla deploymentów typu Preview.** Jeśli gałąź zostanie ustawiona jako Production branch, aliasu nie ma i subdomena zwraca **522**. Wtedy sprawdź Settings → Build → Branch control: Production branch musi być `main`.
 
 ### Uruchomienie lokalne
 
