@@ -1,0 +1,28 @@
+# Nagłówki HTTP dla Cloudflare Pages.
+# Bez tego pliku przeglądarka trzyma js/*.js i css/*.css w cache po wdrożeniu
+# i użytkownik widzi starą wersję, dopóki nie zrobi Ctrl+Shift+R.
+#
+# Pliki nie mają wersjonowania w nazwie (brak ?v=/hash), więc NIE można ich
+# cache'ować na stałe. "no-cache" nie znaczy "nie cache'uj" — znaczy
+# "cache'uj, ale przed użyciem zapytaj serwer, czy plik się zmienił".
+# Gdy nic się nie zmieniło, serwer odpowiada 304 i nic nie jest pobierane.
+#
+# Uwaga: te nagłówki NIE dotyczą /api/* — to Pages Functions, które ustawiają
+# własne nagłówki w kodzie (functions/api/*.js).
+
+/index.html
+  Cache-Control: no-cache
+
+/
+  Cache-Control: no-cache
+
+/js/*
+  Cache-Control: no-cache
+
+/css/*
+  Cache-Control: no-cache
+
+# Grafika zmienia się rzadko — może leżeć w cache dłużej (1 dzień).
+# Przy podmianie logo dodaj sufiks do nazwy pliku albo skróć ten czas.
+/*.png
+  Cache-Control: public, max-age=86400

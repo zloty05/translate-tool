@@ -376,6 +376,8 @@ Katalog `sql/` to **archiwum** migracji wklejanych ręcznie do SQL Editora przed
 
 Sterowanie jest **w panelu Cloudflare**: Settings → Build → **Build output directory = `public`**, ustawione osobno dla Production i Preview. W `wrangler.jsonc` **nie ma** sekcji `assets` — i nie dodawaj jej: przy deployu z gita Cloudflare wchodzi najpierw do katalogu wyjściowego, więc `assets.directory` liczyłoby się względem niego i rozjeżdżało ścieżki.
 
+[public/_headers](public/_headers) wyłącza cache dla `index.html`, `js/*` i `css/*` (`Cache-Control: no-cache` = „sprawdź u serwera przed użyciem", nie „nie cache'uj"). Bez tego po wdrożeniu przeglądarka serwuje stary JavaScript z nowym HTML-em — objawia się to np. pustym panelem konfiguracji przy poprawnych danych. Pliki nie mają wersjonowania w nazwie, więc długiego cache'owania użyć się nie da.
+
 Historia: pierwotnie było `assets.directory: "."`, przez co całe repo trafiało do internetu — `translatescorm.com/sql/*.sql` zwracało HTTP 200 z pełnymi definicjami RPC i schematu.
 
 ### Pozostałe
