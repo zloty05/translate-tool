@@ -11,9 +11,9 @@ const ENVS={
   },
   test:{
     name:'test',
-    // TODO: uzupełnić po założeniu projektu "translatescorm-test" w Supabase
-    url:'',
-    key:''
+    // Projekt "translatescorm-test" — osobna baza, żadnych danych produkcyjnych
+    url:'https://ejtorsngzodkxrbvmybc.supabase.co',
+    key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqdG9yc25nem9ka3hyYnZteWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MTg5OTgsImV4cCI6MjEwMTQ5NDk5OH0.abp7sfO4sOFAAvejZWrFOZDcHqXaiL1eA5iACet2FMI'
   },
   local:{
     name:'local',
