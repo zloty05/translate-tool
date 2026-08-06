@@ -49,6 +49,73 @@ document.addEventListener('DOMContentLoaded',()=>{
       <button class="lp-btn-primary" onclick="hideLanding();showScreen('screen-login')">Zaloguj się →</button>
       <button class="lp-btn-secondary" onclick="hideLanding();showScreen('screen-login')">Mam już konto</button>
     </div>
+
+    <!-- Makieta: lista projektów (odtworzona w HTML/CSS, nie zrzut ekranu) -->
+    <div class="lp-mock lp-mock-hero">
+      <div class="lp-mock-bar">
+        <span class="lp-mock-dot"></span><span class="lp-mock-dot"></span><span class="lp-mock-dot"></span>
+        <span class="lp-mock-title">TranslateScorm — Projekty</span>
+      </div>
+      <div class="lp-mock-body">
+        <div class="lpm-tabs">
+          <span class="lpm-tab on">Aktywne</span>
+          <span class="lpm-tab">Ukończone</span>
+          <span class="lpm-tab">Wszystkie</span>
+        </div>
+
+        <div class="lpm-card">
+          <div class="lpm-ctop">
+            <div>
+              <div class="lpm-title">Szkolenie BHP 2026</div>
+              <div class="lpm-meta">XLIFF · źródło 🇵🇱 Polski · 412 segmentów</div>
+            </div>
+            <div class="lpm-count">3 / 5 języków</div>
+          </div>
+          <div class="lpm-bar"><i style="width:60%"></i></div>
+          <div class="lpm-pills">
+            <span class="lpm-pill lpm-ok">🇬🇧 EN · gotowe</span>
+            <span class="lpm-pill lpm-ok">🇩🇪 DE · gotowe</span>
+            <span class="lpm-pill lpm-ok">🇨🇿 CS · gotowe</span>
+            <span class="lpm-pill lpm-go">🇺🇦 UK · w toku</span>
+            <span class="lpm-pill lpm-wait">🇷🇴 RO · czeka</span>
+          </div>
+        </div>
+
+        <div class="lpm-card done">
+          <div class="lpm-ctop">
+            <div>
+              <div class="lpm-title">Onboarding — moduł 1<span class="lpm-done-badge">✓ Ukończony</span></div>
+              <div class="lpm-meta">PPTX · źródło 🇵🇱 Polski · 128 segmentów</div>
+            </div>
+            <div class="lpm-count">4 / 4 języki</div>
+          </div>
+          <div class="lpm-bar"><i class="blue" style="width:100%"></i></div>
+          <div class="lpm-pills">
+            <span class="lpm-pill lpm-ok">🇬🇧 EN · gotowe</span>
+            <span class="lpm-pill lpm-ok">🇩🇪 DE · gotowe</span>
+            <span class="lpm-pill lpm-ok">🇸🇰 SK · gotowe</span>
+            <span class="lpm-pill lpm-ok">🇭🇺 HU · gotowe</span>
+          </div>
+        </div>
+
+        <div class="lpm-card lpm-card-3">
+          <div class="lpm-ctop">
+            <div>
+              <div class="lpm-title">Compliance — RODO</div>
+              <div class="lpm-meta">XLIFF · źródło 🇵🇱 Polski · 89 segmentów</div>
+            </div>
+            <div class="lpm-count">1 / 3 języki</div>
+          </div>
+          <div class="lpm-bar"><i style="width:33%"></i></div>
+          <div class="lpm-pills">
+            <span class="lpm-pill lpm-ok">🇬🇧 EN · gotowe</span>
+            <span class="lpm-pill lpm-ready">🇩🇪 DE · do weryfikacji</span>
+            <span class="lpm-pill lpm-wait">🇫🇷 FR · czeka</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="lp-hero-stats">
       <div class="lp-hs"><strong>80%</strong> mniej kosztów lokalizacji</div>
       <div class="lp-hs-sep"></div>
@@ -89,7 +156,94 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
   </section>
 
-  <!-- Footer -->
+  <!-- Jak to działa w środku — makiety Słownika i Edytora -->
+  <section class="lp-screens">
+    <div class="lp-screens-inner">
+      <div class="lp-section-label">Jak to działa w środku</div>
+      <h2 class="lp-section-title">Spójna terminologia i pełna kontrola nad tłumaczeniem</h2>
+      <p class="lp-section-sub">AI proponuje, tłumacz zatwierdza. Każde słowo przechodzi przez człowieka — tylko szybciej.</p>
+
+      <div class="lp-screen-block">
+        <div class="lp-mock lp-mock-wide">
+          <div class="lp-mock-bar">
+            <span class="lp-mock-dot"></span><span class="lp-mock-dot"></span><span class="lp-mock-dot"></span>
+            <span class="lp-mock-title">Szkolenie BHP 2026 — edytor</span>
+          </div>
+          <div class="lp-mock-body">
+            <div class="lp-mock-scroll">
+              <div class="lpm-ltabs" id="lpm-ltabs">
+                <button type="button" class="lpm-ltab" data-lang="en">🇬🇧 EN <span class="lpm-est lpm-e-appr">zatwierdzony</span></button>
+                <button type="button" class="lpm-ltab on" data-lang="de">🇩🇪 DE <span class="lpm-est lpm-e-prog">w toku</span></button>
+                <button type="button" class="lpm-ltab" data-lang="cs">🇨🇿 CS <span class="lpm-est lpm-e-ready">do weryfikacji</span></button>
+                <button type="button" class="lpm-ltab" data-lang="uk">🇺🇦 UK <span class="lpm-est lpm-e-pend">nierozpoczęty</span></button>
+              </div>
+            </div>
+            <div class="lpm-actions">
+              <span class="lpm-btn">Z pamięci TM</span>
+              <span class="lpm-btn go">✦ Przetłumacz puste</span>
+              <span class="lpm-btn">↓ XLIFF</span>
+              <span class="lpm-auto">● Zapisano 14:32</span>
+            </div>
+            <div class="lp-mock-scroll">
+              <table class="lpm-seg">
+                <thead>
+                  <tr>
+                    <th class="lpm-num">#</th>
+                    <th style="width:42%">Źródło · 🇵🇱 PL</th>
+                    <th id="lpm-tgt-head">Tłumaczenie · 🇩🇪 DE</th>
+                    <th style="width:80px">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="lpm-seg-body">
+                  <!-- wypełniane przez switchLpmLang() w js/23-landing-mock.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <p class="lp-screen-cap">Edytor pozwala na przetłumaczenie całości przez AI, ponad to wszystkie tłumaczenia zapisuje w tle, pokazuje status każdej frazy i pozwala na poprawki.</p>
+      </div>
+
+      <div class="lp-screen-block">
+        <div class="lp-mock lp-mock-wide">
+          <div class="lp-mock-bar">
+            <span class="lp-mock-dot"></span><span class="lp-mock-dot"></span><span class="lp-mock-dot"></span>
+            <span class="lp-mock-title">TranslateScorm — Słownik</span>
+          </div>
+          <div class="lp-mock-body">
+            <div class="lp-mock-scroll">
+              <table class="lpm-dict">
+                <thead>
+                  <tr>
+                    <th>🇵🇱 Termin (Polski)</th>
+                    <th>🇬🇧 English</th>
+                    <th>🇩🇪 Deutsch</th>
+                    <th>🇨🇿 Čeština</th>
+                    <th>🇺🇦 Українська</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>środki ochrony indywidualnej</td><td class="lpm-cell-ok">personal protective equipment</td><td class="lpm-cell-ok">persönliche Schutzausrüstung</td><td class="lpm-cell-ai">osobní ochranné prostředky</td><td class="lpm-cell-ai">засоби індивідуального захисту</td></tr>
+                  <tr><td>ocena ryzyka zawodowego</td><td class="lpm-cell-ok">occupational risk assessment</td><td class="lpm-cell-ok">Gefährdungsbeurteilung</td><td class="lpm-cell-ok">hodnocení rizik</td><td class="lpm-cell-ai">оцінка професійних ризиків</td></tr>
+                  <tr><td>instruktaż stanowiskowy</td><td class="lpm-cell-ok">on-the-job training</td><td class="lpm-cell-ai">Arbeitsplatzunterweisung</td><td class="lpm-cell-none">—</td><td class="lpm-cell-none">—</td></tr>
+                  <tr><td>karta charakterystyki</td><td class="lpm-cell-ok">safety data sheet</td><td class="lpm-cell-ok">Sicherheitsdatenblatt</td><td class="lpm-cell-ok">bezpečnostní list</td><td class="lpm-cell-ok">паспорт безпеки</td></tr>
+                  <tr><td>strefa zagrożenia wybuchem</td><td class="lpm-cell-ok">explosion hazard zone</td><td class="lpm-cell-ai">Explosionsgefährdeter Bereich</td><td class="lpm-cell-ai">zóna s nebezpečím výbuchu</td><td class="lpm-cell-none">—</td></tr>
+                  <tr><td>zezwolenie na pracę</td><td class="lpm-cell-ok">work permit</td><td class="lpm-cell-ok">Arbeitserlaubnis</td><td class="lpm-cell-ok">pracovní povolení</td><td class="lpm-cell-ai">дозвіл на роботу</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="lpm-legend">
+              <span class="lpm-leg"><span class="lpm-legdot ok"></span> Zaakceptowane przez tłumacza</span>
+              <span class="lpm-leg"><span class="lpm-legdot ai"></span> Propozycja AI — do sprawdzenia</span>
+              <span class="lpm-leg"><span class="lpm-legdot none"></span> Brak tłumaczenia</span>
+            </div>
+          </div>
+        </div>
+        <p class="lp-screen-cap">Słownik terminologii pilnuje, żeby „karta charakterystyki" znaczyła to samo w każdym module i każdym języku. Bierze też udział w tłumaczeniu AI — jeśli tłumaczony wyraz lub fraza jest zawarta w słowniku, tłumaczenie zostanie zaciągnięte ze słownika.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ══ CENNIK ══ -->
   <section id="cennik">
 
@@ -1461,6 +1615,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script src="js/21-notifications.js"></script>
 <script src="js/22-dashboard.js"></script>
 <script src="js/23-dict-verify.js"></script>
+<script src="js/23a-landing-mock.js"></script>
 <script src="js/24-boot.js"></script>
 </body>
 </html>

@@ -893,22 +893,115 @@ body.dark .lp-hero{background:#161616}
 .lp-btn-secondary{padding:13px 28px;background:transparent;color:#fff;border:1px solid #444;border-radius:8px;font-size:15px;font-weight:500;cursor:pointer;transition:background .15s}
 .lp-btn-secondary:hover{background:#2a2a2a}
 
-/* Hero mock — wizualizacja tabeli segmentów */
-.lp-mock{max-width:680px;margin:0 auto;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+/* ══ MAKIETY EKRANÓW APLIKACJI ══
+   Odtworzone w HTML/CSS, nie zrzuty ekranu. Zawsze ciemne — w obu motywach
+   strony — bo aplikacja startuje w dark mode (index.html, skrypt w <head>).
+   Kolory lustrzane wobec realnych reguł aplikacji; jasne tła statusów
+   (#e6f5ec, #fef9e6) zamienione na warianty alfa, bo tło makiety jest ciemne. */
+.lp-mock{max-width:680px;margin:0 auto;border-radius:12px;overflow:hidden;border:1px solid #2a2a2a;background:#0f0f0f;box-shadow:0 24px 60px rgba(0,0,0,.28);text-align:left}
+body.dark .lp-mock{box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.lp-mock-wide{max-width:860px}
 .lp-mock-bar{background:#111;padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #2a2a2a}
-.lp-mock-dot{width:10px;height:10px;border-radius:50%}
+.lp-mock-dot{width:10px;height:10px;border-radius:50%;background:#3a3a3a;flex-shrink:0}
 .lp-mock-title{font-size:11px;color:#555;margin-left:4px}
-.lp-mock-table{background:#111}
-.lp-mock-thead{display:grid;grid-template-columns:1fr 1fr 220px;background:#0a0a0a;padding:7px 14px;border-bottom:1px solid #222}
-.lp-mock-th{font-size:10px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.06em}
-.lp-mock-row{display:grid;grid-template-columns:1fr 1fr 220px;padding:10px 14px;border-bottom:1px solid #1a1a1a;align-items:center;gap:8px}
-.lp-mock-src{font-size:12px;color:#888}
-.lp-mock-tgt{font-size:12px;color:#ccc}
-.lp-mock-langs{display:flex;gap:4px;flex-wrap:wrap}
-.lp-mock-lang{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px}
-.lml-done{background:#0a2a1a;color:#4ade80}
-.lml-go{background:#0a1a2e;color:#5a9eff}
-.lml-wait{background:#1a1a1a;color:#555;border:1px solid #2a2a2a}
+.lp-mock-body{padding:14px}
+/* Makieta jest ilustracją, nie interfejsem: żadnych hoverów ani kursora.
+   Globalne `tr:hover td{background:#fdfcfa}` (sekcja tabel aplikacji) rozjaśniało
+   wiersze niemal do bieli — na ciemnym tle makiety tekst stawał się nieczytelny. */
+.lp-mock tr:hover td,body.dark .lp-mock table tr:hover td{background:transparent}
+.lp-mock tr:hover .lpm-cell-ok,body.dark .lp-mock table tr:hover .lpm-cell-ok{background:rgba(76,222,128,.09)}
+.lp-mock tr:hover .lpm-cell-ai,body.dark .lp-mock table tr:hover .lpm-cell-ai{background:rgba(251,191,36,.09)}
+.lp-mock,.lp-mock *{cursor:default}
+/* Kontener przewijany w poziomie: tabele słownika i edytora bywają szersze
+   niż ramka. min-width:0 jest konieczne — bez tego element flex/grid nie
+   zmniejszy się poniżej treści i tabela zostanie ucięta przez overflow:hidden
+   na .lp-mock zamiast dostać własny pasek przewijania. */
+.lp-mock-scroll{overflow-x:auto;min-width:0;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#3a3a3a transparent}
+.lp-mock-scroll::-webkit-scrollbar{height:6px}
+.lp-mock-scroll::-webkit-scrollbar-track{background:transparent}
+.lp-mock-scroll::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:3px}
+
+/* — filtr segmentowy (odpowiednik .filter-tabs / .ftab) — */
+.lpm-tabs{display:flex;background:#111;border-radius:8px;padding:3px;gap:2px;width:max-content;margin-bottom:12px}
+.lpm-tab{padding:5px 13px;font-size:11.5px;border-radius:6px;color:#888}
+.lpm-tab.on{background:#4CDE80;color:#000;font-weight:600}
+
+/* — karty projektów (odpowiednik .dash-proj-card) — */
+.lpm-card{background:#1a1a1a;border:1px solid #2a2a2a;border-left:3px solid #4CDE80;border-radius:12px;padding:14px 16px;margin-bottom:9px}
+.lpm-card:last-child{margin-bottom:0}
+.lpm-card.done{border-left-color:#60a5fa}
+.lpm-ctop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:9px}
+.lpm-title{font-size:14px;font-weight:700;color:#e8e8e8}
+.lpm-meta{font-size:10.5px;color:#555;margin-top:2px}
+.lpm-count{font-size:11px;color:#888;white-space:nowrap;font-variant-numeric:tabular-nums}
+.lpm-bar{height:5px;background:#2a2a2a;border-radius:3px;overflow:hidden;margin-bottom:9px}
+.lpm-bar i{display:block;height:100%;border-radius:3px;background:#4CDE80}
+.lpm-bar i.blue{background:#60a5fa}
+.lpm-pills{display:flex;flex-wrap:wrap;gap:5px}
+.lpm-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500}
+.lpm-ok{background:rgba(76,222,128,.15);color:#4CDE80}
+.lpm-go{background:rgba(96,165,250,.15);color:#7ab4ff}
+.lpm-ready{background:rgba(251,191,36,.15);color:#e0a92a}
+.lpm-wait{background:#222;color:#666;border:1px solid #2f2f2f}
+.lpm-done-badge{display:inline-flex;gap:4px;background:rgba(96,165,250,.15);color:#7ab4ff;font-size:9.5px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:7px}
+
+/* — słownik (odpowiednik .dict-grid + .dict-cell-*) — */
+/* Tabela słownika: 5 kolumn z długimi terminami. Bez nowrap na td — na wąskich
+   ekranach komórki zawijają się zamiast rozpychać tabelę poza ramkę. */
+.lpm-dict{width:100%;border-collapse:collapse;font-size:11.5px;min-width:640px}
+.lpm-dict th{font-size:10px;font-weight:600;color:#777;background:#141414;padding:7px 8px;border-bottom:1px solid #2a2a2a;text-align:left;white-space:nowrap}
+.lpm-dict td{padding:6px 8px;border-bottom:1px solid #1f1f1f;color:#e8e8e8;line-height:1.4}
+.lpm-cell-ok{background:rgba(76,222,128,.09)}
+.lpm-cell-ai{background:rgba(251,191,36,.09)}
+.lpm-cell-none{color:#4a4a4a}
+.lpm-legend{display:flex;gap:15px;flex-wrap:wrap;font-size:10.5px;color:#555;margin-top:11px;align-items:center}
+.lpm-leg{display:inline-flex;align-items:center;gap:5px}
+.lpm-legdot{width:11px;height:11px;border-radius:3px;border:1px solid rgba(255,255,255,.09);flex-shrink:0}
+.lpm-legdot.ok{background:rgba(76,222,128,.28)}
+.lpm-legdot.ai{background:rgba(251,191,36,.28)}
+.lpm-legdot.none{background:#242424}
+
+/* — edytor: zakładki językowe (odpowiednik .editor-lang-tab + .etab-*) — */
+.lpm-ltabs{display:flex;border-bottom:1px solid #2a2a2a;margin-bottom:12px;width:max-content;min-width:100%}
+/* Jedyny klikalny element makiet — przełącznik języka w edytorze. */
+.lpm-ltab{padding:7px 13px;font-size:11.5px;color:#888;border:none;border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;cursor:pointer;background:none;font-family:inherit;line-height:inherit;transition:color .15s,border-color .15s;-webkit-appearance:none;appearance:none}
+.lp-mock .lpm-ltab{cursor:pointer}
+.lpm-ltab:hover{color:#ccc}
+.lpm-ltab:focus-visible{outline:2px solid #4CDE80;outline-offset:-2px;border-radius:4px}
+.lpm-ltab.on{color:#e8e8e8;border-bottom-color:#4CDE80;font-weight:600}
+.lpm-ltab.on:hover{color:#fff}
+.lpm-est{font-size:9.5px;padding:2px 7px;border-radius:8px;font-weight:600}
+.lpm-e-pend{background:#242424;color:#777}
+.lpm-e-prog{background:rgba(251,191,36,.18);color:#e0a92a}
+.lpm-e-ready{background:rgba(96,165,250,.18);color:#7ab4ff}
+.lpm-e-appr{background:rgba(76,222,128,.18);color:#4CDE80}
+
+/* — edytor: pasek akcji i tabela segmentów — */
+.lpm-actions{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.lpm-btn{font-size:11px;padding:5px 11px;border-radius:6px;background:#242424;color:#bbb;border:1px solid #2f2f2f}
+.lpm-btn.go{background:#4CDE80;color:#000;border-color:#4CDE80;font-weight:600}
+.lpm-auto{font-size:10.5px;color:#4CDE80;margin-left:auto;white-space:nowrap}
+.lpm-seg{width:100%;border-collapse:collapse;font-size:11.5px;min-width:560px}
+.lpm-seg th{font-size:10px;font-weight:600;color:#777;background:#141414;padding:7px 9px;border-bottom:1px solid #2a2a2a;text-align:left}
+.lpm-seg td{padding:7px 9px;border-bottom:1px solid #1f1f1f;vertical-align:top;color:#999;line-height:1.45}
+.lpm-seg .lpm-num{color:#4a4a4a;font-variant-numeric:tabular-nums;width:26px}
+.lpm-in{border:1px solid #2f2f2f;border-radius:5px;padding:5px 8px;background:#141414;color:#e8e8e8;font-size:11.5px;line-height:1.45}
+.lpm-in.chg{border-color:#fbbf24;background:rgba(251,191,36,.06)}
+.lpm-in.sav{border-color:#4CDE80;background:rgba(76,222,128,.05)}
+.lpm-in.empty{color:#4a4a4a}
+.lpm-sp{font-size:9.5px;padding:2px 8px;border-radius:10px;font-weight:500;white-space:nowrap}
+.lpm-sp-t{background:rgba(76,222,128,.15);color:#4CDE80}
+.lpm-sp-e{background:#242424;color:#666}
+
+/* — sekcja „Jak to działa w środku" — */
+.lp-screens{padding:64px 24px;background:#fafaf8}
+body.dark .lp-screens{background:#141414}
+.lp-screens-inner{max-width:860px;margin:0 auto}
+.lp-screen-block{margin-top:36px}
+.lp-screen-block:first-of-type{margin-top:0}
+.lp-screen-cap{font-size:13px;color:#666;text-align:center;max-width:560px;margin:12px auto 0;line-height:1.6}
+body.dark .lp-screen-cap{color:#888}
+.lp-mock-hero{margin-top:8px;margin-bottom:44px}
 
 /* Benefits */
 .lp-benefits{padding:64px 24px;background:#fff}
@@ -957,8 +1050,14 @@ body.dark .lp-footer{background:#111;border-top-color:#2a2a2a}
   .lp-stat:nth-child(3){border-right:1px solid #2a2a2a}
   .lp-stat:nth-child(4){border-right:none}
   .lp-stat:nth-child(3),.lp-stat:nth-child(4){border-top:1px solid #2a2a2a}
-  .lp-mock-row,.lp-mock-thead{grid-template-columns:1fr 1fr}
-  .lp-mock-langs{display:none}
+  .lp-screens{padding:48px 16px}
+}
+@media(max-width:640px){
+  /* Trzecia karta znika — hero ma zostać czytelne bez przewijania w nieskończoność */
+  .lpm-card-3{display:none}
+  .lp-mock-body{padding:11px}
+  .lpm-title{font-size:13px}
+  .lp-mock-hero{margin-bottom:32px}
 }
 @media(max-width:580px){
   .lp-cards{grid-template-columns:1fr}
@@ -1073,14 +1172,17 @@ body.dark .lp-form-submit:hover{background:#e0e0e0}
 .lp-contact-email a{color:#2451b3;text-decoration:none}
 body.dark .lp-contact-email a{color:#5a9eff}
 
-/* ── RESPONSIVE PRICING ── */
+/* ── RESPONSIVE PRICING ──
+   Kolejność bloków ma znaczenie: przy równej specyficzności wygrywa późniejszy,
+   więc szerszy breakpoint (900px) musi stać PRZED węższym (720px). Odwrotnie
+   pakiety zostawały na telefonie w dwóch kolumnach. */
+@media(max-width:900px){
+  .lp-packages-grid{grid-template-columns:repeat(2,1fr)}
+  .lp-billing-grid{grid-template-columns:repeat(2,1fr)}
+}
 @media(max-width:720px){
   .lp-billing-grid{grid-template-columns:1fr}
   .lp-packages-grid{grid-template-columns:1fr}
   .lp-form-row{grid-template-columns:1fr}
   .lp-sub-section{padding:40px 16px}
-}
-@media(max-width:900px){
-  .lp-packages-grid{grid-template-columns:repeat(2,1fr)}
-  .lp-billing-grid{grid-template-columns:repeat(2,1fr)}
 }
