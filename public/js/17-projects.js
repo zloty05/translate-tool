@@ -833,12 +833,13 @@ async function exportProjectXliff(){
       } else {
         // Rich segment — clone source structure and inject per-gId translations
         const sourceClone=srcEl.cloneNode(true);
-        sourceClone.querySelectorAll('g[ctype="x-text"]').forEach(g=>{
-          const gId=g.getAttribute('id');
-          const segKey=unitId+'__'+gId;
-          const tText=translationMap[segKey];
-          if(tText) g.textContent=tText;
-        });
+        // Spacje brzegowe policz z oryginalnego pliku (nie z metadata) — działa też
+        // dla projektów utworzonych przed tą zmianą. Patrz edgePads() w 15-xliff.js.
+        const gEls=Array.from(sourceClone.querySelectorAll('g[ctype="x-text"]'));
+        const nodes=gEls.map(g=>{const raw=g.textContent||'';const text=raw.replace(/^[ \t]+|[ \t]+$/g,'');return{text,...edgePads(raw,text)};});
+        const tgts=gEls.map(g=>({text:translationMap[unitId+'__'+g.getAttribute('id')]||''}));
+        const padded=padXliffTargets(nodes,tgts);
+        gEls.forEach((g,i)=>{ if(tgts[i].text) g.textContent=padded[i]; });
         while(sourceClone.firstChild) targetEl.appendChild(sourceClone.firstChild);
       }
 

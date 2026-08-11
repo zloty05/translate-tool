@@ -1,6 +1,41 @@
 ﻿// ══════════════════════════════════════════════════════════
 // XLIFF
 // ══════════════════════════════════════════════════════════
+
+// Storyline rozbija akapit z pogrubieniem na kilka <g ctype="x-text">.
+// Spacja oddzielająca bold od reszty zdania siedzi WEWNĄTRZ <g> (nigdy pomiędzy),
+// więc trim przy parsowaniu kasował ją bezpowrotnie: "To jest bold tekst" → "This isboldtext".
+// Zapamiętujemy dokładnie to, co trim usunął (nie zakładany znak — bywa "\r        "),
+// żeby eksport mógł odtworzyć oryginał znak w znak.
+function edgePads(raw,trimmed){
+  if(!trimmed) return{padStart:'',padEnd:''};
+  const at=raw.indexOf(trimmed);
+  return{padStart:raw.slice(0,at),padEnd:raw.slice(at+trimmed.length)};
+}
+
+// Zwraca teksty do wstawienia w <g>, z przywróconymi spacjami brzegowymi.
+// Spacja wraca tylko gdy: oryginał ją miał, tłumaczenie jest niepuste, nie ma jej już
+// (AI bywa niekonsekwentne) i po tej stronie jest jeszcze jakiś niepusty fragment —
+// inaczej zostałaby osierocona przed interpunkcją albo na skraju segmentu.
+function padXliffTargets(textNodes,targets){
+  const txt=targets.map(t=>(t&&t.text)||'');
+  const out=txt.slice();
+  const filled=txt.map(t=>!!t.trim());
+  const nextIdx=i=>{for(let j=i+1;j<txt.length;j++)if(filled[j])return j;return -1;};
+  const prevIdx=i=>{for(let j=i-1;j>=0;j--)if(filled[j])return j;return -1;};
+  for(let i=0;i<txt.length;i++){
+    const n=textNodes[i];
+    if(!filled[i]||!n) continue;
+    // Spacja na końcu: tylko gdy dalej coś jeszcze jest i żadna ze stron styku jej nie ma.
+    const nx=nextIdx(i);
+    if(n.padEnd&&nx>=0&&!/[ \t]$/.test(out[i])&&!/^[ \t]/.test(out[nx])) out[i]=out[i]+n.padEnd;
+    // Spacja na początku: analogicznie wstecz — sąsiad mógł już dokleić swoją.
+    const pv=prevIdx(i);
+    if(n.padStart&&pv>=0&&!/^[ \t]/.test(out[i])&&!/[ \t]$/.test(out[pv])) out[i]=n.padStart+out[i];
+  }
+  return out;
+}
+
 async function loadXliff(file){
   const xml=await readFile(file);xliffRawXml=xml;xliffXmlDoc=domParser.parseFromString(xml,'application/xml');
   const units=Array.from(xliffXmlDoc.querySelectorAll('trans-unit'));xliffSegs=[];
@@ -8,7 +43,7 @@ async function loadXliff(file){
     const unitId=unit.getAttribute('id')||'',datatype=unit.getAttribute('datatype')||'';
     const srcEl=unit.querySelector('source');if(!srcEl)return;
     if(datatype==='plaintext'){const text=(srcEl.textContent||'').trim();if(!text)return;const tgt=unit.querySelector('target');xliffSegs.push({id:unitId,unitId,type:'plain',source:text,target:tgt?(tgt.textContent||''):'',status:(tgt&&tgt.textContent.trim())?'done':'pending',fromTM:false});}
-    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:(g.textContent||'').replace(/^[ \t]+|[ \t]+$/g,'')})).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
+    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>{const raw=g.textContent||'';const text=raw.replace(/^[ \t]+|[ \t]+$/g,'');return{gId:g.getAttribute('id'),text,...edgePads(raw,text)};}).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
   });
   const tmHits=await applyTMToSegsAsync(xliffSegs,document.getElementById('target-lang').value);
   const totalChars=xliffSegs.reduce((a,s)=>s.type==='plain'?a+s.source.length:a+s.textNodes.reduce((b,n)=>b+n.text.length,0),0);
@@ -105,7 +140,7 @@ function exportXliff(){
   if(!xliffXmlDoc){alert('Brak pliku.');return;}
   const lang=document.getElementById('target-lang').value;
   const workDoc=domParser.parseFromString(xliffRawXml,'application/xml');
-  xliffSegs.forEach(seg=>{let unit=null;for(const u of workDoc.querySelectorAll('trans-unit')){if(u.getAttribute('id')===seg.unitId){unit=u;break;}}if(!unit)return;const srcEl=unit.querySelector('source');if(!srcEl)return;const ex=unit.querySelector('target');if(ex)ex.remove();const tgt=workDoc.createElementNS(XLIFF_NS,'target');tgt.setAttribute('state','translated');if(seg.type==='plain'){tgt.textContent=seg.target||seg.source;}else{const cl=srcEl.cloneNode(true);cl.querySelectorAll('g[ctype="x-text"]').forEach(g=>{const tn=seg.targets.find(t=>t.gId===g.getAttribute('id'));if(tn&&tn.text)g.textContent=tn.text;});while(cl.firstChild)tgt.appendChild(cl.firstChild);}srcEl.after(tgt);});
+  xliffSegs.forEach(seg=>{let unit=null;for(const u of workDoc.querySelectorAll('trans-unit')){if(u.getAttribute('id')===seg.unitId){unit=u;break;}}if(!unit)return;const srcEl=unit.querySelector('source');if(!srcEl)return;const ex=unit.querySelector('target');if(ex)ex.remove();const tgt=workDoc.createElementNS(XLIFF_NS,'target');tgt.setAttribute('state','translated');if(seg.type==='plain'){tgt.textContent=seg.target||seg.source;}else{const cl=srcEl.cloneNode(true);const padded=padXliffTargets(seg.textNodes,seg.targets);cl.querySelectorAll('g[ctype="x-text"]').forEach(g=>{const i=seg.targets.findIndex(t=>t.gId===g.getAttribute('id'));if(i>=0&&seg.targets[i].text)g.textContent=padded[i];});while(cl.firstChild)tgt.appendChild(cl.firstChild);}srcEl.after(tgt);});
   let s=xmlSer.serializeToString(workDoc);if(!s.startsWith('<?xml'))s='<?xml version="1.0" encoding="utf-8"?>'+s;
   download(s,'translated_'+lang.toLowerCase().replace(/\s+/g,'_')+'.xliff','application/xliff+xml');
 }
