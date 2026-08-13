@@ -36,6 +36,101 @@ function padXliffTargets(textNodes,targets){
   return out;
 }
 
+// Czy dany <g> jest w indeksie górnym? Storyline trzyma styl w <bpt ctype="x-style">,
+// który POPRZEDZA <g> jako rodzeństwo — nie jest jego rodzicem ani atrybutem.
+// Stąd cofanie się po previousElementSibling aż do najbliższego <bpt>.
+// To jedyne źródło prawdy o ®/²: korelacja Elevation="Superscript" z fragmentem
+// symbolu jest w realnych plikach idealna (sprawdzone: 4/4, zero fałszywych trafień).
+function isSupNode(g){
+  for(let p=g.previousElementSibling;p;p=p.previousElementSibling){
+    if(p.nodeName==='bpt'&&(p.getAttribute('ctype')||'')==='x-style')
+      return /Elevation\s*=\s*"Superscript"/.test(p.textContent||'');
+    if(p.nodeName==='g') break; // trafiliśmy na poprzedni tekst — nasz <bpt> byłby wcześniej
+  }
+  return false;
+}
+
+// Kotwica = ogon fragmentu POPRZEDZAJĄCEGO indeks górny; tekst niezmienny językowo,
+// po którym symbol ma się znaleźć. Dwa rodzaje spotykane w kursach WAGO:
+// nazwa handlowa (CAGE CLAMP, TOPJOB, WINSTA) i jednostka (4 mm, 2,5 mm).
+// Nazwy i jednostki nie są tłumaczone ani odmieniane (potwierdzone na realnym
+// tłumaczeniu litewskim: 31/31), więc da się je odnaleźć w tekście od modelu.
+function findAnchor(prevText){
+  if(!prevText) return null;
+  const t=prevText.replace(/[ \t]+$/,'');
+  let m=t.match(/([A-Z][A-Z0-9]*(?:[ \t]+[A-Z][A-Z0-9]*)*)$/);
+  if(m&&m[1].length>=2) return m[1];
+  m=t.match(/(\d+(?:[.,]\d+)?[ \t]*[a-zA-Z]{1,3})$/);
+  if(m) return m[1];
+  return null;
+}
+
+// Rozcina przetłumaczone zdanie z powrotem na fragmenty <g>.
+// Zwraca tablicę tekstów (równoległą do nodes) albo null → wołający robi fallback.
+//
+// Kotwica wyznacza DWIE granice, nie jedną: fragment przed indeksem górnym dostaje
+// DOKŁADNIE tekst kotwicy, a wszystko przed nią należy do fragmentów wcześniejszych.
+// Cięcie samego "za kotwicą" wrzuciłoby całe zdanie do pogrubionego <g> i pogrubiło
+// je w całości — wykryte na symulacji 6GTeyZPPiqb przed implementacją.
+function splitByAnchors(translated,nodes){
+  const out=new Array(nodes.length).fill(null);
+  let cursor=0,lastAssigned=-1;
+  for(let i=0;i<nodes.length;i++){
+    if(!nodes[i].isSup) continue;
+    if(i===0) return null;                       // symbol bez poprzednika — nie ma czego kotwiczyć
+    const anchor=findAnchor(nodes[i-1].text);
+    if(!anchor) return null;
+    const idx=translated.indexOf(anchor,cursor);
+    if(idx<0) return null;                       // kotwica nie przeżyła tłumaczenia
+    // Dopasowanie idzie PO KOLEI (od cursor), więc powtórzona nazwa nie jest sama w sobie
+    // przeszkodą: n-te wystąpienie w źródle odpowiada n-temu w tłumaczeniu — kolejność
+    // fragmentów jest ta sama. Blokujemy dopiero sytuację, gdy ta sama kotwica wraca
+    // jeszcze raz PO tym, jak zużyliśmy już wszystkie jej wystąpienia w źródle.
+    let restSrc=0;
+    for(let j=i+1;j<nodes.length;j++) if(nodes[j].isSup&&findAnchor(nodes[j-1].text)===anchor) restSrc++;
+    let restTr=0,scan=idx+anchor.length;
+    for(;;){const p=translated.indexOf(anchor,scan);if(p<0)break;restTr++;scan=p+anchor.length;}
+    if(restTr>restSrc) return null;              // więcej powtórzeń niż w źródle — nie zgadujemy
+    // Tekst przed kotwicą trafia do fragmentów między poprzednią kotwicą a tym symbolem.
+    // Gdy indeks górny jest zaraz na początku segmentu (i===1), kotwica JEST fragmentem
+    // nodes[0] i head musi się w nim zmieścić — doklejamy go przed kotwicę zamiast
+    // odrzucać całą ścieżkę (przypadki 'Witaj ... WINSTA®' i 'Prie TOPJOB®S').
+    const head=translated.slice(cursor,idx);
+    let slot=-1;
+    for(let j=lastAssigned+1;j<i-1;j++) if(out[j]===null&&!nodes[j].isSup){slot=j;break;}
+    if(slot>=0){ out[slot]=head; for(let j=slot+1;j<i-1;j++) if(out[j]===null) out[j]=''; out[i-1]=anchor; }
+    else out[i-1]=head+anchor;                   // brak wolnego slotu → head zostaje przy kotwicy
+    const cut=idx+anchor.length;
+    // Model bywa uczynny i sam dopisuje ® tuż za nazwą (realny przypadek z pliku
+    // litewskiego: 'Prie TOPJOB®S gnybtų blokų'). Wtedy traktujemy jego symbol jako
+    // granicę, zamiast dokładać drugi i dostać TOPJOB®®S.
+    const sym=nodes[i].text;
+    const dup=translated.startsWith(sym,cut);
+    out[i]=sym;
+    cursor=cut+(dup?sym.length:0);
+    lastAssigned=i;
+  }
+  if(!out.some(v=>v!==null)) return null;        // brak indeksu górnego — nie nasza ścieżka
+  // Ogon zdania trafia do pierwszego wolnego fragmentu PO ostatniej kotwicy —
+  // nie do pierwszego wolnego w ogóle, bo tamte leżą przed nią i są już rozliczone.
+  let tail=-1;
+  for(let j=lastAssigned+1;j<nodes.length;j++) if(out[j]===null&&!nodes[j].isSup){tail=j;break;}
+  if(tail>=0){ out[tail]=translated.slice(cursor); for(let j=tail+1;j<nodes.length;j++) if(out[j]===null) out[j]=''; }
+  else if(cursor<translated.length) return null; // urwany ogon — fallback
+  for(let j=0;j<out.length;j++) if(out[j]===null) out[j]='';
+  // Kontrola spójności: po usunięciu symboli, które DOKŁADAMY z oryginału, sklejenie
+  // musi odtworzyć tekst od modelu znak w znak. Nie można porównywać wprost, bo gdy
+  // model nie napisał ® sam, wynik ma go o jeden więcej niż tekst wejściowy — i to
+  // jest poprawne. Ta kontrola łapie realne zgubienie lub zdublowanie tekstu.
+  let rebuilt='';
+  for(let j=0;j<out.length;j++){
+    if(nodes[j].isSup&&!translated.startsWith(out[j],rebuilt.length)) continue;
+    rebuilt+=out[j];
+  }
+  if(rebuilt!==translated) return null;
+  return out;
+}
+
 async function loadXliff(file){
   const xml=await readFile(file);xliffRawXml=xml;xliffXmlDoc=domParser.parseFromString(xml,'application/xml');
   const units=Array.from(xliffXmlDoc.querySelectorAll('trans-unit'));xliffSegs=[];
@@ -43,7 +138,7 @@ async function loadXliff(file){
     const unitId=unit.getAttribute('id')||'',datatype=unit.getAttribute('datatype')||'';
     const srcEl=unit.querySelector('source');if(!srcEl)return;
     if(datatype==='plaintext'){const text=(srcEl.textContent||'').trim();if(!text)return;const tgt=unit.querySelector('target');xliffSegs.push({id:unitId,unitId,type:'plain',source:text,target:tgt?(tgt.textContent||''):'',status:(tgt&&tgt.textContent.trim())?'done':'pending',fromTM:false});}
-    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>{const raw=g.textContent||'';const text=raw.replace(/^[ \t]+|[ \t]+$/g,'');return{gId:g.getAttribute('id'),text,...edgePads(raw,text)};}).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
+    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>{const raw=g.textContent||'';const text=raw.replace(/^[ \t]+|[ \t]+$/g,'');return{gId:g.getAttribute('id'),text,isSup:isSupNode(g),...edgePads(raw,text)};}).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
   });
   const tmHits=await applyTMToSegsAsync(xliffSegs,document.getElementById('target-lang').value);
   const totalChars=xliffSegs.reduce((a,s)=>s.type==='plain'?a+s.source.length:a+s.textNodes.reduce((b,n)=>b+n.text.length,0),0);
@@ -107,22 +202,64 @@ async function runXliffBatch(toT){
   const lang=document.getElementById('target-lang').value;
   const histId=await createHistoryEntry(document.getElementById('xliff-fname').textContent,'xliff',lang,xliffSegs.length,xliffSegs.filter(s=>s.fromTM).length);
   document.getElementById('xliff-pw').style.display='block';document.getElementById('xliff-pf').style.width='0%';
-  const items=[];toT.forEach(seg=>{const idx=xliffSegs.indexOf(seg);if(seg.type==='plain')items.push({key:idx+'__p',segIndex:idx,gId:null,text:seg.source});else seg.textNodes.forEach(n=>items.push({key:idx+'__'+n.gId,segIndex:idx,gId:n.gId,text:n.text}));});
+  // Segment z indeksem górnym (®, ²) idzie do modelu JAKO CAŁE ZDANIE, jednym itemem.
+  // Rozbicie na osobne <g> gubi kontekst: fragment tłumaczony w izolacji zmienia szyk,
+  // a symbol zostaje przyklejony do pozycji, nie do słowa — stąd "training®" zamiast
+  // "WINSTA®". Odpowiedź rozcinamy sami przez splitByAnchors(). Segmenty bez indeksu
+  // górnego zostają na dotychczasowej ścieżce (fragment = item).
+  let xliffMergedFallback=0;
+  const items=[];toT.forEach(seg=>{const idx=xliffSegs.indexOf(seg);
+    if(seg.type==='plain'){items.push({key:idx+'__p',segIndex:idx,gId:null,text:seg.source});return;}
+    // Sklejamy z przywróconymi spacjami brzegowymi (padStart/padEnd z edgePads),
+    // bo n.text jest przycięty — inaczej "czym jest"+"WINSTA" da "czym jestWINSTA"
+    // i model dostanie zlepiony bełkot zamiast zdania.
+    if(seg.textNodes.some(n=>n.isSup)){items.push({key:idx+'__merged',segIndex:idx,gId:null,merged:true,text:seg.textNodes.map(n=>(n.padStart||'')+n.text+(n.padEnd||'')).join('')});return;}
+    seg.textNodes.forEach(n=>items.push({key:idx+'__'+n.gId,segIndex:idx,gId:n.gId,text:n.text}));});
   setXS('Tłumaczenie '+items.length+' fragmentów na '+lang+'...');
   let done=0,totalCostUsd=0;
   for(let i=0;i<items.length;i+=CHUNK){
     const chunk=items.slice(i,i+CHUNK);
     const dict=buildDictPromptForChunk(lang,chunk.map(it=>it.text),document.getElementById('source-lang')?.value);
     const charsIn=chunk.reduce((a,it)=>a+it.text.length,0);
-    const prompt=`Tłumacz materiały e-learningowe na: ${lang}.\nZachowaj zmienne %...% bez zmian.${dict}\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nFragmenty:\n${JSON.stringify(chunk.map(it=>({key:it.key,text:it.text})))}`;
+    // Reguła o nazwach i jednostkach wzmacnia zachowanie, które model i tak przejawia —
+    // dzięki temu kotwica w splitByAnchors() trafia pewniej. To NIE jest znacznik do
+    // rozstawiania przez model: pozycję ®/² wyliczamy w kodzie.
+    const prompt=`Tłumacz materiały e-learningowe na: ${lang}.\nZachowaj zmienne %...% bez zmian.\nNie tłumacz nazw produktów (WINSTA, TOPJOB, CAGE CLAMP, PUSH WIRE, MINI, MIDI, CLASSIC) ani symboli jednostek (mm) — przepisz je dokładnie.${dict}\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nFragmenty:\n${JSON.stringify(chunk.map(it=>({key:it.key,text:it.text})))}`;
     try{
       const res=JSON.parse((await apiCall(prompt)).replace(/```json|```/g,'').trim());
       const charsOut=res.reduce((a,r)=>a+(r.translation?.length||0),0);
       totalCostUsd+=((charsIn/CPT)/1e6)*PRICE_IN+((charsOut/CPT)/1e6)*PRICE_OUT;
-      res.forEach(r=>{const item=chunk.find(it=>it.key===r.key);if(!item)return;const seg=xliffSegs[item.segIndex];if(!seg)return;if(seg.type==='plain'){seg.target=r.translation;seg.status='done';}else{const tn=seg.targets.find(t=>t.gId===item.gId);if(tn)tn.text=r.translation;if(seg.targets.every(t=>t.text.trim()))seg.status='done';}const ta=document.getElementById('xta-'+item.segIndex);if(ta)ta.value=xliffTgt(xliffSegs[item.segIndex]);const b=document.getElementById('xbadge-'+item.segIndex);if(b&&xliffSegs[item.segIndex].status==='done'){b.className='badge b-green';b.textContent='OK';}});
+      res.forEach(r=>{const item=chunk.find(it=>it.key===r.key);if(!item)return;const seg=xliffSegs[item.segIndex];if(!seg)return;if(seg.type==='plain'){seg.target=r.translation;seg.status='done';}else if(item.merged){
+          // Rozcięcie po kotwicach. Gdy się nie uda (kotwica nie przeżyła tłumaczenia
+          // albo jest niejednoznaczna) — segment zostaje do ponowienia starą ścieżką,
+          // czyli wynik będzie co najwyżej taki jak dziś, nigdy gorszy.
+          const parts=splitByAnchors(r.translation||'',seg.textNodes);
+          if(parts){seg.targets.forEach((t,j)=>{t.text=parts[j];});seg.status='done';}
+          else{xliffMergedFallback++;seg._needsSplitFallback=true;}
+        }else{const tn=seg.targets.find(t=>t.gId===item.gId);if(tn)tn.text=r.translation;if(seg.targets.every(t=>t.text.trim()))seg.status='done';}const ta=document.getElementById('xta-'+item.segIndex);if(ta)ta.value=xliffTgt(xliffSegs[item.segIndex]);const b=document.getElementById('xbadge-'+item.segIndex);if(b&&xliffSegs[item.segIndex].status==='done'){b.className='badge b-green';b.textContent='OK';}});
     }catch(err){chunk.forEach(it=>{xliffSegs[it.segIndex].status='error';const b=document.getElementById('xbadge-'+it.segIndex);if(b){b.className='badge b-red';b.textContent='Błąd';}});setXS('Błąd: '+err.message);}
     done+=chunk.length;document.getElementById('xliff-pf').style.width=Math.round(done/items.length*100)+'%';updateXliffProgress();if(typeof quickMode!=='undefined'&&quickMode==='xliff')renderQuickTable();await sleep(150);
   }
+  // Fallback: segmenty, których nie dało się rozciąć po kotwicy, tłumaczymy jeszcze raz
+  // fragment po fragmencie — dokładnie tak, jak działo się to przed tą zmianą.
+  const fbSegs=xliffSegs.filter(s=>s._needsSplitFallback);
+  if(fbSegs.length){
+    setXS('Ponawiam '+fbSegs.length+' segmentów bez kotwicy...');
+    const fbItems=[];fbSegs.forEach(seg=>{const idx=xliffSegs.indexOf(seg);seg.textNodes.forEach(n=>fbItems.push({key:idx+'__'+n.gId,segIndex:idx,gId:n.gId,text:n.text}));});
+    for(let i=0;i<fbItems.length;i+=CHUNK){
+      const chunk=fbItems.slice(i,i+CHUNK);
+      const dict=buildDictPromptForChunk(lang,chunk.map(it=>it.text),document.getElementById('source-lang')?.value);
+      const prompt=`Tłumacz materiały e-learningowe na: ${lang}.\nZachowaj zmienne %...% bez zmian.${dict}\nJSON: [{"key":"...","translation":"..."}] — bez markdown.\n\nFragmenty:\n${JSON.stringify(chunk.map(it=>({key:it.key,text:it.text})))}`;
+      try{
+        const res=JSON.parse((await apiCall(prompt)).replace(/```json|```/g,'').trim());
+        res.forEach(r=>{const item=chunk.find(it=>it.key===r.key);if(!item)return;const seg=xliffSegs[item.segIndex];if(!seg)return;const tn=seg.targets.find(t=>t.gId===item.gId);if(tn)tn.text=r.translation;});
+      }catch(err){console.warn('Fallback XLIFF nieudany:',err.message);}
+      await sleep(150);
+    }
+    fbSegs.forEach(seg=>{delete seg._needsSplitFallback;const idx=xliffSegs.indexOf(seg);seg.status=seg.targets.every(t=>t.text.trim())?'done':'error';const ta=document.getElementById('xta-'+idx);if(ta)ta.value=xliffTgt(seg);const b=document.getElementById('xbadge-'+idx);if(b){const ok=seg.status==='done';b.className='badge '+(ok?'b-green':'b-red');b.textContent=ok?'OK':'Błąd';}});
+    updateXliffProgress();
+  }
+  if(xliffMergedFallback) console.info('[XLIFF] segmenty bez jednoznacznej kotwicy (fallback):',xliffMergedFallback);
   const finalDone=xliffSegs.filter(s=>s.status==='done').length;
   const charsThisBatch=items.reduce((a,it)=>a+it.text.length,0);
   const creditsUsed=estimateCredits(charsThisBatch);

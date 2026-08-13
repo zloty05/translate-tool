@@ -11,3 +11,9 @@ supabase/.branches/
 
 # Claude Code — lokalna lista uprawnień (per maszyna)
 .claude/settings.local.json
+
+# Materiały robocze klienta (kursy XLIFF/PPTX, tłumaczenia, zrzuty ekranu).
+# Zostają lokalnie — do repo trafia tylko kod i dokumentacja.
+# Wyjątek: docs/dziennik/ (dziennik projektu) jest śledzony.
+docs/*
+!docs/dziennik/

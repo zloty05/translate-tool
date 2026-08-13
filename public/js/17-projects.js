@@ -248,12 +248,16 @@ async function parseXliffForProject(file, srcLang){
       const textNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||''}))
         .filter(n=>n.text.trim().length>0);
       if(!textNodes.length) return;
+      // isSup zapisujemy w metadata, żeby runAITranslation wiedziało, które grupy scalić.
+      // Patrz isSupNode() w 15-xliff.js. Projekty założone przed tą zmianą nie mają tego
+      // pola — wtedy grupa nie zostanie scalona i pójdzie dotychczasową ścieżką.
+      const allTextNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||'',isSup:isSupNode(g)}));
       // Store each non-empty text node as separate segment for TM compatibility
       textNodes.forEach(n=>{
         // Preserve CR (\r) and LF (\n) - only trim spaces and tabs
         const srcText = n.text.replace(/^[ 	]+|[ 	]+$/g, '');
         if(!srcText) return;
-        segments.push({key:unitId+'__'+n.gId, source:srcText, metadata:{type:'rich',unitId,gId:n.gId,allTextNodes:gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||''}))}});
+        segments.push({key:unitId+'__'+n.gId, source:srcText, metadata:{type:'rich',unitId,gId:n.gId,allTextNodes}});
       });
     }
   });
@@ -508,22 +512,53 @@ function updateEditorProgress(lang){
   if(badge){ badge.textContent=`${done}/${total}`; badge.className='badge '+(done===total?'b-green':'b-yellow'); }
 }
 
+// Grupuje segmenty projektu należące do jednej trans-unit z indeksem górnym (®, ²).
+// Zwraca listę "jednostek pracy": zwykły segment albo grupa scalona w jedno zdanie.
+// Podziału w bazie NIE ruszamy — scalenie jest wyłącznie na czas wywołania AI,
+// a wynik zapisujemy z powrotem per seg.id. Patrz splitByAnchors() w 15-xliff.js.
+function buildAIWorkItems(toTranslate){
+  const byUnit={},order=[];
+  toTranslate.forEach(s=>{
+    const m=s.metadata||{},u=m.unitId;
+    const nodes=m.allTextNodes;
+    const hasSup=Array.isArray(nodes)&&nodes.some(n=>n&&n.isSup);
+    if(m.type!=='rich'||!u||!hasSup){order.push({single:s});return;}
+    if(!byUnit[u]){byUnit[u]={unitId:u,nodes,segs:[]};order.push({group:byUnit[u]});}
+    byUnit[u].segs.push(s);
+  });
+  return order.map(o=>{
+    if(o.single) return {segs:[o.single],text:o.single.source_text,merged:false,id:o.single.id};
+    const g=o.group;
+    // Grupa musi pokryć wszystkie niepuste <g>, inaczej sklejenie byłoby dziurawe.
+    const need=g.nodes.filter(n=>(n.text||'').trim().length>0).length;
+    if(g.segs.length<2||g.segs.length!==need) return g.segs.map(s=>({segs:[s],text:s.source_text,merged:false,id:s.id}));
+    // Kolejność wg <g> w pliku, nie wg kolejności wierszy z bazy.
+    const ordered=g.nodes.map(n=>g.segs.find(s=>s.metadata.gId===n.gId)).filter(Boolean);
+    if(ordered.length!==g.segs.length) return g.segs.map(s=>({segs:[s],text:s.source_text,merged:false,id:s.id}));
+    return {segs:ordered,nodes:g.nodes,text:g.nodes.map(n=>n.text).join(''),merged:true,id:ordered[0].id};
+  }).flat();
+}
+
 async function runAITranslation(toTranslate, lang){
   if(!toTranslate.length) return;
   const CHUNK=15; // smaller chunks = fewer missing segments
   let done=0, totalCostUsd=0;
   const failed=[]; // track failed segments for retry
+  let projMergedFallback=0;
+  // Jednostki pracy: scalone grupy z ®/² + pojedyncze segmenty. Kontekst ±3 liczony
+  // po TEJ liście, żeby po scaleniu wskazywał sąsiednie zdania, nie fragmenty.
+  const workItems=buildAIWorkItems(toTranslate);
 
-  for(let i=0;i<toTranslate.length;i+=CHUNK){
-    const chunk=toTranslate.slice(i,i+CHUNK);
-    const charsIn=chunk.reduce((a,s)=>a+s.source_text.length,0);
+  for(let i=0;i<workItems.length;i+=CHUNK){
+    const chunk=workItems.slice(i,i+CHUNK);
+    const charsIn=chunk.reduce((a,s)=>a+s.text.length,0);
 
     // Context: 3 segments before and after chunk
     const CONTEXT=3;
-    const firstIdx=toTranslate.indexOf(chunk[0]);
-    const lastIdx=toTranslate.indexOf(chunk[chunk.length-1]);
-    const ctxBefore=toTranslate.slice(Math.max(0,firstIdx-CONTEXT),firstIdx).map(s=>s.source_text);
-    const ctxAfter=toTranslate.slice(lastIdx+1,lastIdx+1+CONTEXT).map(s=>s.source_text);
+    const firstIdx=i;
+    const lastIdx=i+chunk.length-1;
+    const ctxBefore=workItems.slice(Math.max(0,firstIdx-CONTEXT),firstIdx).map(s=>s.text);
+    const ctxAfter=workItems.slice(lastIdx+1,lastIdx+1+CONTEXT).map(s=>s.text);
 
     // Content type based on file type + project description
     const fileType=currentProject?.file_type||'xliff';
@@ -535,7 +570,7 @@ async function runAITranslation(toTranslate, lang){
       ? 'Kontekst projektu: "'+projDesc+'"'
       : '';
 
-    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.source_text),currentProject?.source_lang);
+    const dict=buildDictPromptForChunk(lang,chunk.map(s=>s.text),currentProject?.source_lang);
     const ctxBeforeStr=ctxBefore.length
       ? '\nKontekst poprzedzający (nie tłumacz — użyj jako kontekst):\n'+ctxBefore.map((t,i)=>'['+(firstIdx-ctxBefore.length+i+1)+'] '+t).join('\n')
       : '';
@@ -551,10 +586,11 @@ WAŻNE:
 - Znak \r to miękki enter (Shift+Enter) — musi pozostać w tłumaczeniu
 - Zachowaj styl, zmienne %...% przepisuj bez zmian
 - Jeśli termin ze słownika zaczyna zdanie lub występuje z wielką literą w oryginale — zachowaj wielką literę w tłumaczeniu
+- Nie tłumacz nazw produktów (WINSTA, TOPJOB, CAGE CLAMP, PUSH WIRE, MINI, MIDI, CLASSIC) ani symboli jednostek (mm) — przepisz je dokładnie
 - Styl: techniczny, zdania zwięzłe${dict}${ctxBeforeStr}
 
 Do tłumaczenia (${chunk.length} szt.):
-${JSON.stringify(chunk.map(s=>({key:s.id,text:s.source_text})))}${ctxAfterStr}
+${JSON.stringify(chunk.map(s=>({key:s.id,text:s.text})))}${ctxAfterStr}
 
 Odpowiedz TYLKO JSON: [{"key":"...","translation":"..."}] — bez markdown, bez preambuły.`;
 
@@ -567,29 +603,50 @@ Odpowiedz TYLKO JSON: [{"key":"...","translation":"..."}] — bez markdown, bez 
       // Track which keys came back
       const returnedKeys=new Set(res.map(r=>r.key));
       const missingInChunk=chunk.filter(s=>!returnedKeys.has(s.id));
-      if(missingInChunk.length) failed.push(...missingInChunk);
+      if(missingInChunk.length) failed.push(...missingInChunk.flatMap(w=>w.segs));
+
+      // Zapis jednego segmentu — wspólny dla ścieżki zwykłej i scalonej.
+      const applyOne=async(seg,text)=>{
+        await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:text});
+        await dbPatch('project_segments',{ai_translation:text,manually_edited:false},`?id=eq.${seg.id}`);
+        if(!seg.translations) seg.translations={};
+        seg.translations[lang]={text,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+        seg.ai_translation=text;
+        seg.manually_edited=false;
+        const ta=document.getElementById('seg-'+seg.id);
+        if(ta){ ta.value=text; ta.className='seg-textarea saved'; setTimeout(()=>ta.className='seg-textarea',2000); }
+        const pill=document.getElementById(`spill-${seg.id}-${lang}`);
+        if(pill){ pill.className='status-pill sp-translated'; pill.textContent='Tłum.'; }
+      };
 
       for(const r of res){
         if(!r.translation) continue;
-        const seg=currentProjectSegs.find(s=>s.id===r.key);
-        if(!seg) continue;
-        await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:r.translation});
-        await dbPatch('project_segments',{ai_translation:r.translation,manually_edited:false},`?id=eq.${seg.id}`);
-        if(!seg.translations) seg.translations={};
-        seg.translations[lang]={text:r.translation,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
-        seg.ai_translation=r.translation;
-        seg.manually_edited=false;
-        const ta=document.getElementById('seg-'+seg.id);
-        if(ta){ ta.value=r.translation; ta.className='seg-textarea saved'; setTimeout(()=>ta.className='seg-textarea',2000); }
-        const pill=document.getElementById(`spill-${seg.id}-${lang}`);
-        if(pill){ pill.className='status-pill sp-translated'; pill.textContent='Tłum.'; }
+        const item=chunk.find(w=>w.id===r.key);
+        if(!item) continue;
+        if(item.merged){
+          // Rozcięcie po kotwicach; przy niepowodzeniu cała grupa idzie do retry
+          // fragment po fragmencie, czyli dokładnie jak przed tą zmianą.
+          const parts=splitByAnchors(r.translation,item.nodes);
+          if(!parts){ projMergedFallback++; failed.push(...item.segs); continue; }
+          const byGid={};item.nodes.forEach((n,j)=>{byGid[n.gId]=parts[j];});
+          for(const seg of item.segs){
+            const txt=byGid[seg.metadata.gId];
+            if(txt===undefined||txt==='') continue;
+            await applyOne(seg,txt);
+          }
+        } else {
+          const seg=currentProjectSegs.find(s=>s.id===r.key);
+          if(!seg) continue;
+          await applyOne(seg,r.translation);
+        }
       }
     }catch(err){
       console.error('AI chunk error:',err);
-      failed.push(...chunk);
+      // failed[] trzyma segmenty (nie jednostki pracy) — retry działa per segment.
+      failed.push(...chunk.flatMap(w=>w.segs));
     }
 
-    done+=chunk.length;
+    done+=chunk.reduce((a,w)=>a+w.segs.length,0);
     const aiPct=Math.round(done/toTranslate.length*100);
     showEditorProgress(`Tłumaczenie AI: ${done}/${toTranslate.length} segmentów`,aiPct);
     setAutosaveIndicator(`⏳ Tłumaczenie AI: ${done}/${toTranslate.length} segmentów...`);
@@ -624,6 +681,7 @@ Tekst: ${JSON.stringify(seg.source_text)}`;
     }
   }
 
+  if(projMergedFallback) console.info('[Projekty] grupy bez jednoznacznej kotwicy (fallback):',projMergedFallback);
   return totalCostUsd;
 }
 
