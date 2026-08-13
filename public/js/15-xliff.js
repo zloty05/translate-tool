@@ -50,6 +50,35 @@ function isSupNode(g){
   return false;
 }
 
+// ── Podgląd pełnego zdania dla tłumacza ─────────────────────────────
+// Po rozcięciu segmentu granice fragmentów nie pokrywają się już z granicami
+// w źródle (angielski przestawia szyk), więc pojedynczy wiersz potrafi wyglądać
+// jak błąd: źródło ". ", tłumaczenie " system training. ". Podgląd pokazuje całe
+// zdanie z wyróżnionym bieżącym fragmentem, żeby tłumacz nie musiał tego składać
+// z sąsiednich wierszy — działa też po przesortowaniu tabeli, które je rozdziela.
+
+// Czy jednostka wymaga podglądu? Tylko te z indeksem górnym — reszta (ok. 83%
+// wierszy) wygląda jak dotąd. Stare projekty nie mają isSup w metadata → false.
+function needsCtxPreview(nodes){
+  return Array.isArray(nodes)&&nodes.some(n=>n&&n.isSup);
+}
+
+// Pełne zdanie jako czysty tekst (do Excela). Łamania na ⏎, żeby nie rozbijały komórki.
+function ctxSentenceText(nodes){
+  if(!needsCtxPreview(nodes)) return '';
+  return nodes.map(n=>(n.text||'').replace(/\r\n|[\r\n]/g,'⏎')).join('');
+}
+
+// Pełne zdanie jako HTML z <mark> na bieżącym fragmencie (do edytora).
+// esc() jest zdefiniowane w 08-utils.js — ładowanym wcześniej.
+function ctxSentenceHTML(nodes,curGid){
+  if(!needsCtxPreview(nodes)) return '';
+  return nodes.map(n=>{
+    const t=esc((n.text||'').replace(/\r\n|[\r\n]/g,'⏎'));
+    return n.gId===curGid?'<mark>'+t+'</mark>':t;
+  }).join('');
+}
+
 // Kotwica = ogon fragmentu POPRZEDZAJĄCEGO indeks górny; tekst niezmienny językowo,
 // po którym symbol ma się znaleźć. Dwa rodzaje spotykane w kursach WAGO:
 // nazwa handlowa (CAGE CLAMP, TOPJOB, WINSTA) i jednostka (4 mm, 2,5 mm).
@@ -58,8 +87,17 @@ function isSupNode(g){
 function findAnchor(prevText){
   if(!prevText) return null;
   const t=prevText.replace(/[ \t]+$/,'');
-  let m=t.match(/([A-Z][A-Z0-9]*(?:[ \t]+[A-Z][A-Z0-9]*)*)$/);
+  // 1) Nazwa WERSALIKAMI, ew. wielowyrazowa: WINSTA, CAGE CLAMP, TOPJOB.
+  //    Diakrytyki muszą być w klasie znaków, inaczej "ZESTAW MONTAŻOWY WINSTA"
+  //    urywa się na "Ż" i kotwicą zostaje ułamek słowa ("OWY WINSTA").
+  const UP='A-ZĄĆĘŁŃÓŚŹŻ';
+  let m=t.match(new RegExp('(['+UP+']['+UP+'0-9]*(?:[ \\t]+['+UP+']['+UP+'0-9]*)*)$'));
   if(m&&m[1].length>=2) return m[1];
+  // 2) Nazwa handlowa pisana mieszaną wielkością liter: Linect, WinstaLink.
+  //    W pełnym szkoleniu "Linect®" to 3 z 82 jednostek — bez tego lecą na fallback.
+  m=t.match(/([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]*)*)$/);
+  if(m&&m[1].length>=3) return m[1];
+  // 3) Jednostka po liczbie: 4 mm, 2,5 mm.
   m=t.match(/(\d+(?:[.,]\d+)?[ \t]*[a-zA-Z]{1,3})$/);
   if(m) return m[1];
   return null;
@@ -270,7 +308,9 @@ async function runXliffBatch(toT){
 }
 function setXS(m){document.getElementById('xliff-status').textContent=m;}
 
-function xliffExportExcel(){if(!xliffSegs.length){alert('Brak segmentów.');return;}const lang=document.getElementById('target-lang').value;const rows=[['ID','Typ','gID','Źródło (PL)','Tłumaczenie ('+lang+')','Status']];xliffSegs.forEach(s=>{if(s.type==='plain')rows.push([s.id,'plain','',s.source,s.target,s.status]);else s.textNodes.forEach((n,i)=>rows.push([s.id,'rich',n.gId,n.text,s.targets[i]?.text||'',s.status]));});const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Tłumaczenia');XLSX.writeFile(wb,'xliff_'+lang.toLowerCase()+'.xlsx');}
+// Kolumna kontekstu MUSI zostać na końcu — xliffImportExcel() czyta kolumny po
+// indeksach (row[0..4]), więc wstawienie jej wcześniej po cichu zepsułoby import.
+function xliffExportExcel(){if(!xliffSegs.length){alert('Brak segmentów.');return;}const lang=document.getElementById('target-lang').value;const rows=[['ID','Typ','gID','Źródło (PL)','Tłumaczenie ('+lang+')','Status','Pełne zdanie (kontekst)']];xliffSegs.forEach(s=>{if(s.type==='plain')rows.push([s.id,'plain','',s.source,s.target,s.status,'']);else{const ctx=ctxSentenceText(s.textNodes);s.textNodes.forEach((n,i)=>rows.push([s.id,'rich',n.gId,n.text,s.targets[i]?.text||'',s.status,ctx]));}});const ws=XLSX.utils.aoa_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Tłumaczenia');XLSX.writeFile(wb,'xliff_'+lang.toLowerCase()+'.xlsx');}
 async function xliffImportExcel(e){const f=e.target.files[0];if(!f)return;const buf=await readFile(f,'array');const rows=XLSX.utils.sheet_to_json(XLSX.read(buf,{type:'array'}).Sheets[XLSX.read(buf,{type:'array'}).SheetNames[0]],{header:1});let n=0;rows.slice(1).forEach(row=>{const sid=String(row[0]||'').trim(),type=String(row[1]||'').trim(),gId=String(row[2]||'').trim(),tr=String(row[4]||'').trim();if(!sid||!tr)return;const seg=xliffSegs.find(s=>s.id===sid);if(!seg)return;if(type==='plain'){seg.target=tr;seg.status='done';seg.fromTM=false;n++;}else if(type==='rich'&&gId){const tn=seg.targets.find(t=>t.gId===gId);if(tn){tn.text=tr;n++;}if(seg.targets.every(t=>t.text.trim()))seg.status='done';}});renderXliffTable();updateXliffProgress();e.target.value='';alert('Zaimportowano '+n+' tłumaczeń.');}
 
 function exportXliff(){

@@ -422,9 +422,15 @@ function renderEditorTable(lang){
     const tStatus=tData?.status||'empty';
     const tr=document.createElement('tr');
     const rowCount=Math.max(2,(seg.source_text.split(/\r|\n/).length));
+    // Podgląd pełnego zdania — tylko dla jednostek z indeksem górnym, bo tylko tam
+    // rozcięcie przesuwa granice fragmentów. Patrz ctxSentenceHTML() w 15-xliff.js.
+    const ctxNodes=seg.metadata?.allTextNodes;
+    const ctxHtml=needsCtxPreview(ctxNodes)
+      ? `<div class="seg-ctx"><span class="seg-ctx-lbl">Pełne zdanie</span>${ctxSentenceHTML(ctxNodes,seg.metadata.gId)}</div>`
+      : '';
     tr.innerHTML=`
       <td style="color:#ccc;font-size:11px;text-align:center;">${i+1}</td>
-      <td><div class="seg-src" style="white-space:pre-wrap;">${esc(seg.source_text)}</div></td>
+      <td>${ctxHtml}<div class="seg-src" style="white-space:pre-wrap;">${esc(seg.source_text)}</div></td>
       <td><textarea class="seg-textarea" id="seg-${seg.id}"
         rows="${rowCount}" ${(!canEdit||isLocked)?'readonly':''}
         onInput="onSegInput('${seg.id}','${lang}',this)"
