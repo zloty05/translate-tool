@@ -554,11 +554,18 @@ async function runAITranslation(toTranslate, lang){
   let done=0, totalCostUsd=0;
   const failed=[]; // track failed segments for retry
   let projMergedFallback=0;
-  // Fragmenty bez litery i cyfry ('.', '?', ', ', '®') przepisujemy wprost ze źródła —
-  // nie ma czego tłumaczyć, a wysyłanie ich marnuje wywołanie i kredyty. Odsiewamy je
-  // PRZED zbudowaniem jednostek pracy, żeby nie weszły do chunków ani do kontekstu ±3.
-  const skipSegs=toTranslate.filter(s=>isUntranslatable(s.source_text));
-  const realSegs=toTranslate.filter(s=>!isUntranslatable(s.source_text));
+  // Fragmenty bez litery i cyfry ('.', '?', ', ') przepisujemy wprost ze źródła — nie ma
+  // czego tłumaczyć, a wysyłanie ich marnuje wywołanie i kredyty.
+  //
+  // KOLEJNOŚĆ MA ZNACZENIE: grupujemy NAJPIERW, odsiewamy DOPIERO potem. buildAIWorkItems
+  // wymaga, by grupa pokrywała wszystkie niepuste <g> jednostki (segs.length===need) —
+  // odsianie '®' i '. ' przed grupowaniem zostawiało grupę niekompletną, warunek zawodził
+  // i segmenty z ® szły starą ścieżką. Scalanie w ogóle się nie uruchamiało.
+  const allItems=buildAIWorkItems(toTranslate);
+  // Segment scalony wchodzi w całości — symbol jest częścią sklejonego zdania, a do <g>
+  // wraca przepisany z oryginału przez splitByAnchors, więc modelowi nie szkodzi.
+  const workItems=allItems.filter(w=>w.merged||!isUntranslatable(w.text));
+  const skipSegs=allItems.filter(w=>!w.merged&&isUntranslatable(w.text)).flatMap(w=>w.segs);
   for(const seg of skipSegs){
     try{
       await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:seg.source_text});
@@ -573,9 +580,6 @@ async function runAITranslation(toTranslate, lang){
     }catch(err){ console.warn('Nie udało się przepisać fragmentu:',err.message); }
   }
   if(skipSegs.length) console.info('[Projekty] fragmenty przepisane bez tłumaczenia (interpunkcja, ®):',skipSegs.length);
-  // Jednostki pracy: scalone grupy z ®/² + pojedyncze segmenty. Kontekst ±3 liczony
-  // po TEJ liście, żeby po scaleniu wskazywał sąsiednie zdania, nie fragmenty.
-  const workItems=buildAIWorkItems(realSegs);
 
   for(let i=0;i<workItems.length;i+=CHUNK){
     const chunk=workItems.slice(i,i+CHUNK);
