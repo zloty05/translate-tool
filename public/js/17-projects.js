@@ -554,9 +554,28 @@ async function runAITranslation(toTranslate, lang){
   let done=0, totalCostUsd=0;
   const failed=[]; // track failed segments for retry
   let projMergedFallback=0;
+  // Fragmenty bez litery i cyfry ('.', '?', ', ', '®') przepisujemy wprost ze źródła —
+  // nie ma czego tłumaczyć, a wysyłanie ich marnuje wywołanie i kredyty. Odsiewamy je
+  // PRZED zbudowaniem jednostek pracy, żeby nie weszły do chunków ani do kontekstu ±3.
+  const skipSegs=toTranslate.filter(s=>isUntranslatable(s.source_text));
+  const realSegs=toTranslate.filter(s=>!isUntranslatable(s.source_text));
+  for(const seg of skipSegs){
+    try{
+      await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:seg.source_text});
+      await dbPatch('project_segments',{ai_translation:seg.source_text,manually_edited:false},`?id=eq.${seg.id}`);
+      if(!seg.translations) seg.translations={};
+      seg.translations[lang]={text:seg.source_text,status:'translated',updated_by:currentUser.id,updated_at:new Date().toISOString()};
+      seg.ai_translation=seg.source_text;
+      const ta=document.getElementById('seg-'+seg.id);
+      if(ta) ta.value=seg.source_text;
+      const pill=document.getElementById(`spill-${seg.id}-${lang}`);
+      if(pill){ pill.className='status-pill sp-translated'; pill.textContent='Tłum.'; }
+    }catch(err){ console.warn('Nie udało się przepisać fragmentu:',err.message); }
+  }
+  if(skipSegs.length) console.info('[Projekty] fragmenty przepisane bez tłumaczenia (interpunkcja, ®):',skipSegs.length);
   // Jednostki pracy: scalone grupy z ®/² + pojedyncze segmenty. Kontekst ±3 liczony
   // po TEJ liście, żeby po scaleniu wskazywał sąsiednie zdania, nie fragmenty.
-  const workItems=buildAIWorkItems(toTranslate);
+  const workItems=buildAIWorkItems(realSegs);
 
   for(let i=0;i<workItems.length;i+=CHUNK){
     const chunk=workItems.slice(i,i+CHUNK);
@@ -656,9 +675,11 @@ Odpowiedz TYLKO JSON: [{"key":"...","translation":"..."}] — bez markdown, bez 
     }
 
     done+=chunk.reduce((a,w)=>a+w.segs.length,0);
-    const aiPct=Math.round(done/toTranslate.length*100);
-    showEditorProgress(`Tłumaczenie AI: ${done}/${toTranslate.length} segmentów`,aiPct);
-    setAutosaveIndicator(`⏳ Tłumaczenie AI: ${done}/${toTranslate.length} segmentów...`);
+    // Przepisane fragmenty wliczamy od razu, inaczej pasek nie dobiłby do 100%.
+    const shown=done+skipSegs.length;
+    const aiPct=Math.round(shown/toTranslate.length*100);
+    showEditorProgress(`Tłumaczenie AI: ${shown}/${toTranslate.length} segmentów`,aiPct);
+    setAutosaveIndicator(`⏳ Tłumaczenie AI: ${shown}/${toTranslate.length} segmentów...`);
     updateEditorProgress(lang);
     await sleep(200);
   }
@@ -699,7 +720,8 @@ async function translateCurrentLangAI(){
   if(!lang){ alert('Wybierz język.'); return; }
   const toTranslate=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
   if(!toTranslate.length){ alert('Wszystkie segmenty już przetłumaczone.'); return; }
-  const totalChars=toTranslate.reduce((a,s)=>a+s.source_text.length,0);
+  // Fragmenty przepisywane bez tłumaczenia nie idą do API, więc nie wliczamy ich do kosztu.
+  const totalChars=toTranslate.reduce((a,s)=>a+(isUntranslatable(s.source_text)?0:s.source_text.length),0);
   const needed=estimateTokensForTranslation(totalChars);
   if(!checkTokenBalance(needed)) return;
   await dbPatch('project_language_assignments',{status:'in_progress',ai_translated_at:new Date().toISOString()},`?project_id=eq.${currentProject.id}&lang=eq.${encodeURIComponent(lang)}`);
@@ -718,7 +740,8 @@ async function translateEmptyAI(){
   if(!lang){ alert('Wybierz język.'); return; }
   const toTranslate=currentProjectSegs.filter(s=>!s.translations?.[lang]?.text);
   if(!toTranslate.length){ setAutosaveIndicator('✓ Brak pustych segmentów.'); return; }
-  const totalChars=toTranslate.reduce((a,s)=>a+s.source_text.length,0);
+  // Jak wyżej — fragmenty przepisywane bez tłumaczenia nie obciążają kredytów.
+  const totalChars=toTranslate.reduce((a,s)=>a+(isUntranslatable(s.source_text)?0:s.source_text.length),0);
   const needed=estimateTokensForTranslation(totalChars);
   if(!checkTokenBalance(needed)) return;
   setAutosaveIndicator(`⏳ Tłumaczenie ${toTranslate.length} pustych segmentów...`);

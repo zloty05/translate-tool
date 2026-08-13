@@ -50,6 +50,16 @@ function isSupNode(g){
   return false;
 }
 
+// Fragment bez litery i cyfry jest nietłumaczalny — w każdym języku zostaje sobą.
+// Storyline wydziela takie <g> przy każdym powrocie do poprzedniego stylu, więc po ®
+// czy po pogrubieniu zostaje osobny fragment '.', '?' albo ', '. Wysyłanie ich do
+// modelu to zmarnowane wywołanie i ryzyko, że wróci coś innego niż wysłaliśmy.
+// \p{L} (dowolna litera Unicode) zamiast listy alfabetów — obsługuje też cyrylicę
+// dla ukraińskiego i znaki bałtyckie, nie tylko polskie diakrytyki.
+function isUntranslatable(text){
+  return !!text && !/[0-9\p{L}]/u.test(text);
+}
+
 // Numer akapitu, w którym leży dany <g>. Storyline otwiera akapit przez
 // <bpt ctype="x-block">, więc liczymy je od początku <source>. Fragmenty w RÓŻNYCH
 // blokach to niezależne teksty (nagłówek + akapit), w TYM SAMYM — jedno rozcięte zdanie.
@@ -275,14 +285,20 @@ async function runXliffBatch(toT){
   // a symbol zostaje przyklejony do pozycji, nie do słowa — stąd "training®" zamiast
   // "WINSTA®". Odpowiedź rozcinamy sami przez splitByAnchors(). Segmenty bez indeksu
   // górnego zostają na dotychczasowej ścieżce (fragment = item).
-  let xliffMergedFallback=0;
+  let xliffMergedFallback=0,xliffSkipped=0;
   const items=[];toT.forEach(seg=>{const idx=xliffSegs.indexOf(seg);
     if(seg.type==='plain'){items.push({key:idx+'__p',segIndex:idx,gId:null,text:seg.source});return;}
     // Sklejamy z przywróconymi spacjami brzegowymi (padStart/padEnd z edgePads),
     // bo n.text jest przycięty — inaczej "czym jest"+"WINSTA" da "czym jestWINSTA"
     // i model dostanie zlepiony bełkot zamiast zdania.
     if(seg.textNodes.some(n=>n.isSup)){items.push({key:idx+'__merged',segIndex:idx,gId:null,merged:true,text:seg.textNodes.map(n=>(n.padStart||'')+n.text+(n.padEnd||'')).join('')});return;}
-    seg.textNodes.forEach(n=>items.push({key:idx+'__'+n.gId,segIndex:idx,gId:n.gId,text:n.text}));});
+    seg.textNodes.forEach((n,j)=>{
+      // Fragment bez litery i cyfry ('.', '?', ', ') przepisujemy wprost z oryginału
+      // zamiast wysyłać do modelu — nie ma czego tłumaczyć, a tłumacz nie dostaje
+      // wiersza "przetłumacz kropkę". Segmenty z ® idą wyżej ścieżką scalania.
+      if(isUntranslatable(n.text)){const t=seg.targets[j];if(t&&!t.text)t.text=n.text;xliffSkipped++;return;}
+      items.push({key:idx+'__'+n.gId,segIndex:idx,gId:n.gId,text:n.text});});
+    if(seg.targets.every(t=>t.text.trim())) seg.status='done';});
   setXS('Tłumaczenie '+items.length+' fragmentów na '+lang+'...');
   let done=0,totalCostUsd=0;
   for(let i=0;i<items.length;i+=CHUNK){
@@ -328,6 +344,7 @@ async function runXliffBatch(toT){
     updateXliffProgress();
   }
   if(xliffMergedFallback) console.info('[XLIFF] segmenty bez jednoznacznej kotwicy (fallback):',xliffMergedFallback);
+  if(xliffSkipped) console.info('[XLIFF] fragmenty przepisane bez tłumaczenia (interpunkcja, ®):',xliffSkipped);
   const finalDone=xliffSegs.filter(s=>s.status==='done').length;
   const charsThisBatch=items.reduce((a,it)=>a+it.text.length,0);
   const creditsUsed=estimateCredits(charsThisBatch);
