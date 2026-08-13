@@ -251,7 +251,7 @@ async function parseXliffForProject(file, srcLang){
       // isSup zapisujemy w metadata, żeby runAITranslation wiedziało, które grupy scalić.
       // Patrz isSupNode() w 15-xliff.js. Projekty założone przed tą zmianą nie mają tego
       // pola — wtedy grupa nie zostanie scalona i pójdzie dotychczasową ścieżką.
-      const allTextNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||'',isSup:isSupNode(g)}));
+      const allTextNodes=gNodes.map(g=>({gId:g.getAttribute('id'),text:g.textContent||'',isSup:isSupNode(g),blockIdx:blockIndexOf(g,srcEl)}));
       // Store each non-empty text node as separate segment for TM compatibility
       textNodes.forEach(n=>{
         // Preserve CR (\r) and LF (\n) - only trim spaces and tabs

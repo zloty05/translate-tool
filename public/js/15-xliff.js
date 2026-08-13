@@ -50,6 +50,18 @@ function isSupNode(g){
   return false;
 }
 
+// Numer akapitu, w którym leży dany <g>. Storyline otwiera akapit przez
+// <bpt ctype="x-block">, więc liczymy je od początku <source>. Fragmenty w RÓŻNYCH
+// blokach to niezależne teksty (nagłówek + akapit), w TYM SAMYM — jedno rozcięte zdanie.
+function blockIndexOf(g,srcEl){
+  let n=0;
+  for(const el of srcEl.querySelectorAll('bpt,g')){
+    if(el===g) break;
+    if(el.nodeName==='bpt'&&(el.getAttribute('ctype')||'')==='x-block') n++;
+  }
+  return n;
+}
+
 // ── Podgląd pełnego zdania dla tłumacza ─────────────────────────────
 // Po rozcięciu segmentu granice fragmentów nie pokrywają się już z granicami
 // w źródle (angielski przestawia szyk), więc pojedynczy wiersz potrafi wyglądać
@@ -57,10 +69,28 @@ function isSupNode(g){
 // zdanie z wyróżnionym bieżącym fragmentem, żeby tłumacz nie musiał tego składać
 // z sąsiednich wierszy — działa też po przesortowaniu tabeli, które je rozdziela.
 
-// Czy jednostka wymaga podglądu? Tylko te z indeksem górnym — reszta (ok. 83%
-// wierszy) wygląda jak dotąd. Stare projekty nie mają isSup w metadata → false.
+// Czy jednostka wymaga podglądu? Dwa przypadki urwanego kontekstu:
+//  1. indeks górny — rozcinamy segment, więc granice fragmentów nie pokrywają się
+//     z granicami w źródle;
+//  2. formatowanie (bold/kursywa) W ŚRODKU zdania — nie rozcinamy, ale tłumacz i tak
+//     widzi urwany fragment ('przekrój przewodu…' bez początku i końca zdania).
+//
+// Dla (2) dwa warunki naraz: fragmenty muszą leżeć w TYM SAMYM bloku (inaczej to
+// nagłówek + akapit, każdy samodzielny) i tekst musi między nimi PŁYNĄĆ, czyli na
+// jakimś styku nie ma łamania linii (inaczej to osobne linie, np. 'Krok 1: \r').
+// Świadomie NIE filtrujemy po długości fragmentu — próg zawodzi: '%tradD%'+'dni'
+// i '%tradH%'+'godzin' to ta sama sytuacja, a wypadłyby po różnych stronach progu.
+// Stare projekty nie mają isSup/blockIdx w metadata → false, zachowanie jak dotąd.
 function needsCtxPreview(nodes){
-  return Array.isArray(nodes)&&nodes.some(n=>n&&n.isSup);
+  if(!Array.isArray(nodes)||nodes.length<2) return false;
+  if(nodes.some(n=>n&&n.isSup)) return true;
+  const solid=nodes.filter(n=>n&&(n.text||'').trim());
+  for(let i=0;i<solid.length-1;i++){
+    const a=solid[i],b=solid[i+1];
+    if(a.blockIdx===undefined||a.blockIdx!==b.blockIdx) continue;
+    if(!/[\r\n]\s*$/.test(a.text||'')&&!/^\s*[\r\n]/.test(b.text||'')) return true;
+  }
+  return false;
 }
 
 // Pełne zdanie jako czysty tekst (do Excela). Łamania na ⏎, żeby nie rozbijały komórki.
@@ -176,7 +206,7 @@ async function loadXliff(file){
     const unitId=unit.getAttribute('id')||'',datatype=unit.getAttribute('datatype')||'';
     const srcEl=unit.querySelector('source');if(!srcEl)return;
     if(datatype==='plaintext'){const text=(srcEl.textContent||'').trim();if(!text)return;const tgt=unit.querySelector('target');xliffSegs.push({id:unitId,unitId,type:'plain',source:text,target:tgt?(tgt.textContent||''):'',status:(tgt&&tgt.textContent.trim())?'done':'pending',fromTM:false});}
-    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>{const raw=g.textContent||'';const text=raw.replace(/^[ \t]+|[ \t]+$/g,'');return{gId:g.getAttribute('id'),text,isSup:isSupNode(g),...edgePads(raw,text)};}).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
+    else{const gNodes=Array.from(srcEl.querySelectorAll('g[ctype="x-text"]'));const textNodes=gNodes.map(g=>{const raw=g.textContent||'';const text=raw.replace(/^[ \t]+|[ \t]+$/g,'');return{gId:g.getAttribute('id'),text,isSup:isSupNode(g),blockIdx:blockIndexOf(g,srcEl),...edgePads(raw,text)};}).filter(n=>n.text.length>0);if(!textNodes.length)return;const tgt=unit.querySelector('target');const exT=tgt?Array.from(tgt.querySelectorAll('g[ctype="x-text"]')).map(g=>({gId:g.getAttribute('id'),text:g.textContent||''})):[];const targets=textNodes.map(n=>{const ex=exT.find(t=>t.gId===n.gId);return{gId:n.gId,text:ex?ex.text:''};});xliffSegs.push({id:unitId,unitId,type:'rich',textNodes,targets,status:targets.every(t=>t.text.trim())?'done':'pending',fromTM:false});}
   });
   const tmHits=await applyTMToSegsAsync(xliffSegs,document.getElementById('target-lang').value);
   const totalChars=xliffSegs.reduce((a,s)=>s.type==='plain'?a+s.source.length:a+s.textNodes.reduce((b,n)=>b+n.text.length,0),0);
