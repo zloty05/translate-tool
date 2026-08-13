@@ -424,9 +424,12 @@ function renderEditorTable(lang){
     const rowCount=Math.max(2,(seg.source_text.split(/\r|\n/).length));
     // Podgląd pełnego zdania — tylko dla jednostek z indeksem górnym, bo tylko tam
     // rozcięcie przesuwa granice fragmentów. Patrz ctxSentenceHTML() w 15-xliff.js.
+    // Domyślnie ZWINIĘTY: jednostka z ® daje 3-7 wierszy, a każdy pokazywałby to samo
+    // zdanie — przy 772 wierszach kursu to setki powtórzeń. <details> zamiast własnego
+    // toggle'a, bo ten wzorzec jest już w projekcie (.dict-srcmap, .dict-bulk).
     const ctxNodes=seg.metadata?.allTextNodes;
     const ctxHtml=needsCtxPreview(ctxNodes)
-      ? `<div class="seg-ctx"><span class="seg-ctx-lbl">Pełne zdanie</span>${ctxSentenceHTML(ctxNodes,seg.metadata.gId)}</div>`
+      ? `<details class="seg-ctx"><summary>Pełne zdanie</summary><div class="seg-ctx-body">${ctxSentenceHTML(ctxNodes,seg.metadata.gId)}</div></details>`
       : '';
     tr.innerHTML=`
       <td style="color:#ccc;font-size:11px;text-align:center;">${i+1}</td>

@@ -535,8 +535,10 @@ body.dark .tx-col{color:#aaa}
 /* Project editor */
 body.dark .seg-textarea{background:#111;border-color:#2a2a2a;color:#ccc}
 body.dark .seg-src{color:#aaa}
-body.dark .seg-ctx{background:#15201a;color:#9dbca6;border-left-color:#4CDE80}
-body.dark .seg-ctx mark{background:#2b5c3a;color:#e9ffef}
+body.dark .seg-ctx>summary{color:#666}
+body.dark .seg-ctx>summary:hover{color:#4CDE80}
+body.dark .seg-ctx-body{background:#15201a;color:#9dbca6;border-left-color:#4CDE80}
+body.dark .seg-ctx-body mark{background:#2b5c3a;color:#e9ffef}
 body.dark .editor-header{background:#1a1a1a;border-color:#2a2a2a}
 body.dark .editor-header-top{border-color:#2a2a2a}
 body.dark .editor-header-tabs{background:#111;border-color:#2a2a2a}
@@ -826,10 +828,17 @@ body.dark .dash-metric-value{color:#fff;}
 .seg-editor-table td{padding:6px 8px;border-bottom:1px solid #f0ede8;vertical-align:top}
 .seg-src{font-size:13px;color:#555;line-height:1.5;padding:6px 4px}
 /* Podgląd pełnego zdania — tylko przy jednostkach z indeksem górnym (®, ²),
-   gdzie rozcięcie przesuwa granice fragmentów względem źródła. */
-.seg-ctx{font-size:11.5px;line-height:1.5;color:#5a6b5a;background:#f6f8f6;border-left:2px solid #4CDE80;border-radius:0 4px 4px 0;padding:5px 8px;margin:0 4px 6px;white-space:pre-wrap;word-break:break-word}
-.seg-ctx-lbl{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin-bottom:2px}
-.seg-ctx mark{background:#d8f0dc;color:#14431f;border-radius:2px;padding:0 2px;font-weight:600}
+   gdzie rozcięcie przesuwa granice fragmentów względem źródła.
+   Domyślnie zwinięty: pojawia się przy ~43% wierszy, więc stan zamknięty musi być
+   lekki — sam przełącznik, bez tła i ramki. Wzorzec strzałek jak w .dict-srcmap. */
+.seg-ctx{margin:0 4px 4px}
+.seg-ctx>summary{cursor:pointer;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#aaa;list-style:none;padding:2px 0;user-select:none}
+.seg-ctx>summary::-webkit-details-marker{display:none}
+.seg-ctx>summary::before{content:'▸ '}
+.seg-ctx[open]>summary::before{content:'▾ '}
+.seg-ctx>summary:hover{color:#4CDE80}
+.seg-ctx-body{font-size:11.5px;line-height:1.5;color:#5a6b5a;background:#f6f8f6;border-left:2px solid #4CDE80;border-radius:0 4px 4px 0;padding:5px 8px;margin-top:3px;white-space:pre-wrap;word-break:break-word}
+.seg-ctx-body mark{background:#d8f0dc;color:#14431f;border-radius:2px;padding:0 2px;font-weight:600}
 .seg-textarea{width:100%;font-size:13px;font-family:inherit;border:1px solid #e0ddd8;border-radius:5px;padding:5px 8px;resize:vertical;min-height:48px;background:#fafaf8;color:#1a1a1a;transition:border-color .15s}
 .seg-textarea:focus{outline:none;border-color:#1a1a1a}
 .seg-textarea.changed{border-color:#fbbf24;background:#fffbeb}
