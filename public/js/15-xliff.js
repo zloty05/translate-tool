@@ -143,6 +143,64 @@ function findAnchor(prevText){
   return null;
 }
 
+// Rozdziela ciąg tekstu między kilka sąsiadujących fragmentów, gdy nie ma tam kotwicy.
+// Dotyczy obu końców segmentu: fragmentów PRZED pierwszym symbolem i PO ostatnim.
+// Kotwica wyznacza granicę tylko wokół symbolu, więc dalej jedynym sygnałem są łamania
+// linii — należą do struktury akapitu, nie do języka, więc model je zachowuje.
+//
+// Zwraca tablicę tekstów (równoległą do idxs) albo null → wołający robi fallback.
+// Wspólne dla głowy i ogona: przy pierwszej naprawie zduplikowałem tę logikę i poprawiłem
+// tylko ogon, przez co ten sam błąd wrócił po drugiej stronie symbolu.
+function splitRunByNewlines(text,nodes,idxs){
+  if(!idxs.length) return text.length?null:[];
+  if(idxs.length===1) return [text];
+  // Fragment, który w tłumaczeniu wystąpił DOSŁOWNIE (nazwa własna typu "MIDI", spójnik
+  // pozostawiony bez zmian, interpunkcja), sam wyznacza swoją granicę — odcinamy go
+  // z brzegów ciągu. Kryterium jest dopasowanie tekstu, nie brak liter: " i " ma literę,
+  // ale w "MINI® and MIDI®" i tak nie da się go rozciąć po łamaniu, bo go tam nie ma.
+  const headPad=[];
+  while(idxs.length>1&&text.startsWith(nodes[idxs[0]].text)){
+    headPad.push(nodes[idxs[0]].text);
+    text=text.slice(nodes[idxs[0]].text.length);
+    idxs=idxs.slice(1);
+  }
+  const tailPad=[];
+  while(idxs.length>1&&text.endsWith(nodes[idxs[idxs.length-1]].text)){
+    const j=idxs[idxs.length-1];
+    tailPad.unshift(nodes[j].text);
+    text=text.slice(0,text.length-nodes[j].text.length);
+    idxs=idxs.slice(0,-1);
+  }
+  if(idxs.length===1) return [...headPad,text,...tailPad];
+  // Fragment będący samym białym znakiem ("\n") jest nieodróżnialny od sąsiednich łamań
+  // w tłumaczeniu — model swobodnie scala puste linie, a my nie mamy czym go zakotwiczyć.
+  if(idxs.some(j=>!(nodes[j].text||'').trim())) return null;
+  // Każdy fragment poza ostatnim musi kończyć się łamaniem w ORYGINALE, inaczej nie ma
+  // czego szukać w tłumaczeniu.
+  const heads=idxs.slice(0,-1);
+  if(!heads.every(j=>/[\r\n]\s*$/.test(nodes[j].text||''))) return null;
+  const nlCount=s=>((s||'').match(/\r\n|[\r\n]/g)||[]).length;
+  const parts=[];let pos=0;
+  for(let k=0;k<heads.length;k++){
+    // Fragment może mieć łamania także W ŚRODKU (np. "...za pomocą \rzłączek TOPJOB").
+    // Cięcie po PIERWSZYM napotkanym trafiłoby wtedy w środek zdania i sąsiad pochłonąłby
+    // treść. Przeskakujemy tyle łamań, ile ma oryginał, i tniemy dopiero za ostatnim.
+    const want=nlCount(nodes[heads[k]].text);
+    if(!want) return null;
+    let end=pos;
+    for(let c=0;c<want;c++){
+      const rel=text.slice(end).search(/[\r\n]/);
+      if(rel<0) return null;                      // model zgubił łamanie
+      end=end+rel+1;
+      if(text[end-1]==='\r'&&text[end]==='\n') end++;   // CRLF to jedno łamanie
+    }
+    parts.push(text.slice(pos,end));pos=end;
+  }
+  parts.push(text.slice(pos));
+  if(parts.some(p=>!p.length)) return null;
+  return [...headPad,...parts,...tailPad];
+}
+
 // Rozcina przetłumaczone zdanie z powrotem na fragmenty <g>.
 // Zwraca tablicę tekstów (równoległą do nodes) albo null → wołający robi fallback.
 //
@@ -174,10 +232,37 @@ function splitByAnchors(translated,nodes){
     // nodes[0] i head musi się w nim zmieścić — doklejamy go przed kotwicę zamiast
     // odrzucać całą ścieżkę (przypadki 'Witaj ... WINSTA®' i 'Prie TOPJOB®S').
     const head=translated.slice(cursor,idx);
-    let slot=-1;
-    for(let j=lastAssigned+1;j<i-1;j++) if(out[j]===null&&!nodes[j].isSup){slot=j;break;}
-    if(slot>=0){ out[slot]=head; for(let j=slot+1;j<i-1;j++) if(out[j]===null) out[j]=''; out[i-1]=anchor; }
-    else out[i-1]=head+anchor;                   // brak wolnego slotu → head zostaje przy kotwicy
+    // Fragment kotwicy (nodes[i-1]) WCHODZI do podziału jako ostatni: kotwica jest jego
+    // końcówką, a przed nią może być jeszcze jego własny tekst. Pominięcie go zrzucało
+    // całą głowę na fragment wcześniejszy — stąd zlepek "To zdanie jest prawdziwe\rNie
+    // dopuszcza się…" przy jednocześnie skróconym sąsiedzie.
+    // Fragment kotwicy wchodzi do podziału TYLKO gdy ma własny tekst przed kotwicą
+    // (np. "...za pomocą \rzłączek TOPJOB"). Gdy jest samą kotwicą ("WINSTA"), nie ma
+    // czego dzielić — dostanie ją osobno niżej.
+    const anchorHasOwnText=(nodes[i-1].text||'').replace(/[ \t]+$/,'')!==anchor;
+    const headIdx=[];
+    for(let j=lastAssigned+1;j<(anchorHasOwnText?i:i-1);j++) if(out[j]===null&&!nodes[j].isSup) headIdx.push(j);
+    if(!headIdx.length){
+      out[i-1]=head+anchor;                      // brak slotu → head zostaje przy kotwicy
+    } else if(headIdx.length===1&&!anchorHasOwnText){
+      out[headIdx[0]]=head;                      // cała głowa do jedynego fragmentu przed kotwicą
+      out[i-1]=anchor;
+    } else {
+      // Fragmenty bez własnej treści (spacja, myślnik) przepisujemy z oryginału — poza tymi
+      // z łamaniem, bo one niosą granicę i muszą trafić do rozcięcia niżej.
+      let hRest=head;
+      // Zjadamy WSZYSTKIE wiodące fragmenty bez treści, nie tylko do przedostatniego —
+      // inaczej " i " w "MINI® i MIDI®" zostawało w podziale i blokowało rozcięcie.
+      while(headIdx.length>1&&isUntranslatable(nodes[headIdx[0]].text)&&!/[\r\n]/.test(nodes[headIdx[0]].text||'')&&hRest.startsWith(nodes[headIdx[0]].text)){
+        const j=headIdx.shift();
+        out[j]=nodes[j].text;
+        hRest=hRest.slice(nodes[j].text.length);
+      }
+      const hParts=splitRunByNewlines(hRest,nodes,headIdx);
+      if(!hParts) return null;
+      headIdx.forEach((j,k)=>{out[j]=hParts[k];});
+      out[i-1]=(out[i-1]||'')+anchor;            // kotwica dokleja się na końcu swojego fragmentu
+    }
     const cut=idx+anchor.length;
     // Model bywa uczynny i sam dopisuje ® tuż za nazwą (realny przypadek z pliku
     // litewskiego: 'Prie TOPJOB®S gnybtų blokų'). Wtedy traktujemy jego symbol jako
@@ -194,48 +279,17 @@ function splitByAnchors(translated,nodes){
   // łamania linii — należą do struktury akapitu, nie do języka, więc model je zachowuje.
   const tailIdx=[];
   for(let j=lastAssigned+1;j<nodes.length;j++) if(out[j]===null&&!nodes[j].isSup) tailIdx.push(j);
-  const rest=translated.slice(cursor);
-  if(!tailIdx.length){
-    if(rest.length) return null;                 // jest tekst, ale nie ma go gdzie włożyć
-  } else if(tailIdx.length===1){
-    out[tailIdx[0]]=rest;
-  } else {
-    // Fragmenty ogona bez własnej treści (sama spacja, myślnik, interpunkcja) przepisujemy
-    // wprost z oryginału — w tłumaczeniu wyglądają tak samo, a bez tego blokowałyby
-    // rozcięcie i cały segment leciałby na fallback (przypadek "MINI® i MIDI® - …").
-    // WYJĄTEK: fragment z łamaniem linii niesie granicę akapitu, więc zostaje do cięcia
-    // niżej — inaczej ". \n" zostałby przepisany, a następny dostałby zlepek dwóch zdań.
-    while(tailIdx.length>1&&isUntranslatable(nodes[tailIdx[0]].text)&&!/[\r\n]/.test(nodes[tailIdx[0]].text||'')){
-      const j=tailIdx.shift();
-      out[j]=nodes[j].text;
-      if(rest.startsWith(nodes[j].text)) cursor+=nodes[j].text.length;
-    }
-    const rest2=translated.slice(cursor);
-    if(tailIdx.length===1){ out[tailIdx[0]]=rest2; }
-    else {
-    // Kilka fragmentów w ogonie — rozcinamy po łamaniach linii. Warunek: każdy fragment
-    // poza ostatnim musi kończyć się łamaniem w ORYGINALE, inaczej nie ma czego szukać.
-    const heads=tailIdx.slice(0,-1);
-    if(!heads.every(j=>/[\r\n]\s*$/.test(nodes[j].text||''))) return null;
-    // Fragment będący samym białym znakiem ("\n") nie da się odróżnić od sąsiednich
-    // łamań w tłumaczeniu — model swobodnie scala puste linie. Bez własnej treści
-    // nie mamy czym go zakotwiczyć, więc oddajemy cały segment na starą ścieżkę.
-    if(tailIdx.some(j=>!(nodes[j].text||'').trim())) return null;
-    const parts=[];let pos=0,okSplit=true;
-    for(let k=0;k<heads.length;k++){
-      const idx=rest2.slice(pos).search(/[\r\n]/);
-      if(idx<0){okSplit=false;break;}
-      let end=pos+idx+1;
-      if(rest2[pos+idx]==='\r'&&rest2[end]==='\n') end++;  // CRLF liczymy jako jedno łamanie
-      parts.push(rest2.slice(pos,end));pos=end;
-    }
-    // Bez kompletu granic albo z pustym ostatnim odcinkiem wolimy fallback niż zgadywanie.
-    if(!okSplit||parts.length!==heads.length) return null;
-    parts.push(rest2.slice(pos));
-    if(parts.some(p=>!p.length)) return null;
-    tailIdx.forEach((j,k)=>{out[j]=parts[k];});
-    }
+  let rest=translated.slice(cursor);
+  // Fragmenty bez własnej treści (spacja, myślnik) przepisujemy z oryginału — poza tymi
+  // z łamaniem, bo ". \n" przepisane na ślepo dałoby sąsiadowi zlepek dwóch zdań.
+  while(tailIdx.length>1&&isUntranslatable(nodes[tailIdx[0]].text)&&!/[\r\n]/.test(nodes[tailIdx[0]].text||'')){
+    const j=tailIdx.shift();
+    out[j]=nodes[j].text;
+    if(rest.startsWith(nodes[j].text)) rest=rest.slice(nodes[j].text.length);
   }
+  const tParts=splitRunByNewlines(rest,nodes,tailIdx);
+  if(!tParts) return null;
+  tailIdx.forEach((j,k)=>{out[j]=tParts[k];});
   for(let j=0;j<out.length;j++) if(out[j]===null) out[j]='';
   // Kontrola spójności: po usunięciu symboli, które DOKŁADAMY z oryginału, sklejenie
   // musi odtworzyć tekst od modelu znak w znak. Nie można porównywać wprost, bo gdy
@@ -247,10 +301,15 @@ function splitByAnchors(translated,nodes){
     rebuilt+=out[j];
   }
   if(rebuilt!==translated) return null;
-  // Bramka końcowa: fragment, który miał treść w źródle, nie może wyjść pusty.
-  // Pusty wiersz w edytorze i zlepek w sąsiednim to gorszy błąd niż źle postawiony ®,
-  // bo gubi treść. Cokolwiek by tu nie przeszło — lepiej oddać segment na starą ścieżkę.
-  for(let j=0;j<out.length;j++) if((nodes[j].text||'').trim()&&!(out[j]||'').trim()) return null;
+  // Bramka końcowa. Pusty wiersz w edytorze i zlepek w sąsiednim gubią treść, więc są
+  // gorsze niż źle postawiony ® — w razie wątpliwości wolimy oddać segment na starą ścieżkę.
+  //
+  // Liczymy fragmenty z treścią po obu stronach zamiast sprawdzać każdy osobno. Wariant
+  // "każdy z osobna" przepuszczał przypadek ze zrzutu: fragment '\n' (sam biały znak)
+  // wypadał z kontroli, a jego treść lądowała w sąsiedzie jako zlepek.
+  const solidSrc=nodes.filter(n=>(n.text||'').trim()).length;
+  const solidOut=out.filter((t,j)=>(nodes[j].text||'').trim()&&(t||'').trim()).length;
+  if(solidOut!==solidSrc) return null;
   return out;
 }
 
