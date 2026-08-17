@@ -189,12 +189,53 @@ function splitByAnchors(translated,nodes){
     lastAssigned=i;
   }
   if(!out.some(v=>v!==null)) return null;        // brak indeksu górnego — nie nasza ścieżka
-  // Ogon zdania trafia do pierwszego wolnego fragmentu PO ostatniej kotwicy —
-  // nie do pierwszego wolnego w ogóle, bo tamte leżą przed nią i są już rozliczone.
-  let tail=-1;
-  for(let j=lastAssigned+1;j<nodes.length;j++) if(out[j]===null&&!nodes[j].isSup){tail=j;break;}
-  if(tail>=0){ out[tail]=translated.slice(cursor); for(let j=tail+1;j<nodes.length;j++) if(out[j]===null) out[j]=''; }
-  else if(cursor<translated.length) return null; // urwany ogon — fallback
+  // Ogon zdania: fragmenty PO ostatniej kotwicy. Kotwica wyznacza granice tylko wokół
+  // symbolu, więc dalej nie mamy już żadnego punktu zaczepienia. Jedyny sygnał to
+  // łamania linii — należą do struktury akapitu, nie do języka, więc model je zachowuje.
+  const tailIdx=[];
+  for(let j=lastAssigned+1;j<nodes.length;j++) if(out[j]===null&&!nodes[j].isSup) tailIdx.push(j);
+  const rest=translated.slice(cursor);
+  if(!tailIdx.length){
+    if(rest.length) return null;                 // jest tekst, ale nie ma go gdzie włożyć
+  } else if(tailIdx.length===1){
+    out[tailIdx[0]]=rest;
+  } else {
+    // Fragmenty ogona bez własnej treści (sama spacja, myślnik, interpunkcja) przepisujemy
+    // wprost z oryginału — w tłumaczeniu wyglądają tak samo, a bez tego blokowałyby
+    // rozcięcie i cały segment leciałby na fallback (przypadek "MINI® i MIDI® - …").
+    // WYJĄTEK: fragment z łamaniem linii niesie granicę akapitu, więc zostaje do cięcia
+    // niżej — inaczej ". \n" zostałby przepisany, a następny dostałby zlepek dwóch zdań.
+    while(tailIdx.length>1&&isUntranslatable(nodes[tailIdx[0]].text)&&!/[\r\n]/.test(nodes[tailIdx[0]].text||'')){
+      const j=tailIdx.shift();
+      out[j]=nodes[j].text;
+      if(rest.startsWith(nodes[j].text)) cursor+=nodes[j].text.length;
+    }
+    const rest2=translated.slice(cursor);
+    if(tailIdx.length===1){ out[tailIdx[0]]=rest2; }
+    else {
+    // Kilka fragmentów w ogonie — rozcinamy po łamaniach linii. Warunek: każdy fragment
+    // poza ostatnim musi kończyć się łamaniem w ORYGINALE, inaczej nie ma czego szukać.
+    const heads=tailIdx.slice(0,-1);
+    if(!heads.every(j=>/[\r\n]\s*$/.test(nodes[j].text||''))) return null;
+    // Fragment będący samym białym znakiem ("\n") nie da się odróżnić od sąsiednich
+    // łamań w tłumaczeniu — model swobodnie scala puste linie. Bez własnej treści
+    // nie mamy czym go zakotwiczyć, więc oddajemy cały segment na starą ścieżkę.
+    if(tailIdx.some(j=>!(nodes[j].text||'').trim())) return null;
+    const parts=[];let pos=0,okSplit=true;
+    for(let k=0;k<heads.length;k++){
+      const idx=rest2.slice(pos).search(/[\r\n]/);
+      if(idx<0){okSplit=false;break;}
+      let end=pos+idx+1;
+      if(rest2[pos+idx]==='\r'&&rest2[end]==='\n') end++;  // CRLF liczymy jako jedno łamanie
+      parts.push(rest2.slice(pos,end));pos=end;
+    }
+    // Bez kompletu granic albo z pustym ostatnim odcinkiem wolimy fallback niż zgadywanie.
+    if(!okSplit||parts.length!==heads.length) return null;
+    parts.push(rest2.slice(pos));
+    if(parts.some(p=>!p.length)) return null;
+    tailIdx.forEach((j,k)=>{out[j]=parts[k];});
+    }
+  }
   for(let j=0;j<out.length;j++) if(out[j]===null) out[j]='';
   // Kontrola spójności: po usunięciu symboli, które DOKŁADAMY z oryginału, sklejenie
   // musi odtworzyć tekst od modelu znak w znak. Nie można porównywać wprost, bo gdy
@@ -206,6 +247,10 @@ function splitByAnchors(translated,nodes){
     rebuilt+=out[j];
   }
   if(rebuilt!==translated) return null;
+  // Bramka końcowa: fragment, który miał treść w źródle, nie może wyjść pusty.
+  // Pusty wiersz w edytorze i zlepek w sąsiednim to gorszy błąd niż źle postawiony ®,
+  // bo gubi treść. Cokolwiek by tu nie przeszło — lepiej oddać segment na starą ścieżkę.
+  for(let j=0;j<out.length;j++) if((nodes[j].text||'').trim()&&!(out[j]||'').trim()) return null;
   return out;
 }
 
