@@ -36,6 +36,28 @@ function padXliffTargets(textNodes,targets){
   return out;
 }
 
+// Przenosi brzegowe lamania wiersza ze zrodla na tlumaczenie.
+// Koncowe \n to w Storyline koniec akapitu (to on tworzy punktatory), a \r to miekki
+// enter (Shift+Enter, w pliku &#xD;). Prompt prosi model o ich zachowanie, ale model
+// bywa niekonsekwentny: w jednym przebiegu zachowal 23/23, w kolejnym 0/23 — ten sam
+// plik i ten sam prompt. Dlatego o brzegach decyduje kod, nie model.
+// Przepisujemy DOKLADNIE znaki z oryginalu, bez normalizacji \r na \n — Storyline je
+// rozroznia. Lamania WEWNATRZ tekstu zostawiamy modelowi: ich pozycja zalezy od szyku
+// zdania w jezyku docelowym, wiec kod nie ma jak jej odgadnac.
+// Uwaga: padXliffTargets() tego nie zalatwia — obcina wylacznie [ \t], wiec \n zostaje
+// w tekscie, padEnd jest puste i nie ma czego odtwarzac.
+function restoreEdgeBreaks(rawSrc, out){
+  if(!out || !out.trim()) return out;
+  const src = String(rawSrc == null ? '' : rawSrc);
+  const lead = (src.match(/^\s*[\r\n]\s*/) || [''])[0];
+  // Gdy zrodlo to same biale znaki, lead i trail zlapalyby ten sam fragment
+  // i doklejalibysmy go dwa razy — wtedy liczy sie tylko poczatek.
+  const trail = lead.length >= src.length ? '' : (src.match(/\s*[\r\n]\s*$/) || [''])[0];
+  if(!lead && !trail) return out;
+  const core = out.replace(/^\s+/, '').replace(/\s+$/, '');
+  return (lead || '') + core + (trail || '');
+}
+
 // Czy dany <g> jest w indeksie górnym? Storyline trzyma styl w <bpt ctype="x-style">,
 // który POPRZEDZA <g> jako rodzeństwo — nie jest jego rodzicem ani atrybutem.
 // Stąd cofanie się po previousElementSibling aż do najbliższego <bpt>.
@@ -468,7 +490,7 @@ function exportXliff(){
   if(!xliffXmlDoc){alert('Brak pliku.');return;}
   const lang=document.getElementById('target-lang').value;
   const workDoc=domParser.parseFromString(xliffRawXml,'application/xml');
-  xliffSegs.forEach(seg=>{let unit=null;for(const u of workDoc.querySelectorAll('trans-unit')){if(u.getAttribute('id')===seg.unitId){unit=u;break;}}if(!unit)return;const srcEl=unit.querySelector('source');if(!srcEl)return;const ex=unit.querySelector('target');if(ex)ex.remove();const tgt=workDoc.createElementNS(XLIFF_NS,'target');tgt.setAttribute('state','translated');if(seg.type==='plain'){tgt.textContent=seg.target||seg.source;}else{const cl=srcEl.cloneNode(true);const padded=padXliffTargets(seg.textNodes,seg.targets);cl.querySelectorAll('g[ctype="x-text"]').forEach(g=>{const i=seg.targets.findIndex(t=>t.gId===g.getAttribute('id'));if(i>=0&&seg.targets[i].text)g.textContent=padded[i];});while(cl.firstChild)tgt.appendChild(cl.firstChild);}srcEl.after(tgt);});
+  xliffSegs.forEach(seg=>{let unit=null;for(const u of workDoc.querySelectorAll('trans-unit')){if(u.getAttribute('id')===seg.unitId){unit=u;break;}}if(!unit)return;const srcEl=unit.querySelector('source');if(!srcEl)return;const ex=unit.querySelector('target');if(ex)ex.remove();const tgt=workDoc.createElementNS(XLIFF_NS,'target');tgt.setAttribute('state','translated');if(seg.type==='plain'){tgt.textContent=seg.target||seg.source;}else{const cl=srcEl.cloneNode(true);const padded=padXliffTargets(seg.textNodes,seg.targets);cl.querySelectorAll('g[ctype="x-text"]').forEach(g=>{const i=seg.targets.findIndex(t=>t.gId===g.getAttribute('id'));if(i>=0&&seg.targets[i].text)g.textContent=restoreEdgeBreaks(g.textContent||'',padded[i]);});while(cl.firstChild)tgt.appendChild(cl.firstChild);}srcEl.after(tgt);});
   let s=xmlSer.serializeToString(workDoc);if(!s.startsWith('<?xml'))s='<?xml version="1.0" encoding="utf-8"?>'+s;
   download(s,'translated_'+lang.toLowerCase().replace(/\s+/g,'_')+'.xliff','application/xliff+xml');
 }

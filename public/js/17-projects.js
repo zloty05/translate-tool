@@ -923,17 +923,20 @@ async function exportProjectXliff(){
 
       if(datatype==='plaintext'){
         const tText=translationMap[unitId]||srcEl.textContent||'';
-        targetEl.textContent=tText;
+        targetEl.textContent=restoreEdgeBreaks(srcEl.textContent||'',tText);
       } else {
         // Rich segment — clone source structure and inject per-gId translations
         const sourceClone=srcEl.cloneNode(true);
         // Spacje brzegowe policz z oryginalnego pliku (nie z metadata) — działa też
         // dla projektów utworzonych przed tą zmianą. Patrz edgePads() w 15-xliff.js.
         const gEls=Array.from(sourceClone.querySelectorAll('g[ctype="x-text"]'));
-        const nodes=gEls.map(g=>{const raw=g.textContent||'';const text=raw.replace(/^[ \t]+|[ \t]+$/g,'');return{text,...edgePads(raw,text)};});
+        const nodes=gEls.map(g=>{const raw=g.textContent||'';const text=raw.replace(/^[ \t]+|[ \t]+$/g,'');return{raw,text,...edgePads(raw,text)};});
         const tgts=gEls.map(g=>({text:translationMap[unitId+'__'+g.getAttribute('id')]||''}));
         const padded=padXliffTargets(nodes,tgts);
-        gEls.forEach((g,i)=>{ if(tgts[i].text) g.textContent=padded[i]; });
+        // Brzegowe lamania bierzemy z oryginalu, nie od modelu — patrz
+        // restoreEdgeBreaks() w 15-xliff.js. Zrodlem prawdy jest surowy <g> z pliku
+        // klienta (gEls sa klonem <source>), wiec dziala tez dla starych projektow.
+        gEls.forEach((g,i)=>{ if(tgts[i].text) g.textContent=restoreEdgeBreaks(nodes[i].raw,padded[i]); });
         while(sourceClone.firstChild) targetEl.appendChild(sourceClone.firstChild);
       }
 
