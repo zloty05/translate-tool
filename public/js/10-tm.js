@@ -28,6 +28,11 @@ async function pushTMBatch(pairs,lang,source){
   const rows=[];
   pairs.forEach(({src,tgt})=>{
     if(!src?.trim()||!tgt?.trim()) return;
+    // Fragment bez litery i cyfry ('®', '.', '?') nie jest jednostka tlumaczeniowa —
+    // w kazdym jezyku zostaje soba, wiec jako wpis TM tylko zasmieca pamiec i zanizy
+    // statystyki. Storyline wydziela takie <g> przy kazdej zmianie stylu, wiec bez tego
+    // filtra z jednego kursu wpada ich ponad sto. Patrz isUntranslatable() w 15-xliff.js.
+    if(typeof isUntranslatable==='function'&&isUntranslatable(src)) return;
     const k=tmKey(src);
     rows.push({key:k,source:src,target:tgt,lang,src:source,organization_id:currentOrg.id});
     const cached=tmCache.find(e=>e.key===k&&e.lang===lang);
