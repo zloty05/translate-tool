@@ -2,7 +2,7 @@
 
 ## Opis aplikacji
 
-TranslateScorm to wielotenantowa aplikacja SaaS do tłumaczenia materiałów e-learningowych. Obsługuje pliki XLIFF (Articulate Storyline), PPTX (PowerPoint) i napisy (SRT/VTT). Tłumaczenia wykonywane są przez Claude API (claude-sonnet-4-20250514) bezpośrednio z przeglądarki. Aplikacja zarządza organizacjami, zespołami tłumaczy, pamięcią tłumaczeń (TM) i słownikiem terminologii — dane synchronizowane przez Supabase. Rozliczenie oparte na kredytach: 1 kredyt = 1 000 znaków = 1 PLN.
+TranslateScorm to wielotenantowa aplikacja SaaS do tłumaczenia materiałów e-learningowych. Obsługuje pliki XLIFF (Articulate Storyline), PPTX (PowerPoint) i napisy (SRT/VTT). Tłumaczenia wykonywane są przez Claude API (`claude-sonnet-4-6`) — przeglądarka woła wyłącznie backend-proxy `/api/translate`, klucz API nigdy nie trafia do klienta. Aplikacja zarządza organizacjami, zespołami tłumaczy, pamięcią tłumaczeń (TM) i słownikiem terminologii — dane synchronizowane przez Supabase. Rozliczenie oparte na kredytach: 1 kredyt = 1 000 znaków = 1 PLN.
 
 ---
 
@@ -220,6 +220,51 @@ const CHUNK=20                       // segmentów na wywołanie API (XLIFF/PPTX
 4. Retry failed — jeden segment = jedno wywołanie
 5. Po zakończeniu: `pushTMBatch` (zapis do TM) + `deductCredits(charsThisBatch, ...)`
 
+### Scalanie segmentów z indeksem górnym (®, mm²) — [15-xliff.js](public/js/15-xliff.js)
+
+Storyline rozbija zdanie na osobne `<g ctype="x-text">` przy **każdej** zmianie stylu, więc
+`WINSTA®` to trzy fragmenty: `"…systemie WINSTA"`, `"®"`, `". "`. Tłumaczone osobno tracą
+kontekst — model przestawia szyk, a ® zostaje przyklejone do **pozycji**, nie do słowa
+(`"training®"` zamiast `"WINSTA®"`).
+
+Dlatego segment zawierający fragment `Superscript` idzie do modelu **jako całe zdanie**,
+jednym itemem, a odpowiedź rozcinamy w kodzie. Kluczowe funkcje:
+
+| Funkcja | Rola |
+|---|---|
+| `isSupNode(g)` | Czy `<g>` jest w indeksie górnym — czyta `Elevation="Superscript"` z **poprzedzającego** `<bpt ctype="x-style">` (styl jest rodzeństwem, nie rodzicem) |
+| `findAnchor(prevText)` | Kotwica = ogon fragmentu przed symbolem: nazwa handlowa (`WINSTA`, `CAGE CLAMP`, `Linect`) albo jednostka (`4 mm`) — tekst niezmienny językowo |
+| `splitRunByNewlines()` | Rozdziela tekst między fragmenty **bez** kotwicy (przed pierwszym i po ostatnim symbolu) |
+| `splitByAnchors()` | Główna funkcja rozcinania; zwraca `null` → wołający robi fallback |
+| `isUntranslatable(text)` | Fragment bez litery i cyfry (`'.'`, `'®'`) — nie wysyłamy do modelu ani do TM |
+
+**Zasady, których nie wolno naruszyć:**
+
+- **Model nigdy nie decyduje o pozycji symbolu.** ® przepisujemy dosłownie z oryginału.
+  Odrzucone (świadomie): znaczniki granic w tekście, cięcie proporcjonalne do długości,
+  pytanie modelu o `parts` — wszystkie oddają podział modelowi i są niedeterministyczne.
+- **`splitByAnchors` zwraca `null` zamiast zgadywać.** Fallback daje wynik jak przed
+  naprawą — ® może wylądować nie tam, ale **żaden wiersz nie jest pusty i nic nie jest
+  zlepione**. Utrata treści jest gorsza niż źle postawiony symbol.
+- **Bramka końcowa liczy fragmenty z treścią po obu stronach.** Sprawdzanie „czy pusty"
+  osobno dla każdego przepuszczało zlepki: fragment `'
+'` wypadał z kontroli, a jego
+  treść lądowała w sąsiedzie.
+- **Głowa i ogon używają tego samego helpera.** Przy pierwszej naprawie zduplikowałem tę
+  logikę i poprawiłem tylko ogon — ten sam błąd wrócił po drugiej stronie symbolu.
+
+**Kolejność w projektach ma znaczenie** ([17-projects.js](public/js/17-projects.js)):
+`buildAIWorkItems` wymaga, by grupa pokrywała **wszystkie** niepuste `<g>` jednostki
+(`segs.length===need`). Odsianie `isUntranslatable` **przed** grupowaniem zostawia grupę
+niekompletną, warunek zawodzi i scalanie w ogóle się nie uruchamia. Grupuj najpierw,
+filtruj potem.
+
+**Podgląd pełnego zdania** — `needsCtxPreview` / `ctxSentenceHTML` renderują w edytorze
+zwinięty `<details>` z całym zdaniem i wyróżnionym fragmentem. Po rozcięciu granice nie
+pokrywają się z granicami w źródle, więc pojedynczy wiersz potrafi wyglądać jak błąd.
+Dane biorą się z `metadata.allTextNodes`; **stare projekty nie mają tam `isSup`/`blockIdx`
+i idą dotychczasową ścieżką** — to zamierzone, brak regresji.
+
 ### Ekrany auth — layout split-screen
 
 Każdy ekran auth ma strukturę:
@@ -255,6 +300,8 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 - **Wywołanie Anthropic w Cloudflare Function** — musi zostać w `functions/api/translate.js` (backend-proxy). NIE przenosić do przeglądarki: klucz `env.ANTHROPIC_API_KEY` nigdy w kliencie, header `x-api-key` + `anthropic-version: 2023-06-01` ustawiane po stronie serwera. Frontend woła tylko `/api/translate` z tokenem Supabase
 - **`XLIFF_NS`** — przestrzeń nazw XLIFF 1.2: `'urn:oasis:names:tc:xliff:document:1.2'`
 - **`applyRunText`** — skomplikowana logika podziału tekstu między `<r>` runy w PPTX; zmiana psuje formatowanie
+- **`splitByAnchors` i spółka** — rozcinanie segmentów z ®/²; szczegóły w sekcji „Scalanie segmentów z indeksem górnym". Zwrot `null` to **poprawna** odpowiedź (fallback), nie błąd do naprawienia
+- **Style w `<bpt>` nigdy nie są odtwarzane** — eksport klonuje `<source>` i podmienia wyłącznie `textContent` każdego `<g>` ([15-xliff.js](public/js/15-xliff.js), [17-projects.js](public/js/17-projects.js)). Formatowanie pochodzi z pliku klienta i nigdy go nie opuszcza; nie ma kodu, który „decyduje", co pogrubić
 - **CSS reguły dark mode** — obszerne, często z `!important`; przy nowych elementach zawsze dodaj parę `body.dark .klasa`
 - **`deductTokens`** — to alias do `deductCredits`, zachowany dla backward compat; nie usuwaj
 
@@ -262,6 +309,7 @@ Wszystkie style landing page używają prefixu `lp-` (unika kolizji z CSS aplika
 
 - **`buildDictPrompt`** — cienki wrapper na `buildDictPromptForChunk` (bez chunku, źródłem język bazowy org). Nie ma dziś wywołań; wszystkie 4 ścieżki AI wołają `buildDictPromptForChunk` bezpośrednio. Wcześniejszy duplikat deklaracji został usunięty — nie dodawaj kolejnej
 - **`tmCache[]`** — rolling cache (max 1000 wpisów), nie pełna kopia bazy; do lookup używaj `lookupTMBatch` (RPC)
+- **`pushTMBatch` filtruje `isUntranslatable`** ([10-tm.js](public/js/10-tm.js)) — fragmenty typu `'®'`, `'.'`, `'?'` nie są jednostkami tłumaczeniowymi i tylko zaśmiecają TM (z jednego kursu ponad 100 par `'®' => '®'`). Filtr siedzi w **jednym wspólnym wejściu** dla wszystkich czterech miejsc zapisu — nie duplikuj go u wołających
 - **Model AI** — `claude-sonnet-4-6`; przy zmianie upewnij się że model istnieje
 - **Stripe checkout** — `startCheckout()` kończy się alertem; płatności niegotowe, admin ma ręczne doładowanie
 - **`orgParam()`** — zawsze używaj w zapytaniach REST do filtrowania po `organization_id`

@@ -128,6 +128,15 @@ Dla zmian dotykających danych (migracje, słownik, struktura):
 - [ ] Zmiana zweryfikowana na `test.translatescorm.com`
 - [ ] Jeśli migracja ma zapytania kontrolne — uruchomione, wynik zgodny z oczekiwaniem
 
+Dla zmian dotykających **rozcinania segmentów** (`splitByAnchors`, `findAnchor`,
+`buildAIWorkItems`, `isUntranslatable`) — patrz sekcja o scalaniu w [CLAUDE.md](CLAUDE.md):
+
+- [ ] Przetłumaczony realny kurs (`docs/poprawki_r/Winsta I_PL.xlf`) jako **projekt**, nie tylko przez zakładkę XLIFF
+- [ ] W edytorze: **żaden wiersz nie jest pusty przy niepustym źródle** i nigdzie nie ma zlepka dwóch zdań
+- [ ] W wyeksportowanym XLIFF ® stoi tuż za nazwą produktu, nie za przypadkowym słowem
+- [ ] Liczba `<bpt>` i `gId` identyczna jak w oryginale (formatowanie nienaruszone)
+- [ ] Konsola: licznik fallbacków rozsądny — skok w górę oznacza regresję w rozpoznawaniu kotwic
+
 Po wdrożeniu:
 
 - [ ] `translatescorm.com` ładuje się, brak znacznika środowiska
@@ -163,6 +172,8 @@ Migracje w tym projekcie są celowo zachowawcze: backfill liczy wartości z real
 | `/api/translate` → **401**, reszta działa | Zmienne Preview wskazują produkcyjną bazę | Settings → Variables → Preview: `SUPABASE_URL`/`SUPABASE_ANON_KEY` na projekt testowy, potem Redeploy |
 | `Could not find the function ...` | Migracja niewgrana **albo** niepełne argumenty w teście | `supabase migration list`; przy `curl` wysyłaj komplet parametrów |
 | Pliki SQL dostępne publicznie | Coś poza `public/` trafiło do publikacji | Sprawdź `assets` w `wrangler.jsonc` (nie powinno być) i Build output |
+| Puste wiersze w edytorze / zlepione zdania | Regresja w `splitByAnchors` — zmiana po jednej stronie symbolu albo odsianie fragmentów przed grupowaniem | Patrz „Scalanie segmentów" w [CLAUDE.md](CLAUDE.md). Sprawdź na `docs/poprawki_r/Winsta I_PL.xlf`, nie na wymyślonym przykładzie |
+| ® za przypadkowym słowem po tłumaczeniu | Segment poszedł starą ścieżką — scalanie się nie uruchomiło | Konsola: skok licznika fallbacków. Częsta przyczyna: `buildAIWorkItems` dostał niekompletną grupę |
 | `wrangler pages dev` nie startuje | Zbłąkane procesy blokują port | Znajdź korzeń: `Get-CimInstance Win32_Process \| Where-Object { $_.CommandLine -match 'wrangler' }`, potem `taskkill /F /T /PID <korzeń>` |
 
 ---
@@ -174,3 +185,7 @@ Migracje w tym projekcie są celowo zachowawcze: backfill liczy wartości z real
 - **Nie zaszywaj domeny w kodzie** — używaj `location.origin`. Inaczej rejestracja z testu przekieruje na produkcję.
 - **Nie umieszczaj plików poza `public/`, jeśli mają być dostępne w przeglądarce** — i odwrotnie: nie wkładaj do `public/` niczego, co ma zostać prywatne.
 - **Nie testuj na produkcji.** Środowisko testowe ma własną bazę i kosztuje 0 zł.
+- **Nie weryfikuj rozcinania segmentów na wymyślonych przykładach.** Testy jednostkowe na
+  ręcznie ułożonych fragmentach przechodziły na zielono, podczas gdy realny kurs gubił treść
+  w kilkunastu miejscach — bo wszystkie zmyślone przypadki miały najwyżej jeden fragment za
+  symbolem. Miarą jest przebieg po **wszystkich** jednostkach realnego pliku.
