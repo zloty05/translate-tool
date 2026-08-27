@@ -1184,8 +1184,12 @@ async function importProjectExcel(e){
   const tmPairs=[];
   for(const row of rows.slice(1)){
     const key=String(row[1]||'').trim();
-    const translation=String(row[3]||'').trim();
-    if(!key||!translation) continue;
+    // Tlumaczenia NIE obcinamy: koncowy \n to w Storyline koniec akapitu — to on
+    // tworzy punktatory. trim() kasowal go i lista zlewala sie w jeden akapit.
+    // Excel zapisuje lamania jako CRLF, wiec normalizujemy do LF (jak w zrodle).
+    // Samotnego \r nie ruszamy — Storyline uzywa go jako miekkiego lamania (&#xD;).
+    const translation=String(row[3]??'').replace(/\r\n/g,'\n');
+    if(!key||!translation.trim()) continue;
     const seg=currentProjectSegs.find(s=>s.segment_key===key);
     if(!seg) continue;
     await supa.rpc('save_segment_translation',{seg_id:seg.id,lang,new_text:translation});
