@@ -2,7 +2,7 @@
 // TEAM MANAGEMENT
 // ══════════════════════════════════════════════════════════
 function getMemberName(m){
-  // display_name from member_emails view
+  // display_name z RPC get_member_emails
   const dn=m.display_name?.trim();
   if(dn && dn.length>0 && !dn.match(/^[0-9a-f-]{36}$/i)) return dn;
   // full_name from profiles
@@ -13,19 +13,29 @@ function getMemberName(m){
   return m.user_id.substring(0,8)+'...';
 }
 
+// Mapa user_id -> {email, display_name} dla organizacji.
+// RPC zamiast widoku member_emails: widok czytał auth.users i był wystawiony
+// dla roli anon (linter auth_users_exposed). Zwraca {} przy błędzie —
+// wołający schodzą wtedy na fallback (UUID/nazwa z profiles), nic się nie wywala.
+async function fetchMemberEmailMap(orgId){
+  if(!orgId) return {};
+  try{
+    const{data,error}=await supa.rpc('get_member_emails',{org_id:orgId});
+    if(error) throw error;
+    const map={};
+    (data||[]).forEach(e=>{ map[e.user_id]={email:e.email,display_name:e.display_name}; });
+    return map;
+  }catch(e){ console.warn('get_member_emails error:',e); return {}; }
+}
+
 async function loadTeam(){
   document.getElementById('team-org-info').textContent=`Organizacja: ${currentOrg?.name||'—'} · Twoja rola: ${currentRole||'—'}`;
   document.getElementById('team-loading').style.display='flex';
   try{
     const members=await dbGet('organization_members',`?${orgParam()}`);
-    // Use member_emails view which bypasses profiles RLS issues
     // Bierzemy też email — bez niego fallback w getMemberName() pokazuje skrócone UUID
     // dla userów bez full_name (np. zaproszonych z panelu Supabase).
-    let nameMap={};
-    try{
-      const nameData=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
-      nameData.forEach(e=>{ nameMap[e.user_id]={email:e.email,display_name:e.display_name}; });
-    }catch(e){ console.warn('member_emails error:',e); }
+    const nameMap=await fetchMemberEmailMap(currentOrg.id);
     const membersWithProfiles=members.map(m=>({
       ...m,
       profiles:null,

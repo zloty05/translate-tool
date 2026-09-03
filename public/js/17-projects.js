@@ -107,7 +107,7 @@ function npFileSelected(file){
   else document.getElementById('np-file-type').value='xliff';
 }
 
-// Ładuje członków org do teamMembersCache i wzbogaca o email/nazwę (member_emails + profiles).
+// Ładuje członków org do teamMembersCache i wzbogaca o email/nazwę (get_member_emails + profiles).
 // Wzbogaca gdy cache pusty LUB gdy istniejące wpisy nie mają email/display_name
 // (np. gdy loadDictCache() wypełnił cache surowymi wierszami organization_members).
 async function ensureTeamMembersLoaded(){
@@ -116,11 +116,7 @@ async function ensureTeamMembersLoaded(){
   if(!needsEnrich) return;
   const members = await dbGet('organization_members',`?organization_id=eq.${currentOrg.id}`);
   const profiles = await dbGet('profiles',`?id=in.(${members.map(m=>m.user_id).join(',')})`);
-  let emailMap={};
-  try{
-    const ed=await dbGet('member_emails',`?organization_id=eq.${currentOrg.id}`);
-    ed.forEach(e=>{ emailMap[e.user_id]={email:e.email,display_name:e.display_name}; });
-  }catch(e){}
+  const emailMap=await fetchMemberEmailMap(currentOrg.id);
   teamMembersCache = members.map(m=>({
     ...m,
     profile:profiles.find(p=>p.id===m.user_id),

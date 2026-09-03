@@ -1,4 +1,15 @@
 -- ══════════════════════════════════════════════════════════════════
+-- NIEAKTUALNE — widok member_emails został USUNIĘTY.
+-- Zastąpiła go RPC get_member_emails (SECURITY DEFINER z jawną bramką
+-- na członkostwo) w migracji 20260903120000_member_emails_security.sql.
+-- Powód: linter Supabase, auth_users_exposed — widok czytał auth.users
+-- i miał GRANT dla roli anon. Nie wskrzeszaj tego widoku.
+--
+-- Uwaga poniżej o security_invoker POZOSTAJE aktualna: jest powodem,
+-- dla którego nie da się naprawić widoku samym dodaniem tej opcji.
+-- ══════════════════════════════════════════════════════════════════
+
+-- ══════════════════════════════════════════════════════════════════
 -- ARCHIWUM — migracja sprzed wprowadzenia Supabase CLI.
 -- Została już zastosowana na produkcji, a jej efekt jest zawarty
 -- w zrzucie schematu supabase/migrations/*_remote_schema.sql.
